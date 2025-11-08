@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<genmodel:GenModel xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore"
+    xmlns:genmodel="http://www.eclipse.org/emf/2002/GenModel" modelDirectory="/kino.application/src-gen" modelPluginID="kino.application"
+    modelName="My" rootExtendsClass="org.eclipse.emf.ecore.impl.MinimalEObjectImpl$Container"
+    importerID="org.eclipse.emf.importer.ecore" complianceLevel="17.0" copyrightFields="false"
+    operationReflection="true" importOrganizing="true">
+  <foreignModel>My.ecore</foreignModel>
+  <genPackages prefix="Kino" disposableProviderFactory="true" ecorePackage="My.ecore#/">
+    <genEnums typeSafeEnumCompatible="false" ecoreEnum="My.ecore#//SitzreihenKategorie">
+      <genEnumLiterals ecoreEnumLiteral="My.ecore#//SitzreihenKategorie/PARKETT"/>
+      <genEnumLiterals ecoreEnumLiteral="My.ecore#//SitzreihenKategorie/LOGE"/>
+      <genEnumLiterals ecoreEnumLiteral="My.ecore#//SitzreihenKategorie/LOGE_MIT_SERVICE"/>
+    </genEnums>
+    <genClasses ecoreClass="My.ecore#//Kino">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute My.ecore#//Kino/name"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference My.ecore#//Kino/saele"/>
+      <genOperations ecoreOperation="My.ecore#//Kino/saalAnlegen">
+        <genParameters ecoreParameter="My.ecore#//Kino/saalAnlegen/name"/>
+      </genOperations>
+      <genOperations ecoreOperation="My.ecore#//Kino/filmAnlegen">
+        <genParameters ecoreParameter="My.ecore#//Kino/filmAnlegen/titel"/>
+        <genParameters ecoreParameter="My.ecore#//Kino/filmAnlegen/dauer"/>
+        <genParameters ecoreParameter="My.ecore#//Kino/filmAnlegen/beschreibung"/>
+      </genOperations>
+      <genOperations ecoreOperation="My.ecore#//Kino/einnahmenBerechnen">
+        <genParameters ecoreParameter="My.ecore#//Kino/einnahmenBerechnen/intervallStart"/>
+        <genParameters ecoreParameter="My.ecore#//Kino/einnahmenBerechnen/intervallEnde"/>
+      </genOperations>
+    </genClasses>
+    <genClasses ecoreClass="My.ecore#//Kinosaal">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute My.ecore#//Kinosaal/name"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute My.ecore#//Kinosaal/freigegeben"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference My.ecore#//Kinosaal/reihen"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference My.ecore#//Kinosaal/auffuehrungen"/>
+      <genOperations ecoreOperation="My.ecore#//Kinosaal/reiheHinzufügen">
+        <genParameters ecoreParameter="My.ecore#//Kinosaal/reiheHinzufügen/reihe"/>
+      </genOperations>
+      <genOperations ecoreOperation="My.ecore#//Kinosaal/freigeben"/>
+      <genOperations ecoreOperation="My.ecore#//Kinosaal/istFreigegeben"/>
+    </genClasses>
+    <genClasses ecoreClass="My.ecore#//Film">
+      <genFeatures property="Readonly" createChild="false" ecoreFeature="ecore:EAttribute My.ecore#//Film/titel"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute My.ecore#//Film/dauer"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute My.ecore#//Film/beschreibung"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference My.ecore#//Film/auffuehrungen"/>
+      <genOperations ecoreOperation="My.ecore#//Film/gesamtEinnahmen"/>
+    </genClasses>
+    <genClasses ecoreClass="My.ecore#//Auffuehrung">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute My.ecore#//Auffuehrung/startzeitpunkt"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference My.ecore#//Auffuehrung/saal"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference My.ecore#//Auffuehrung/reservierungen"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference My.ecore#//Auffuehrung/buchungen"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference My.ecore#//Auffuehrung/film"/>
+      <genOperations ecoreOperation="My.ecore#//Auffuehrung/verfuegbarePlaetze">
+        <genParameters ecoreParameter="My.ecore#//Auffuehrung/verfuegbarePlaetze/kategorie"/>
+      </genOperations>
+      <genOperations ecoreOperation="My.ecore#//Auffuehrung/gesamtEinnahmen"/>
+    </genClasses>
+    <genClasses ecoreClass="My.ecore#//Sitzreihe">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute My.ecore#//Sitzreihe/reihennummer"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute My.ecore#//Sitzreihe/kategorie"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute My.ecore#//Sitzreihe/anzahlSitze"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference My.ecore#//Sitzreihe/plaetze"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference My.ecore#//Sitzreihe/saal"/>
+    </genClasses>
+    <genClasses ecoreClass="My.ecore#//Sitzplatz">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute My.ecore#//Sitzplatz/platznummer"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference My.ecore#//Sitzplatz/reihe"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference My.ecore#//Sitzplatz/reservierung"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference My.ecore#//Sitzplatz/buchung"/>
+    </genClasses>
+    <genClasses ecoreClass="My.ecore#//Kunde">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute My.ecore#//Kunde/name"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute My.ecore#//Kunde/email"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference My.ecore#//Kunde/reservierungen"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference My.ecore#//Kunde/buchungen"/>
+      <genOperations ecoreOperation="My.ecore#//Kunde/reservieren">
+        <genParameters ecoreParameter="My.ecore#//Kunde/reservieren/auffuehrung"/>
+        <genParameters ecoreParameter="My.ecore#//Kunde/reservieren/plaetze"/>
+      </genOperations>
+      <genOperations ecoreOperation="My.ecore#//Kunde/reservierungStornieren">
+        <genParameters ecoreParameter="My.ecore#//Kunde/reservierungStornieren/reservierung"/>
+      </genOperations>
+      <genOperations ecoreOperation="My.ecore#//Kunde/direktBuchung">
+        <genParameters ecoreParameter="My.ecore#//Kunde/direktBuchung/auffuehrung"/>
+        <genParameters ecoreParameter="My.ecore#//Kunde/direktBuchung/plaetze"/>
+      </genOperations>
+      <genOperations ecoreOperation="My.ecore#//Kunde/reservierungZuBuchungVerarbeiten">
+        <genParameters ecoreParameter="My.ecore#//Kunde/reservierungZuBuchungVerarbeiten/reservierung"/>
+      </genOperations>
+    </genClasses>
+    <genClasses ecoreClass="My.ecore#//Reservierung">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute My.ecore#//Reservierung/reservierungsnummer"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute My.ecore#//Reservierung/startZeitstempel"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference My.ecore#//Reservierung/kunde"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference My.ecore#//Reservierung/auffuehrung"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference My.ecore#//Reservierung/plaetze"/>
+      <genOperations ecoreOperation="My.ecore#//Reservierung/stornieren"/>
+      <genOperations ecoreOperation="My.ecore#//Reservierung/inBuchungUmwandeln"/>
+    </genClasses>
+    <genClasses ecoreClass="My.ecore#//Buchung">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute My.ecore#//Buchung/buchungsnummer"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute My.ecore#//Buchung/buchungsZeitstempel"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute My.ecore#//Buchung/bezahlt"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference My.ecore#//Buchung/kunde"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference My.ecore#//Buchung/auffuehrung"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference My.ecore#//Buchung/plaetze"/>
+      <genOperations ecoreOperation="My.ecore#//Buchung/gesamtpreis"/>
+    </genClasses>
+  </genPackages>
+</genmodel:GenModel>
