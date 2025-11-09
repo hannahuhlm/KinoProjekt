@@ -3,8 +3,10 @@
 package kino.impl;
 
 import java.lang.reflect.InvocationTargetException;
-
+import java.time.LocalTime;
 import java.util.Collection;
+import java.util.Date;
+import java.util.Random;
 
 import kino.Auffuehrung;
 import kino.Buchung;
@@ -195,49 +197,118 @@ public class KundeImpl extends MinimalEObjectImpl.Container implements Kunde {
 	/**
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
-	 * @generated
+	 * @generated NOT
 	 */
 	@Override
 	public Reservierung reservieren(Auffuehrung auffuehrung, EList<Sitzplatz> plaetze) {
-		// TODO: implement this method
-		// Ensure that you remove @generated or mark it @generated NOT
-		throw new UnsupportedOperationException();
+		Reservierung reservierung= new ReservierungImpl();
+
+		//fehler wenn sitzplatz nicht verfügbar
+		for (Sitzplatz sitzplatz : plaetze) {
+			if (!sitzplatz.isIsFrei()) {
+				//TODO: fehlerhandling und so dass buchung nicht greift wenn später einer belegt
+			}else {
+				//sitz reservieren
+				sitzplatz.setIsFrei(false);
+				sitzplatz.setReservierung(reservierung);
+			}
+		}
+		// Nummer festlegen
+		LocalTime now = LocalTime.now();
+        int time = now.getHour() * 10000 + now.getMinute() * 100 + now.getSecond(); 
+        int random = new Random().nextInt(90) + 10; 
+        int nummer = (time * 100) + random; 
+        
+		//Attribute setzen
+		reservierung.setStartZeitstempel(new Date());
+		reservierung.setReservierungsnummer(nummer);
+		reservierung.setKunde(this);
+		reservierung.setAuffuehrung(auffuehrung);
+		reservierung.plaetzeHinzufuegen(plaetze);
+		
+		
+		//die reservierung der Liste an Reservierungen des Kunden und der Aufführung hinzufügen 
+		this.reservierungen.add(reservierung);
+		auffuehrung.reservierungHinzufuegen(reservierung);
+		
+		return reservierung;
 	}
 
 	/**
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
-	 * @generated
+	 * @generated NOT
 	 */
 	@Override
-	public void reservierungStornieren(Reservierung reservierung) {
-		// TODO: implement this method
-		// Ensure that you remove @generated or mark it @generated NOT
-		throw new UnsupportedOperationException();
+	public void reservierungStornieren(Reservierung reservierung, Auffuehrung auffuehrung) {
+		this.reservierungen.remove(reservierung);
+		auffuehrung.reservierungLoeschen(reservierung);
 	}
+
 
 	/**
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
-	 * @generated
+	 * @generated NOT
 	 */
 	@Override
 	public Buchung direktBuchung(Auffuehrung auffuehrung, EList<Sitzplatz> plaetze) {
-		// TODO: implement this method
-		// Ensure that you remove @generated or mark it @generated NOT
-		throw new UnsupportedOperationException();
+		Buchung buchung= new BuchungImpl();
+		//fehler wenn sitzplatz nicht verfügbar
+		for (Sitzplatz sitzplatz : plaetze) {
+			if (!sitzplatz.isIsFrei()) {
+				//TODO: fehlerhandling und so dass buchung nicht greift wenn später einer belegt
+			}else {
+				//sitz reservieren
+				sitzplatz.setIsFrei(false);
+				sitzplatz.setBuchung(buchung);
+			}
+		}
+		//Buchungscode generieren:
+		LocalTime now = LocalTime.now();
+        int time = now.getHour() * 10000 + now.getMinute() * 100 + now.getSecond(); 
+        int random = new Random().nextInt(90) + 10; 
+        int nummer = (time * 100) + random; 
+        String buchungscode = "B" + String.valueOf(nummer);
+        
+		//Attribute setzen
+		buchung.setBuchungsZeitstempel(new Date());
+		buchung.setBuchungsnummer(buchungscode);
+		buchung.setKunde(this);
+		buchung.setAuffuehrung(auffuehrung);
+		buchung.plaetzeHinzufuegen(plaetze);
+		
+		//Buchung der Liste an Buchungen von Kunde/Aufführung hinzufügen
+		this.buchungen.add(buchung);
+		auffuehrung.getBuchungen().add(buchung);
+		
+		return buchung;
 	}
 
 	/**
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
-	 * @generated
+	 * @generated NOT
 	 */
 	@Override
 	public Buchung reservierungZuBuchungVerarbeiten(Reservierung reservierung) {
-		// TODO: implement this method
-		// Ensure that you remove @generated or mark it @generated NOT
-		throw new UnsupportedOperationException();
+		Buchung buchung= new BuchungImpl();
+		
+		//buchungscode erstellen
+		String buchungscode= "B" + String.valueOf(reservierung.getReservierungsnummer());
+		
+		//Attribute setzen
+		buchung.setBuchungsZeitstempel(new Date());
+		buchung.setBuchungsnummer(buchungscode);
+		buchung.setKunde(reservierung.getKunde());
+		buchung.setAuffuehrung(reservierung.getAuffuehrung());
+		buchung.plaetzeHinzufuegen(reservierung.getPlaetze());
+		
+		//Buchung der Liste an Buchungen von Kunde/Aufführung hinzufügen
+		this.buchungen.add(buchung);
+		reservierung.getAuffuehrung().getBuchungen().add(buchung);
+		
+		return buchung;
 	}
 
 	/**
@@ -342,8 +413,8 @@ public class KundeImpl extends MinimalEObjectImpl.Container implements Kunde {
 		switch (operationID) {
 			case KinoPackage.KUNDE___RESERVIEREN__AUFFUEHRUNG_ELIST:
 				return reservieren((Auffuehrung)arguments.get(0), (EList<Sitzplatz>)arguments.get(1));
-			case KinoPackage.KUNDE___RESERVIERUNG_STORNIEREN__RESERVIERUNG:
-				reservierungStornieren((Reservierung)arguments.get(0));
+			case KinoPackage.KUNDE___RESERVIERUNG_STORNIEREN__RESERVIERUNG_AUFFUEHRUNG:
+				reservierungStornieren((Reservierung)arguments.get(0), (Auffuehrung)arguments.get(1));
 				return null;
 			case KinoPackage.KUNDE___DIREKT_BUCHUNG__AUFFUEHRUNG_ELIST:
 				return direktBuchung((Auffuehrung)arguments.get(0), (EList<Sitzplatz>)arguments.get(1));

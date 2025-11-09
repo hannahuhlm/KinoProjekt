@@ -197,6 +197,16 @@ public class KinoPackageImpl extends EPackageImpl implements KinoPackage {
 	 * @generated
 	 */
 	@Override
+	public EReference getKino_Kunden() {
+		return (EReference)kinoEClass.getEStructuralFeatures().get(2);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
 	public EOperation getKino__SaalAnlegen__String() {
 		return kinoEClass.getEOperations().get(0);
 	}
@@ -217,8 +227,38 @@ public class KinoPackageImpl extends EPackageImpl implements KinoPackage {
 	 * @generated
 	 */
 	@Override
-	public EOperation getKino__EinnahmenBerechnen__Date_Date() {
+	public EOperation getKino__EinnahmenBerechnen__Auffuehrung() {
 		return kinoEClass.getEOperations().get(2);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
+	public EOperation getKino__EinnahmenBerechnen__Film() {
+		return kinoEClass.getEOperations().get(3);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
+	public EOperation getKino__SitzreiheAnlegen__int_SitzreihenKategorie_int_Kinosaal() {
+		return kinoEClass.getEOperations().get(4);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
+	public EOperation getKino__KundeAnlegen__String_String() {
+		return kinoEClass.getEOperations().get(5);
 	}
 
 	/**
@@ -427,6 +467,16 @@ public class KinoPackageImpl extends EPackageImpl implements KinoPackage {
 	 * @generated
 	 */
 	@Override
+	public EAttribute getAuffuehrung_AktuelleEinnahmen() {
+		return (EAttribute)auffuehrungEClass.getEStructuralFeatures().get(5);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
 	public EOperation getAuffuehrung__VerfuegbarePlaetze__SitzreihenKategorie() {
 		return auffuehrungEClass.getEOperations().get(0);
 	}
@@ -437,8 +487,28 @@ public class KinoPackageImpl extends EPackageImpl implements KinoPackage {
 	 * @generated
 	 */
 	@Override
-	public EOperation getAuffuehrung__GesamtEinnahmen() {
+	public EOperation getAuffuehrung__ReservierungHinzufuegen__Reservierung() {
 		return auffuehrungEClass.getEOperations().get(1);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
+	public EOperation getAuffuehrung__BuchungHinzufuegen__Buchung() {
+		return auffuehrungEClass.getEOperations().get(2);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
+	public EOperation getAuffuehrung__ReservierungLoeschen__Reservierung() {
+		return auffuehrungEClass.getEOperations().get(3);
 	}
 
 	/**
@@ -507,6 +577,16 @@ public class KinoPackageImpl extends EPackageImpl implements KinoPackage {
 	 * @generated
 	 */
 	@Override
+	public EOperation getSitzreihe__PlaetzeAnlegen() {
+		return sitzreiheEClass.getEOperations().get(0);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
 	public EClass getSitzplatz() {
 		return sitzplatzEClass;
 	}
@@ -549,6 +629,16 @@ public class KinoPackageImpl extends EPackageImpl implements KinoPackage {
 	@Override
 	public EReference getSitzplatz_Buchung() {
 		return (EReference)sitzplatzEClass.getEStructuralFeatures().get(3);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
+	public EAttribute getSitzplatz_IsFrei() {
+		return (EAttribute)sitzplatzEClass.getEStructuralFeatures().get(4);
 	}
 
 	/**
@@ -617,7 +707,7 @@ public class KinoPackageImpl extends EPackageImpl implements KinoPackage {
 	 * @generated
 	 */
 	@Override
-	public EOperation getKunde__ReservierungStornieren__Reservierung() {
+	public EOperation getKunde__ReservierungStornieren__Reservierung_Auffuehrung() {
 		return kundeEClass.getEOperations().get(1);
 	}
 
@@ -707,18 +797,8 @@ public class KinoPackageImpl extends EPackageImpl implements KinoPackage {
 	 * @generated
 	 */
 	@Override
-	public EOperation getReservierung__Stornieren() {
+	public EOperation getReservierung__PlaetzeHinzufuegen__EList() {
 		return reservierungEClass.getEOperations().get(0);
-	}
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
-	@Override
-	public EOperation getReservierung__InBuchungUmwandeln() {
-		return reservierungEClass.getEOperations().get(1);
 	}
 
 	/**
@@ -807,6 +887,16 @@ public class KinoPackageImpl extends EPackageImpl implements KinoPackage {
 	 * @generated
 	 */
 	@Override
+	public EOperation getBuchung__PlaetzeHinzufuegen__EList() {
+		return buchungEClass.getEOperations().get(1);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
 	public EEnum getSitzreihenKategorie() {
 		return sitzreihenKategorieEEnum;
 	}
@@ -843,9 +933,13 @@ public class KinoPackageImpl extends EPackageImpl implements KinoPackage {
 		kinoEClass = createEClass(KINO);
 		createEAttribute(kinoEClass, KINO__NAME);
 		createEReference(kinoEClass, KINO__SAELE);
+		createEReference(kinoEClass, KINO__KUNDEN);
 		createEOperation(kinoEClass, KINO___SAAL_ANLEGEN__STRING);
 		createEOperation(kinoEClass, KINO___FILM_ANLEGEN__STRING_INT_STRING);
-		createEOperation(kinoEClass, KINO___EINNAHMEN_BERECHNEN__DATE_DATE);
+		createEOperation(kinoEClass, KINO___EINNAHMEN_BERECHNEN__AUFFUEHRUNG);
+		createEOperation(kinoEClass, KINO___EINNAHMEN_BERECHNEN__FILM);
+		createEOperation(kinoEClass, KINO___SITZREIHE_ANLEGEN__INT_SITZREIHENKATEGORIE_INT_KINOSAAL);
+		createEOperation(kinoEClass, KINO___KUNDE_ANLEGEN__STRING_STRING);
 
 		kinosaalEClass = createEClass(KINOSAAL);
 		createEAttribute(kinosaalEClass, KINOSAAL__NAME);
@@ -869,8 +963,11 @@ public class KinoPackageImpl extends EPackageImpl implements KinoPackage {
 		createEReference(auffuehrungEClass, AUFFUEHRUNG__RESERVIERUNGEN);
 		createEReference(auffuehrungEClass, AUFFUEHRUNG__BUCHUNGEN);
 		createEReference(auffuehrungEClass, AUFFUEHRUNG__FILM);
+		createEAttribute(auffuehrungEClass, AUFFUEHRUNG__AKTUELLE_EINNAHMEN);
 		createEOperation(auffuehrungEClass, AUFFUEHRUNG___VERFUEGBARE_PLAETZE__SITZREIHENKATEGORIE);
-		createEOperation(auffuehrungEClass, AUFFUEHRUNG___GESAMT_EINNAHMEN);
+		createEOperation(auffuehrungEClass, AUFFUEHRUNG___RESERVIERUNG_HINZUFUEGEN__RESERVIERUNG);
+		createEOperation(auffuehrungEClass, AUFFUEHRUNG___BUCHUNG_HINZUFUEGEN__BUCHUNG);
+		createEOperation(auffuehrungEClass, AUFFUEHRUNG___RESERVIERUNG_LOESCHEN__RESERVIERUNG);
 
 		sitzreiheEClass = createEClass(SITZREIHE);
 		createEAttribute(sitzreiheEClass, SITZREIHE__REIHENNUMMER);
@@ -878,12 +975,14 @@ public class KinoPackageImpl extends EPackageImpl implements KinoPackage {
 		createEAttribute(sitzreiheEClass, SITZREIHE__ANZAHL_SITZE);
 		createEReference(sitzreiheEClass, SITZREIHE__PLAETZE);
 		createEReference(sitzreiheEClass, SITZREIHE__SAAL);
+		createEOperation(sitzreiheEClass, SITZREIHE___PLAETZE_ANLEGEN);
 
 		sitzplatzEClass = createEClass(SITZPLATZ);
 		createEAttribute(sitzplatzEClass, SITZPLATZ__PLATZNUMMER);
 		createEReference(sitzplatzEClass, SITZPLATZ__REIHE);
 		createEReference(sitzplatzEClass, SITZPLATZ__RESERVIERUNG);
 		createEReference(sitzplatzEClass, SITZPLATZ__BUCHUNG);
+		createEAttribute(sitzplatzEClass, SITZPLATZ__IS_FREI);
 
 		kundeEClass = createEClass(KUNDE);
 		createEAttribute(kundeEClass, KUNDE__NAME);
@@ -891,7 +990,7 @@ public class KinoPackageImpl extends EPackageImpl implements KinoPackage {
 		createEReference(kundeEClass, KUNDE__RESERVIERUNGEN);
 		createEReference(kundeEClass, KUNDE__BUCHUNGEN);
 		createEOperation(kundeEClass, KUNDE___RESERVIEREN__AUFFUEHRUNG_ELIST);
-		createEOperation(kundeEClass, KUNDE___RESERVIERUNG_STORNIEREN__RESERVIERUNG);
+		createEOperation(kundeEClass, KUNDE___RESERVIERUNG_STORNIEREN__RESERVIERUNG_AUFFUEHRUNG);
 		createEOperation(kundeEClass, KUNDE___DIREKT_BUCHUNG__AUFFUEHRUNG_ELIST);
 		createEOperation(kundeEClass, KUNDE___RESERVIERUNG_ZU_BUCHUNG_VERARBEITEN__RESERVIERUNG);
 
@@ -901,8 +1000,7 @@ public class KinoPackageImpl extends EPackageImpl implements KinoPackage {
 		createEReference(reservierungEClass, RESERVIERUNG__KUNDE);
 		createEReference(reservierungEClass, RESERVIERUNG__AUFFUEHRUNG);
 		createEReference(reservierungEClass, RESERVIERUNG__PLAETZE);
-		createEOperation(reservierungEClass, RESERVIERUNG___STORNIEREN);
-		createEOperation(reservierungEClass, RESERVIERUNG___IN_BUCHUNG_UMWANDELN);
+		createEOperation(reservierungEClass, RESERVIERUNG___PLAETZE_HINZUFUEGEN__ELIST);
 
 		buchungEClass = createEClass(BUCHUNG);
 		createEAttribute(buchungEClass, BUCHUNG__BUCHUNGSNUMMER);
@@ -912,6 +1010,7 @@ public class KinoPackageImpl extends EPackageImpl implements KinoPackage {
 		createEReference(buchungEClass, BUCHUNG__AUFFUEHRUNG);
 		createEReference(buchungEClass, BUCHUNG__PLAETZE);
 		createEOperation(buchungEClass, BUCHUNG___GESAMTPREIS);
+		createEOperation(buchungEClass, BUCHUNG___PLAETZE_HINZUFUEGEN__ELIST);
 
 		// Create enums
 		sitzreihenKategorieEEnum = createEEnum(SITZREIHEN_KATEGORIE);
@@ -950,6 +1049,7 @@ public class KinoPackageImpl extends EPackageImpl implements KinoPackage {
 		initEClass(kinoEClass, Kino.class, "Kino", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
 		initEAttribute(getKino_Name(), ecorePackage.getEString(), "name", null, 0, 1, Kino.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 		initEReference(getKino_Saele(), this.getKinosaal(), null, "saele", null, 1, -1, Kino.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_COMPOSITE, IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
+		initEReference(getKino_Kunden(), this.getKunde(), null, "kunden", null, 1, -1, Kino.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_COMPOSITE, IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 
 		EOperation op = initEOperation(getKino__SaalAnlegen__String(), this.getKinosaal(), "saalAnlegen", 0, 1, IS_UNIQUE, IS_ORDERED);
 		addEParameter(op, ecorePackage.getEString(), "name", 0, 1, IS_UNIQUE, IS_ORDERED);
@@ -959,9 +1059,21 @@ public class KinoPackageImpl extends EPackageImpl implements KinoPackage {
 		addEParameter(op, ecorePackage.getEInt(), "dauer", 0, 1, IS_UNIQUE, IS_ORDERED);
 		addEParameter(op, ecorePackage.getEString(), "beschreibung", 0, 1, IS_UNIQUE, IS_ORDERED);
 
-		op = initEOperation(getKino__EinnahmenBerechnen__Date_Date(), ecorePackage.getEDouble(), "einnahmenBerechnen", 0, 1, IS_UNIQUE, IS_ORDERED);
-		addEParameter(op, ecorePackage.getEDate(), "intervallStart", 0, 1, IS_UNIQUE, IS_ORDERED);
-		addEParameter(op, ecorePackage.getEDate(), "intervallEnde", 0, 1, IS_UNIQUE, IS_ORDERED);
+		op = initEOperation(getKino__EinnahmenBerechnen__Auffuehrung(), ecorePackage.getEDouble(), "einnahmenBerechnen", 0, 1, IS_UNIQUE, IS_ORDERED);
+		addEParameter(op, this.getAuffuehrung(), "auffuehrung", 0, 1, IS_UNIQUE, IS_ORDERED);
+
+		op = initEOperation(getKino__EinnahmenBerechnen__Film(), ecorePackage.getEDouble(), "einnahmenBerechnen", 0, 1, IS_UNIQUE, IS_ORDERED);
+		addEParameter(op, this.getFilm(), "film", 0, 1, IS_UNIQUE, IS_ORDERED);
+
+		op = initEOperation(getKino__SitzreiheAnlegen__int_SitzreihenKategorie_int_Kinosaal(), this.getSitzreihe(), "sitzreiheAnlegen", 0, 1, IS_UNIQUE, IS_ORDERED);
+		addEParameter(op, ecorePackage.getEInt(), "nummer", 0, 1, IS_UNIQUE, IS_ORDERED);
+		addEParameter(op, this.getSitzreihenKategorie(), "kategorie", 0, 1, IS_UNIQUE, IS_ORDERED);
+		addEParameter(op, ecorePackage.getEInt(), "sitzAnzahl", 0, 1, IS_UNIQUE, IS_ORDERED);
+		addEParameter(op, this.getKinosaal(), "saal", 0, 1, IS_UNIQUE, IS_ORDERED);
+
+		op = initEOperation(getKino__KundeAnlegen__String_String(), null, "kundeAnlegen", 0, 1, IS_UNIQUE, IS_ORDERED);
+		addEParameter(op, ecorePackage.getEString(), "name", 0, 1, IS_UNIQUE, IS_ORDERED);
+		addEParameter(op, ecorePackage.getEString(), "email", 0, 1, IS_UNIQUE, IS_ORDERED);
 
 		initEClass(kinosaalEClass, Kinosaal.class, "Kinosaal", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
 		initEAttribute(getKinosaal_Name(), ecorePackage.getEString(), "name", null, 0, 1, Kinosaal.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
@@ -990,11 +1102,19 @@ public class KinoPackageImpl extends EPackageImpl implements KinoPackage {
 		initEReference(getAuffuehrung_Reservierungen(), this.getReservierung(), null, "reservierungen", null, 0, -1, Auffuehrung.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_COMPOSITE, IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 		initEReference(getAuffuehrung_Buchungen(), this.getBuchung(), null, "buchungen", null, 0, -1, Auffuehrung.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_COMPOSITE, IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 		initEReference(getAuffuehrung_Film(), this.getFilm(), null, "film", null, 1, 1, Auffuehrung.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_COMPOSITE, IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
+		initEAttribute(getAuffuehrung_AktuelleEinnahmen(), ecorePackage.getEDouble(), "aktuelleEinnahmen", null, 0, 1, Auffuehrung.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 
 		op = initEOperation(getAuffuehrung__VerfuegbarePlaetze__SitzreihenKategorie(), this.getSitzplatz(), "verfuegbarePlaetze", 0, -1, IS_UNIQUE, IS_ORDERED);
 		addEParameter(op, this.getSitzreihenKategorie(), "kategorie", 0, 1, IS_UNIQUE, IS_ORDERED);
 
-		initEOperation(getAuffuehrung__GesamtEinnahmen(), ecorePackage.getEDouble(), "gesamtEinnahmen", 0, 1, IS_UNIQUE, IS_ORDERED);
+		op = initEOperation(getAuffuehrung__ReservierungHinzufuegen__Reservierung(), null, "reservierungHinzufuegen", 0, 1, IS_UNIQUE, IS_ORDERED);
+		addEParameter(op, this.getReservierung(), "reservierung", 0, 1, IS_UNIQUE, IS_ORDERED);
+
+		op = initEOperation(getAuffuehrung__BuchungHinzufuegen__Buchung(), null, "buchungHinzufuegen", 0, 1, IS_UNIQUE, IS_ORDERED);
+		addEParameter(op, this.getBuchung(), "buchung", 0, 1, IS_UNIQUE, IS_ORDERED);
+
+		op = initEOperation(getAuffuehrung__ReservierungLoeschen__Reservierung(), null, "reservierungLoeschen", 0, 1, IS_UNIQUE, IS_ORDERED);
+		addEParameter(op, this.getReservierung(), "reservierung", 0, 1, IS_UNIQUE, IS_ORDERED);
 
 		initEClass(sitzreiheEClass, Sitzreihe.class, "Sitzreihe", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
 		initEAttribute(getSitzreihe_Reihennummer(), ecorePackage.getEInt(), "reihennummer", null, 0, 1, Sitzreihe.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
@@ -1003,11 +1123,14 @@ public class KinoPackageImpl extends EPackageImpl implements KinoPackage {
 		initEReference(getSitzreihe_Plaetze(), this.getSitzplatz(), null, "plaetze", null, 1, -1, Sitzreihe.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_COMPOSITE, IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 		initEReference(getSitzreihe_Saal(), this.getKinosaal(), null, "saal", null, 1, 1, Sitzreihe.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_COMPOSITE, IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 
+		initEOperation(getSitzreihe__PlaetzeAnlegen(), null, "plaetzeAnlegen", 0, 1, IS_UNIQUE, IS_ORDERED);
+
 		initEClass(sitzplatzEClass, Sitzplatz.class, "Sitzplatz", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
 		initEAttribute(getSitzplatz_Platznummer(), ecorePackage.getEInt(), "platznummer", null, 0, 1, Sitzplatz.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 		initEReference(getSitzplatz_Reihe(), this.getSitzreihe(), null, "reihe", null, 1, 1, Sitzplatz.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_COMPOSITE, IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 		initEReference(getSitzplatz_Reservierung(), this.getReservierung(), null, "reservierung", null, 0, 1, Sitzplatz.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_COMPOSITE, IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 		initEReference(getSitzplatz_Buchung(), this.getBuchung(), null, "buchung", null, 0, 1, Sitzplatz.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_COMPOSITE, IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
+		initEAttribute(getSitzplatz_IsFrei(), ecorePackage.getEBoolean(), "isFrei", "true", 0, 1, Sitzplatz.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 
 		initEClass(kundeEClass, Kunde.class, "Kunde", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
 		initEAttribute(getKunde_Name(), ecorePackage.getEString(), "name", null, 0, 1, Kunde.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
@@ -1019,8 +1142,9 @@ public class KinoPackageImpl extends EPackageImpl implements KinoPackage {
 		addEParameter(op, this.getAuffuehrung(), "auffuehrung", 0, 1, IS_UNIQUE, IS_ORDERED);
 		addEParameter(op, this.getSitzplatz(), "plaetze", 1, -1, IS_UNIQUE, IS_ORDERED);
 
-		op = initEOperation(getKunde__ReservierungStornieren__Reservierung(), null, "reservierungStornieren", 0, 1, IS_UNIQUE, IS_ORDERED);
+		op = initEOperation(getKunde__ReservierungStornieren__Reservierung_Auffuehrung(), null, "reservierungStornieren", 0, 1, IS_UNIQUE, IS_ORDERED);
 		addEParameter(op, this.getReservierung(), "reservierung", 0, 1, IS_UNIQUE, IS_ORDERED);
+		addEParameter(op, this.getAuffuehrung(), "auffuehrung", 0, 1, IS_UNIQUE, IS_ORDERED);
 
 		op = initEOperation(getKunde__DirektBuchung__Auffuehrung_EList(), this.getBuchung(), "direktBuchung", 0, 1, IS_UNIQUE, IS_ORDERED);
 		addEParameter(op, this.getAuffuehrung(), "auffuehrung", 0, 1, IS_UNIQUE, IS_ORDERED);
@@ -1036,12 +1160,11 @@ public class KinoPackageImpl extends EPackageImpl implements KinoPackage {
 		initEReference(getReservierung_Auffuehrung(), this.getAuffuehrung(), null, "auffuehrung", null, 1, 1, Reservierung.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_COMPOSITE, IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 		initEReference(getReservierung_Plaetze(), this.getSitzplatz(), null, "plaetze", null, 1, -1, Reservierung.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_COMPOSITE, IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 
-		initEOperation(getReservierung__Stornieren(), null, "stornieren", 0, 1, IS_UNIQUE, IS_ORDERED);
-
-		initEOperation(getReservierung__InBuchungUmwandeln(), this.getBuchung(), "inBuchungUmwandeln", 0, 1, IS_UNIQUE, IS_ORDERED);
+		op = initEOperation(getReservierung__PlaetzeHinzufuegen__EList(), null, "plaetzeHinzufuegen", 0, 1, IS_UNIQUE, IS_ORDERED);
+		addEParameter(op, this.getSitzplatz(), "plaetze", 1, -1, IS_UNIQUE, IS_ORDERED);
 
 		initEClass(buchungEClass, Buchung.class, "Buchung", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
-		initEAttribute(getBuchung_Buchungsnummer(), ecorePackage.getEInt(), "buchungsnummer", null, 0, 1, Buchung.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
+		initEAttribute(getBuchung_Buchungsnummer(), ecorePackage.getEString(), "buchungsnummer", null, 0, 1, Buchung.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 		initEAttribute(getBuchung_BuchungsZeitstempel(), ecorePackage.getEDate(), "buchungsZeitstempel", null, 0, 1, Buchung.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 		initEAttribute(getBuchung_Bezahlt(), ecorePackage.getEBoolean(), "bezahlt", "false", 0, 1, Buchung.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 		initEReference(getBuchung_Kunde(), this.getKunde(), null, "kunde", null, 1, 1, Buchung.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_COMPOSITE, IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
@@ -1049,6 +1172,9 @@ public class KinoPackageImpl extends EPackageImpl implements KinoPackage {
 		initEReference(getBuchung_Plaetze(), this.getSitzplatz(), null, "plaetze", null, 1, -1, Buchung.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_COMPOSITE, IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 
 		initEOperation(getBuchung__Gesamtpreis(), ecorePackage.getEDouble(), "gesamtpreis", 0, 1, IS_UNIQUE, IS_ORDERED);
+
+		op = initEOperation(getBuchung__PlaetzeHinzufuegen__EList(), null, "plaetzeHinzufuegen", 0, 1, IS_UNIQUE, IS_ORDERED);
+		addEParameter(op, this.getSitzplatz(), "plaetze", 1, -1, IS_UNIQUE, IS_ORDERED);
 
 		// Initialize enums and add enum literals
 		initEEnum(sitzreihenKategorieEEnum, SitzreihenKategorie.class, "SitzreihenKategorie");

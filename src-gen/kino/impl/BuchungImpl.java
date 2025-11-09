@@ -52,7 +52,7 @@ public class BuchungImpl extends MinimalEObjectImpl.Container implements Buchung
 	 * @generated
 	 * @ordered
 	 */
-	protected static final int BUCHUNGSNUMMER_EDEFAULT = 0;
+	protected static final String BUCHUNGSNUMMER_EDEFAULT = null;
 
 	/**
 	 * The cached value of the '{@link #getBuchungsnummer() <em>Buchungsnummer</em>}' attribute.
@@ -62,7 +62,7 @@ public class BuchungImpl extends MinimalEObjectImpl.Container implements Buchung
 	 * @generated
 	 * @ordered
 	 */
-	protected int buchungsnummer = BUCHUNGSNUMMER_EDEFAULT;
+	protected String buchungsnummer = BUCHUNGSNUMMER_EDEFAULT;
 
 	/**
 	 * The default value of the '{@link #getBuchungsZeitstempel() <em>Buchungs Zeitstempel</em>}' attribute.
@@ -159,7 +159,7 @@ public class BuchungImpl extends MinimalEObjectImpl.Container implements Buchung
 	 * @generated
 	 */
 	@Override
-	public int getBuchungsnummer() {
+	public String getBuchungsnummer() {
 		return buchungsnummer;
 	}
 
@@ -169,8 +169,8 @@ public class BuchungImpl extends MinimalEObjectImpl.Container implements Buchung
 	 * @generated
 	 */
 	@Override
-	public void setBuchungsnummer(int newBuchungsnummer) {
-		int oldBuchungsnummer = buchungsnummer;
+	public void setBuchungsnummer(String newBuchungsnummer) {
+		String oldBuchungsnummer = buchungsnummer;
 		buchungsnummer = newBuchungsnummer;
 		if (eNotificationRequired())
 			eNotify(new ENotificationImpl(this, Notification.SET, KinoPackage.BUCHUNG__BUCHUNGSNUMMER, oldBuchungsnummer, buchungsnummer));
@@ -333,6 +333,18 @@ public class BuchungImpl extends MinimalEObjectImpl.Container implements Buchung
 	 * @generated
 	 */
 	@Override
+	public void plaetzeHinzufuegen(EList<Sitzplatz> plaetze) {
+		// TODO: implement this method
+		// Ensure that you remove @generated or mark it @generated NOT
+		throw new UnsupportedOperationException();
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
 	public Object eGet(int featureID, boolean resolve, boolean coreType) {
 		switch (featureID) {
 			case KinoPackage.BUCHUNG__BUCHUNGSNUMMER:
@@ -363,7 +375,7 @@ public class BuchungImpl extends MinimalEObjectImpl.Container implements Buchung
 	public void eSet(int featureID, Object newValue) {
 		switch (featureID) {
 			case KinoPackage.BUCHUNG__BUCHUNGSNUMMER:
-				setBuchungsnummer((Integer)newValue);
+				setBuchungsnummer((String)newValue);
 				return;
 			case KinoPackage.BUCHUNG__BUCHUNGS_ZEITSTEMPEL:
 				setBuchungsZeitstempel((Date)newValue);
@@ -424,7 +436,7 @@ public class BuchungImpl extends MinimalEObjectImpl.Container implements Buchung
 	public boolean eIsSet(int featureID) {
 		switch (featureID) {
 			case KinoPackage.BUCHUNG__BUCHUNGSNUMMER:
-				return buchungsnummer != BUCHUNGSNUMMER_EDEFAULT;
+				return BUCHUNGSNUMMER_EDEFAULT == null ? buchungsnummer != null : !BUCHUNGSNUMMER_EDEFAULT.equals(buchungsnummer);
 			case KinoPackage.BUCHUNG__BUCHUNGS_ZEITSTEMPEL:
 				return BUCHUNGS_ZEITSTEMPEL_EDEFAULT == null ? buchungsZeitstempel != null : !BUCHUNGS_ZEITSTEMPEL_EDEFAULT.equals(buchungsZeitstempel);
 			case KinoPackage.BUCHUNG__BEZAHLT:
@@ -445,10 +457,14 @@ public class BuchungImpl extends MinimalEObjectImpl.Container implements Buchung
 	 * @generated
 	 */
 	@Override
+	@SuppressWarnings("unchecked")
 	public Object eInvoke(int operationID, EList<?> arguments) throws InvocationTargetException {
 		switch (operationID) {
 			case KinoPackage.BUCHUNG___GESAMTPREIS:
 				return gesamtpreis();
+			case KinoPackage.BUCHUNG___PLAETZE_HINZUFUEGEN__ELIST:
+				plaetzeHinzufuegen((EList<Sitzplatz>)arguments.get(0));
+				return null;
 		}
 		return super.eInvoke(operationID, arguments);
 	}

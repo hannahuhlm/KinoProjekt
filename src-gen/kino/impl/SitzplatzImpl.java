@@ -28,6 +28,7 @@ import org.eclipse.emf.ecore.impl.MinimalEObjectImpl;
  *   <li>{@link kino.impl.SitzplatzImpl#getReihe <em>Reihe</em>}</li>
  *   <li>{@link kino.impl.SitzplatzImpl#getReservierung <em>Reservierung</em>}</li>
  *   <li>{@link kino.impl.SitzplatzImpl#getBuchung <em>Buchung</em>}</li>
+ *   <li>{@link kino.impl.SitzplatzImpl#isIsFrei <em>Is Frei</em>}</li>
  * </ul>
  *
  * @generated
@@ -82,6 +83,26 @@ public class SitzplatzImpl extends MinimalEObjectImpl.Container implements Sitzp
 	 * @ordered
 	 */
 	protected Buchung buchung;
+
+	/**
+	 * The default value of the '{@link #isIsFrei() <em>Is Frei</em>}' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @see #isIsFrei()
+	 * @generated
+	 * @ordered
+	 */
+	protected static final boolean IS_FREI_EDEFAULT = true;
+
+	/**
+	 * The cached value of the '{@link #isIsFrei() <em>Is Frei</em>}' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @see #isIsFrei()
+	 * @generated
+	 * @ordered
+	 */
+	protected boolean isFrei = IS_FREI_EDEFAULT;
 
 	/**
 	 * <!-- begin-user-doc -->
@@ -251,6 +272,29 @@ public class SitzplatzImpl extends MinimalEObjectImpl.Container implements Sitzp
 	 * @generated
 	 */
 	@Override
+	public boolean isIsFrei() {
+		return isFrei;
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
+	public void setIsFrei(boolean newIsFrei) {
+		boolean oldIsFrei = isFrei;
+		isFrei = newIsFrei;
+		if (eNotificationRequired())
+			eNotify(new ENotificationImpl(this, Notification.SET, KinoPackage.SITZPLATZ__IS_FREI, oldIsFrei, isFrei));
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
 	public Object eGet(int featureID, boolean resolve, boolean coreType) {
 		switch (featureID) {
 			case KinoPackage.SITZPLATZ__PLATZNUMMER:
@@ -264,6 +308,8 @@ public class SitzplatzImpl extends MinimalEObjectImpl.Container implements Sitzp
 			case KinoPackage.SITZPLATZ__BUCHUNG:
 				if (resolve) return getBuchung();
 				return basicGetBuchung();
+			case KinoPackage.SITZPLATZ__IS_FREI:
+				return isIsFrei();
 		}
 		return super.eGet(featureID, resolve, coreType);
 	}
@@ -287,6 +333,9 @@ public class SitzplatzImpl extends MinimalEObjectImpl.Container implements Sitzp
 				return;
 			case KinoPackage.SITZPLATZ__BUCHUNG:
 				setBuchung((Buchung)newValue);
+				return;
+			case KinoPackage.SITZPLATZ__IS_FREI:
+				setIsFrei((Boolean)newValue);
 				return;
 		}
 		super.eSet(featureID, newValue);
@@ -312,6 +361,9 @@ public class SitzplatzImpl extends MinimalEObjectImpl.Container implements Sitzp
 			case KinoPackage.SITZPLATZ__BUCHUNG:
 				setBuchung((Buchung)null);
 				return;
+			case KinoPackage.SITZPLATZ__IS_FREI:
+				setIsFrei(IS_FREI_EDEFAULT);
+				return;
 		}
 		super.eUnset(featureID);
 	}
@@ -332,6 +384,8 @@ public class SitzplatzImpl extends MinimalEObjectImpl.Container implements Sitzp
 				return reservierung != null;
 			case KinoPackage.SITZPLATZ__BUCHUNG:
 				return buchung != null;
+			case KinoPackage.SITZPLATZ__IS_FREI:
+				return isFrei != IS_FREI_EDEFAULT;
 		}
 		return super.eIsSet(featureID);
 	}
@@ -348,6 +402,8 @@ public class SitzplatzImpl extends MinimalEObjectImpl.Container implements Sitzp
 		StringBuilder result = new StringBuilder(super.toString());
 		result.append(" (platznummer: ");
 		result.append(platznummer);
+		result.append(", isFrei: ");
+		result.append(isFrei);
 		result.append(')');
 		return result.toString();
 	}

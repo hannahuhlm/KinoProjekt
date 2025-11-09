@@ -5,12 +5,14 @@ package kino.impl;
 import java.lang.reflect.InvocationTargetException;
 
 import java.util.Collection;
-import java.util.Date;
-
+import kino.Auffuehrung;
 import kino.Film;
 import kino.Kino;
 import kino.KinoPackage;
 import kino.Kinosaal;
+import kino.Kunde;
+import kino.Sitzreihe;
+import kino.SitzreihenKategorie;
 import kino.KinoFactory;
 import org.eclipse.emf.common.notify.Notification;
 
@@ -33,6 +35,7 @@ import org.eclipse.emf.ecore.util.EObjectResolvingEList;
  * <ul>
  *   <li>{@link kino.impl.KinoImpl#getName <em>Name</em>}</li>
  *   <li>{@link kino.impl.KinoImpl#getSaele <em>Saele</em>}</li>
+ *   <li>{@link kino.impl.KinoImpl#getKunden <em>Kunden</em>}</li>
  * </ul>
  *
  * @generated
@@ -67,6 +70,16 @@ public class KinoImpl extends MinimalEObjectImpl.Container implements Kino {
 	 * @ordered
 	 */
 	protected EList<Kinosaal> saele;
+
+	/**
+	 * The cached value of the '{@link #getKunden() <em>Kunden</em>}' reference list.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @see #getKunden()
+	 * @generated
+	 * @ordered
+	 */
+	protected EList<Kunde> kunden;
 
 	/**
 	 * <!-- begin-user-doc -->
@@ -126,6 +139,19 @@ public class KinoImpl extends MinimalEObjectImpl.Container implements Kino {
 	/**
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
+	public EList<Kunde> getKunden() {
+		if (kunden == null) {
+			kunden = new EObjectResolvingEList<Kunde>(Kunde.class, this, KinoPackage.KINO__KUNDEN);
+		}
+		return kunden;
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
 	 * @generated NOT
 	 */
 	@Override
@@ -157,13 +183,52 @@ public class KinoImpl extends MinimalEObjectImpl.Container implements Kino {
 	/**
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
-	 * @generated
+	 * @generated NOT
 	 */
 	@Override
-	public double einnahmenBerechnen(Date intervallStart, Date intervallEnde) {
-		// TODO: implement this method
-		// Ensure that you remove @generated or mark it @generated NOT
-		throw new UnsupportedOperationException();
+	public double einnahmenBerechnen(Auffuehrung auffuehrung) {
+		return auffuehrung.getAktuelleEinnahmen();
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated NOT
+	 */
+	@Override
+	public double einnahmenBerechnen(Film film) {
+		return film.gesamtEinnahmen();
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated NOT
+	 */
+	@Override
+	public Sitzreihe sitzreiheAnlegen(int nummer, SitzreihenKategorie kategorie, int sitzAnzahl, Kinosaal saal) {
+		Sitzreihe reihe = new SitzreiheImpl();
+		reihe.setReihennummer(nummer);
+		reihe.setKategorie(kategorie);
+		reihe.setAnzahlSitze(sitzAnzahl);
+		reihe.setSaal(saal);
+		//auch dem Saal die Reihe hinzufügen
+		saal.reiheHinzufügen(reihe);
+		return reihe;
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated NOT
+	 */
+	@Override
+	public void kundeAnlegen(String name, String email) {
+		Kunde kunde = new KundeImpl();
+		kunde.setName(name);
+		kunde.setEmail(email);
+		
+		this.kunden.add(kunde);
 	}
 
 	/**
@@ -178,6 +243,8 @@ public class KinoImpl extends MinimalEObjectImpl.Container implements Kino {
 				return getName();
 			case KinoPackage.KINO__SAELE:
 				return getSaele();
+			case KinoPackage.KINO__KUNDEN:
+				return getKunden();
 		}
 		return super.eGet(featureID, resolve, coreType);
 	}
@@ -198,6 +265,10 @@ public class KinoImpl extends MinimalEObjectImpl.Container implements Kino {
 				getSaele().clear();
 				getSaele().addAll((Collection<? extends Kinosaal>)newValue);
 				return;
+			case KinoPackage.KINO__KUNDEN:
+				getKunden().clear();
+				getKunden().addAll((Collection<? extends Kunde>)newValue);
+				return;
 		}
 		super.eSet(featureID, newValue);
 	}
@@ -216,6 +287,9 @@ public class KinoImpl extends MinimalEObjectImpl.Container implements Kino {
 			case KinoPackage.KINO__SAELE:
 				getSaele().clear();
 				return;
+			case KinoPackage.KINO__KUNDEN:
+				getKunden().clear();
+				return;
 		}
 		super.eUnset(featureID);
 	}
@@ -232,6 +306,8 @@ public class KinoImpl extends MinimalEObjectImpl.Container implements Kino {
 				return NAME_EDEFAULT == null ? name != null : !NAME_EDEFAULT.equals(name);
 			case KinoPackage.KINO__SAELE:
 				return saele != null && !saele.isEmpty();
+			case KinoPackage.KINO__KUNDEN:
+				return kunden != null && !kunden.isEmpty();
 		}
 		return super.eIsSet(featureID);
 	}
@@ -248,8 +324,15 @@ public class KinoImpl extends MinimalEObjectImpl.Container implements Kino {
 				return saalAnlegen((String)arguments.get(0));
 			case KinoPackage.KINO___FILM_ANLEGEN__STRING_INT_STRING:
 				return filmAnlegen((String)arguments.get(0), (Integer)arguments.get(1), (String)arguments.get(2));
-			case KinoPackage.KINO___EINNAHMEN_BERECHNEN__DATE_DATE:
-				return einnahmenBerechnen((Date)arguments.get(0), (Date)arguments.get(1));
+			case KinoPackage.KINO___EINNAHMEN_BERECHNEN__AUFFUEHRUNG:
+				return einnahmenBerechnen((Auffuehrung)arguments.get(0));
+			case KinoPackage.KINO___EINNAHMEN_BERECHNEN__FILM:
+				return einnahmenBerechnen((Film)arguments.get(0));
+			case KinoPackage.KINO___SITZREIHE_ANLEGEN__INT_SITZREIHENKATEGORIE_INT_KINOSAAL:
+				return sitzreiheAnlegen((Integer)arguments.get(0), (SitzreihenKategorie)arguments.get(1), (Integer)arguments.get(2), (Kinosaal)arguments.get(3));
+			case KinoPackage.KINO___KUNDE_ANLEGEN__STRING_STRING:
+				kundeAnlegen((String)arguments.get(0), (String)arguments.get(1));
+				return null;
 		}
 		return super.eInvoke(operationID, arguments);
 	}

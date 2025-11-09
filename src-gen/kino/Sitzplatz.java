@@ -17,6 +17,7 @@ import org.eclipse.emf.ecore.EObject;
  *   <li>{@link kino.Sitzplatz#getReihe <em>Reihe</em>}</li>
  *   <li>{@link kino.Sitzplatz#getReservierung <em>Reservierung</em>}</li>
  *   <li>{@link kino.Sitzplatz#getBuchung <em>Buchung</em>}</li>
+ *   <li>{@link kino.Sitzplatz#isIsFrei <em>Is Frei</em>}</li>
  * </ul>
  *
  * @see kino.KinoPackage#getSitzplatz()
@@ -111,5 +112,28 @@ public interface Sitzplatz extends EObject {
 	 * @generated
 	 */
 	void setBuchung(Buchung value);
+
+	/**
+	 * Returns the value of the '<em><b>Is Frei</b></em>' attribute.
+	 * The default value is <code>"true"</code>.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the value of the '<em>Is Frei</em>' attribute.
+	 * @see #setIsFrei(boolean)
+	 * @see kino.KinoPackage#getSitzplatz_IsFrei()
+	 * @model default="true"
+	 * @generated
+	 */
+	boolean isIsFrei();
+
+	/**
+	 * Sets the value of the '{@link kino.Sitzplatz#isIsFrei <em>Is Frei</em>}' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @param value the new value of the '<em>Is Frei</em>' attribute.
+	 * @see #isIsFrei()
+	 * @generated
+	 */
+	void setIsFrei(boolean value);
 
 } // Sitzplatz

@@ -2,8 +2,8 @@
  */
 package kino.impl;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
-
 import kino.KinoPackage;
 import kino.Kinosaal;
 import kino.Sitzplatz;
@@ -264,6 +264,23 @@ public class SitzreiheImpl extends MinimalEObjectImpl.Container implements Sitzr
 	/**
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
+	 * @generated NOT
+	 */
+	@Override
+	public void plaetzeAnlegen() {
+		for (int i = 0; i < anzahlSitze; i++) {
+			Sitzplatz neuerPlatz= new SitzplatzImpl();
+			//attribute setzen
+			neuerPlatz.setPlatznummer(i+1);
+			neuerPlatz.setReihe(this);
+			
+			this.plaetze.add(neuerPlatz);
+		}
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
 	 * @generated
 	 */
 	@Override
@@ -360,6 +377,21 @@ public class SitzreiheImpl extends MinimalEObjectImpl.Container implements Sitzr
 				return saal != null;
 		}
 		return super.eIsSet(featureID);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
+	public Object eInvoke(int operationID, EList<?> arguments) throws InvocationTargetException {
+		switch (operationID) {
+			case KinoPackage.SITZREIHE___PLAETZE_ANLEGEN:
+				plaetzeAnlegen();
+				return null;
+		}
+		return super.eInvoke(operationID, arguments);
 	}
 
 	/**

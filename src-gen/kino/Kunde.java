@@ -108,7 +108,7 @@ public interface Kunde extends EObject {
 	 * @model
 	 * @generated
 	 */
-	void reservierungStornieren(Reservierung reservierung);
+	void reservierungStornieren(Reservierung reservierung, Auffuehrung auffuehrung);
 
 	/**
 	 * <!-- begin-user-doc -->

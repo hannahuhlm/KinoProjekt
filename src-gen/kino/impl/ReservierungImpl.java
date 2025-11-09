@@ -8,7 +8,6 @@ import java.util.Collection;
 import java.util.Date;
 
 import kino.Auffuehrung;
-import kino.Buchung;
 import kino.KinoPackage;
 import kino.Kunde;
 import kino.Reservierung;
@@ -275,25 +274,11 @@ public class ReservierungImpl extends MinimalEObjectImpl.Container implements Re
 	/**
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
-	 * @generated
+	 * @generated NOT
 	 */
 	@Override
-	public void stornieren() {
-		// TODO: implement this method
-		// Ensure that you remove @generated or mark it @generated NOT
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
-	@Override
-	public Buchung inBuchungUmwandeln() {
-		// TODO: implement this method
-		// Ensure that you remove @generated or mark it @generated NOT
-		throw new UnsupportedOperationException();
+	public void plaetzeHinzufuegen(EList<Sitzplatz> plaetze) {
+		this.plaetze = plaetze;
 	}
 
 	/**
@@ -404,13 +389,12 @@ public class ReservierungImpl extends MinimalEObjectImpl.Container implements Re
 	 * @generated
 	 */
 	@Override
+	@SuppressWarnings("unchecked")
 	public Object eInvoke(int operationID, EList<?> arguments) throws InvocationTargetException {
 		switch (operationID) {
-			case KinoPackage.RESERVIERUNG___STORNIEREN:
-				stornieren();
+			case KinoPackage.RESERVIERUNG___PLAETZE_HINZUFUEGEN__ELIST:
+				plaetzeHinzufuegen((EList<Sitzplatz>)arguments.get(0));
 				return null;
-			case KinoPackage.RESERVIERUNG___IN_BUCHUNG_UMWANDELN:
-				return inBuchungUmwandeln();
 		}
 		return super.eInvoke(operationID, arguments);
 	}

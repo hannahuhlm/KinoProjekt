@@ -11,12 +11,26 @@
       <eParameters name="beschreibung" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
     </eOperations>
     <eOperations name="einnahmenBerechnen" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDouble">
-      <eParameters name="intervallStart" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDate"/>
-      <eParameters name="intervallEnde" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDate"/>
+      <eParameters name="auffuehrung" eType="#//Auffuehrung"/>
+    </eOperations>
+    <eOperations name="einnahmenBerechnen" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDouble">
+      <eParameters name="film" eType="#//Film"/>
+    </eOperations>
+    <eOperations name="sitzreiheAnlegen" eType="#//Sitzreihe">
+      <eParameters name="nummer" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
+      <eParameters name="kategorie" eType="#//SitzreihenKategorie"/>
+      <eParameters name="sitzAnzahl" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
+      <eParameters name="saal" eType="#//Kinosaal"/>
+    </eOperations>
+    <eOperations name="kundeAnlegen">
+      <eParameters name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+      <eParameters name="email" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
     </eOperations>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="saele" lowerBound="1" upperBound="-1"
         eType="#//Kinosaal"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="kunden" lowerBound="1"
+        upperBound="-1" eType="#//Kunde"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="Kinosaal">
     <eOperations name="reiheHinzufügen">
@@ -44,7 +58,15 @@
     <eOperations name="verfuegbarePlaetze" upperBound="-1" eType="#//Sitzplatz">
       <eParameters name="kategorie" eType="#//SitzreihenKategorie"/>
     </eOperations>
-    <eOperations name="gesamtEinnahmen" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDouble"/>
+    <eOperations name="reservierungHinzufuegen">
+      <eParameters name="reservierung" eType="#//Reservierung"/>
+    </eOperations>
+    <eOperations name="buchungHinzufuegen">
+      <eParameters name="buchung" eType="#//Buchung"/>
+    </eOperations>
+    <eOperations name="reservierungLoeschen">
+      <eParameters name="reservierung" eType="#//Reservierung"/>
+    </eOperations>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="startzeitpunkt" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDate"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="saal" lowerBound="1" eType="#//Kinosaal"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="reservierungen" upperBound="-1"
@@ -52,8 +74,10 @@
     <eStructuralFeatures xsi:type="ecore:EReference" name="buchungen" upperBound="-1"
         eType="#//Buchung"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="film" lowerBound="1" eType="#//Film"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="aktuelleEinnahmen" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDouble"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="Sitzreihe">
+    <eOperations name="plaetzeAnlegen"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="reihennummer" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="kategorie" eType="#//SitzreihenKategorie"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="anzahlSitze" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
@@ -71,6 +95,8 @@
     <eStructuralFeatures xsi:type="ecore:EReference" name="reihe" lowerBound="1" eType="#//Sitzreihe"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="reservierung" eType="#//Reservierung"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="buchung" eType="#//Buchung"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="isFrei" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean"
+        defaultValueLiteral="true"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="Kunde">
     <eOperations name="reservieren" eType="#//Reservierung">
@@ -79,6 +105,7 @@
     </eOperations>
     <eOperations name="reservierungStornieren">
       <eParameters name="reservierung" eType="#//Reservierung"/>
+      <eParameters name="auffuehrung" eType="#//Auffuehrung"/>
     </eOperations>
     <eOperations name="direktBuchung" eType="#//Buchung">
       <eParameters name="auffuehrung" eType="#//Auffuehrung"/>
@@ -95,8 +122,9 @@
         eType="#//Buchung"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="Reservierung">
-    <eOperations name="stornieren"/>
-    <eOperations name="inBuchungUmwandeln" eType="#//Buchung"/>
+    <eOperations name="plaetzeHinzufuegen">
+      <eParameters name="plaetze" lowerBound="1" upperBound="-1" eType="#//Sitzplatz"/>
+    </eOperations>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="reservierungsnummer" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="startZeitstempel" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDate"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="kunde" lowerBound="1" eType="#//Kunde"/>
@@ -107,7 +135,10 @@
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="Buchung">
     <eOperations name="gesamtpreis" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDouble"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="buchungsnummer" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
+    <eOperations name="plaetzeHinzufuegen">
+      <eParameters name="plaetze" lowerBound="1" upperBound="-1" eType="#//Sitzplatz"/>
+    </eOperations>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="buchungsnummer" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="buchungsZeitstempel" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDate"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="bezahlt" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean"
         defaultValueLiteral="false"/>

@@ -3,9 +3,9 @@
 package kino.impl;
 
 import java.lang.reflect.InvocationTargetException;
-
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 
 import kino.Auffuehrung;
 import kino.Buchung;
@@ -14,10 +14,11 @@ import kino.KinoPackage;
 import kino.Kinosaal;
 import kino.Reservierung;
 import kino.Sitzplatz;
+import kino.Sitzreihe;
 import kino.SitzreihenKategorie;
 
 import org.eclipse.emf.common.notify.Notification;
-
+import org.eclipse.emf.common.util.BasicEList;
 import org.eclipse.emf.common.util.EList;
 
 import org.eclipse.emf.ecore.EClass;
@@ -41,6 +42,7 @@ import org.eclipse.emf.ecore.util.EObjectResolvingEList;
  *   <li>{@link kino.impl.AuffuehrungImpl#getReservierungen <em>Reservierungen</em>}</li>
  *   <li>{@link kino.impl.AuffuehrungImpl#getBuchungen <em>Buchungen</em>}</li>
  *   <li>{@link kino.impl.AuffuehrungImpl#getFilm <em>Film</em>}</li>
+ *   <li>{@link kino.impl.AuffuehrungImpl#getAktuelleEinnahmen <em>Aktuelle Einnahmen</em>}</li>
  * </ul>
  *
  * @generated
@@ -105,6 +107,26 @@ public class AuffuehrungImpl extends MinimalEObjectImpl.Container implements Auf
 	 * @ordered
 	 */
 	protected Film film;
+
+	/**
+	 * The default value of the '{@link #getAktuelleEinnahmen() <em>Aktuelle Einnahmen</em>}' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @see #getAktuelleEinnahmen()
+	 * @generated
+	 * @ordered
+	 */
+	protected static final double AKTUELLE_EINNAHMEN_EDEFAULT = 0.0;
+
+	/**
+	 * The cached value of the '{@link #getAktuelleEinnahmen() <em>Aktuelle Einnahmen</em>}' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @see #getAktuelleEinnahmen()
+	 * @generated
+	 * @ordered
+	 */
+	protected double aktuelleEinnahmen = AKTUELLE_EINNAHMEN_EDEFAULT;
 
 	/**
 	 * <!-- begin-user-doc -->
@@ -260,10 +282,8 @@ public class AuffuehrungImpl extends MinimalEObjectImpl.Container implements Auf
 	 * @generated
 	 */
 	@Override
-	public EList<Sitzplatz> verfuegbarePlaetze(SitzreihenKategorie kategorie) {
-		// TODO: implement this method
-		// Ensure that you remove @generated or mark it @generated NOT
-		throw new UnsupportedOperationException();
+	public double getAktuelleEinnahmen() {
+		return aktuelleEinnahmen;
 	}
 
 	/**
@@ -272,10 +292,67 @@ public class AuffuehrungImpl extends MinimalEObjectImpl.Container implements Auf
 	 * @generated
 	 */
 	@Override
-	public double gesamtEinnahmen() {
-		// TODO: implement this method
-		// Ensure that you remove @generated or mark it @generated NOT
-		throw new UnsupportedOperationException();
+	public void setAktuelleEinnahmen(double newAktuelleEinnahmen) {
+		double oldAktuelleEinnahmen = aktuelleEinnahmen;
+		aktuelleEinnahmen = newAktuelleEinnahmen;
+		if (eNotificationRequired())
+			eNotify(new ENotificationImpl(this, Notification.SET, KinoPackage.AUFFUEHRUNG__AKTUELLE_EINNAHMEN, oldAktuelleEinnahmen, aktuelleEinnahmen));
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated NOT
+	 */
+	@Override
+	public EList<Sitzplatz> verfuegbarePlaetze(SitzreihenKategorie kategorie) {
+		EList<Sitzplatz> result= new BasicEList<Sitzplatz>();
+		
+		List<Sitzreihe> reihen= this.saal.getReihen();
+		//alle Reihen der Kategorie sammeln
+		for (Sitzreihe sitzreihe : reihen) {
+			if (sitzreihe.getKategorie().equals(kategorie)) {
+				List<Sitzplatz> plaetze= sitzreihe.getPlaetze();
+				//alle plätze dieser Reihe hinzufügen, wenn frei
+				for (Sitzplatz platz : plaetze) {
+					if (platz.isIsFrei()) {
+						result.add(platz);
+					}
+				}
+			
+			}
+		}
+		return result;
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated NOT
+	 */
+	@Override
+	public void reservierungHinzufuegen(Reservierung reservierung) {
+		this.reservierungen.add(reservierung);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated NOT
+	 */
+	@Override
+	public void buchungHinzufuegen(Buchung buchung) {
+		this.buchungen.add(buchung);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated NOT
+	 */
+	@Override
+	public void reservierungLoeschen(Reservierung reservierung) {
+		this.reservierungen.remove(reservierung);
 	}
 
 	/**
@@ -298,6 +375,8 @@ public class AuffuehrungImpl extends MinimalEObjectImpl.Container implements Auf
 			case KinoPackage.AUFFUEHRUNG__FILM:
 				if (resolve) return getFilm();
 				return basicGetFilm();
+			case KinoPackage.AUFFUEHRUNG__AKTUELLE_EINNAHMEN:
+				return getAktuelleEinnahmen();
 		}
 		return super.eGet(featureID, resolve, coreType);
 	}
@@ -328,6 +407,9 @@ public class AuffuehrungImpl extends MinimalEObjectImpl.Container implements Auf
 			case KinoPackage.AUFFUEHRUNG__FILM:
 				setFilm((Film)newValue);
 				return;
+			case KinoPackage.AUFFUEHRUNG__AKTUELLE_EINNAHMEN:
+				setAktuelleEinnahmen((Double)newValue);
+				return;
 		}
 		super.eSet(featureID, newValue);
 	}
@@ -355,6 +437,9 @@ public class AuffuehrungImpl extends MinimalEObjectImpl.Container implements Auf
 			case KinoPackage.AUFFUEHRUNG__FILM:
 				setFilm((Film)null);
 				return;
+			case KinoPackage.AUFFUEHRUNG__AKTUELLE_EINNAHMEN:
+				setAktuelleEinnahmen(AKTUELLE_EINNAHMEN_EDEFAULT);
+				return;
 		}
 		super.eUnset(featureID);
 	}
@@ -377,6 +462,8 @@ public class AuffuehrungImpl extends MinimalEObjectImpl.Container implements Auf
 				return buchungen != null && !buchungen.isEmpty();
 			case KinoPackage.AUFFUEHRUNG__FILM:
 				return film != null;
+			case KinoPackage.AUFFUEHRUNG__AKTUELLE_EINNAHMEN:
+				return aktuelleEinnahmen != AKTUELLE_EINNAHMEN_EDEFAULT;
 		}
 		return super.eIsSet(featureID);
 	}
@@ -391,8 +478,15 @@ public class AuffuehrungImpl extends MinimalEObjectImpl.Container implements Auf
 		switch (operationID) {
 			case KinoPackage.AUFFUEHRUNG___VERFUEGBARE_PLAETZE__SITZREIHENKATEGORIE:
 				return verfuegbarePlaetze((SitzreihenKategorie)arguments.get(0));
-			case KinoPackage.AUFFUEHRUNG___GESAMT_EINNAHMEN:
-				return gesamtEinnahmen();
+			case KinoPackage.AUFFUEHRUNG___RESERVIERUNG_HINZUFUEGEN__RESERVIERUNG:
+				reservierungHinzufuegen((Reservierung)arguments.get(0));
+				return null;
+			case KinoPackage.AUFFUEHRUNG___BUCHUNG_HINZUFUEGEN__BUCHUNG:
+				buchungHinzufuegen((Buchung)arguments.get(0));
+				return null;
+			case KinoPackage.AUFFUEHRUNG___RESERVIERUNG_LOESCHEN__RESERVIERUNG:
+				reservierungLoeschen((Reservierung)arguments.get(0));
+				return null;
 		}
 		return super.eInvoke(operationID, arguments);
 	}
@@ -409,6 +503,8 @@ public class AuffuehrungImpl extends MinimalEObjectImpl.Container implements Auf
 		StringBuilder result = new StringBuilder(super.toString());
 		result.append(" (startzeitpunkt: ");
 		result.append(startzeitpunkt);
+		result.append(", aktuelleEinnahmen: ");
+		result.append(aktuelleEinnahmen);
 		result.append(')');
 		return result.toString();
 	}

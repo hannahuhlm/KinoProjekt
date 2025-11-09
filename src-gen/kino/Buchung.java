@@ -35,12 +35,12 @@ public interface Buchung extends EObject {
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
 	 * @return the value of the '<em>Buchungsnummer</em>' attribute.
-	 * @see #setBuchungsnummer(int)
+	 * @see #setBuchungsnummer(String)
 	 * @see kino.KinoPackage#getBuchung_Buchungsnummer()
 	 * @model
 	 * @generated
 	 */
-	int getBuchungsnummer();
+	String getBuchungsnummer();
 
 	/**
 	 * Sets the value of the '{@link kino.Buchung#getBuchungsnummer <em>Buchungsnummer</em>}' attribute.
@@ -50,7 +50,7 @@ public interface Buchung extends EObject {
 	 * @see #getBuchungsnummer()
 	 * @generated
 	 */
-	void setBuchungsnummer(int value);
+	void setBuchungsnummer(String value);
 
 	/**
 	 * Returns the value of the '<em><b>Buchungs Zeitstempel</b></em>' attribute.
@@ -160,5 +160,13 @@ public interface Buchung extends EObject {
 	 * @generated
 	 */
 	double gesamtpreis();
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @model plaetzeRequired="true" plaetzeMany="true"
+	 * @generated
+	 */
+	void plaetzeHinzufuegen(EList<Sitzplatz> plaetze);
 
 } // Buchung

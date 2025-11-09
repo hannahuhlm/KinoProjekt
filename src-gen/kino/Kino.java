@@ -2,8 +2,6 @@
  */
 package kino;
 
-import java.util.Date;
-
 import org.eclipse.emf.common.util.EList;
 
 import org.eclipse.emf.ecore.EObject;
@@ -19,6 +17,7 @@ import org.eclipse.emf.ecore.EObject;
  * <ul>
  *   <li>{@link kino.Kino#getName <em>Name</em>}</li>
  *   <li>{@link kino.Kino#getSaele <em>Saele</em>}</li>
+ *   <li>{@link kino.Kino#getKunden <em>Kunden</em>}</li>
  * </ul>
  *
  * @see kino.KinoPackage#getKino()
@@ -61,6 +60,18 @@ public interface Kino extends EObject {
 	EList<Kinosaal> getSaele();
 
 	/**
+	 * Returns the value of the '<em><b>Kunden</b></em>' reference list.
+	 * The list contents are of type {@link kino.Kunde}.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the value of the '<em>Kunden</em>' reference list.
+	 * @see kino.KinoPackage#getKino_Kunden()
+	 * @model required="true"
+	 * @generated
+	 */
+	EList<Kunde> getKunden();
+
+	/**
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
 	 * @model
@@ -82,6 +93,30 @@ public interface Kino extends EObject {
 	 * @model
 	 * @generated
 	 */
-	double einnahmenBerechnen(Date intervallStart, Date intervallEnde);
+	double einnahmenBerechnen(Auffuehrung auffuehrung);
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @model
+	 * @generated
+	 */
+	double einnahmenBerechnen(Film film);
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @model
+	 * @generated
+	 */
+	Sitzreihe sitzreiheAnlegen(int nummer, SitzreihenKategorie kategorie, int sitzAnzahl, Kinosaal saal);
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @model
+	 * @generated
+	 */
+	void kundeAnlegen(String name, String email);
 
 } // Kino

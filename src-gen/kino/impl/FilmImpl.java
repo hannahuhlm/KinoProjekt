@@ -212,13 +212,15 @@ public class FilmImpl extends MinimalEObjectImpl.Container implements Film {
 	/**
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
-	 * @generated
+	 * @generated NOT
 	 */
 	@Override
 	public double gesamtEinnahmen() {
-		// TODO: implement this method
-		// Ensure that you remove @generated or mark it @generated NOT
-		throw new UnsupportedOperationException();
+		double result=0;
+		for (Auffuehrung auffuehrung : auffuehrungen) {
+			result= result + auffuehrung.getAktuelleEinnahmen();
+		}
+		return result;
 	}
 
 	/**

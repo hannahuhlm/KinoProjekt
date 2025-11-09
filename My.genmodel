@@ -14,6 +14,7 @@
     <genClasses ecoreClass="My.ecore#//Kino">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute My.ecore#//Kino/name"/>
       <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference My.ecore#//Kino/saele"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference My.ecore#//Kino/kunden"/>
       <genOperations ecoreOperation="My.ecore#//Kino/saalAnlegen">
         <genParameters ecoreParameter="My.ecore#//Kino/saalAnlegen/name"/>
       </genOperations>
@@ -23,8 +24,20 @@
         <genParameters ecoreParameter="My.ecore#//Kino/filmAnlegen/beschreibung"/>
       </genOperations>
       <genOperations ecoreOperation="My.ecore#//Kino/einnahmenBerechnen">
-        <genParameters ecoreParameter="My.ecore#//Kino/einnahmenBerechnen/intervallStart"/>
-        <genParameters ecoreParameter="My.ecore#//Kino/einnahmenBerechnen/intervallEnde"/>
+        <genParameters ecoreParameter="My.ecore#//Kino/einnahmenBerechnen/auffuehrung"/>
+      </genOperations>
+      <genOperations ecoreOperation="My.ecore#//Kino/einnahmenBerechnen.1">
+        <genParameters ecoreParameter="My.ecore#//Kino/einnahmenBerechnen.1/film"/>
+      </genOperations>
+      <genOperations ecoreOperation="My.ecore#//Kino/sitzreiheAnlegen">
+        <genParameters ecoreParameter="My.ecore#//Kino/sitzreiheAnlegen/nummer"/>
+        <genParameters ecoreParameter="My.ecore#//Kino/sitzreiheAnlegen/kategorie"/>
+        <genParameters ecoreParameter="My.ecore#//Kino/sitzreiheAnlegen/sitzAnzahl"/>
+        <genParameters ecoreParameter="My.ecore#//Kino/sitzreiheAnlegen/saal"/>
+      </genOperations>
+      <genOperations ecoreOperation="My.ecore#//Kino/kundeAnlegen">
+        <genParameters ecoreParameter="My.ecore#//Kino/kundeAnlegen/name"/>
+        <genParameters ecoreParameter="My.ecore#//Kino/kundeAnlegen/email"/>
       </genOperations>
     </genClasses>
     <genClasses ecoreClass="My.ecore#//Kinosaal">
@@ -51,10 +64,19 @@
       <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference My.ecore#//Auffuehrung/reservierungen"/>
       <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference My.ecore#//Auffuehrung/buchungen"/>
       <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference My.ecore#//Auffuehrung/film"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute My.ecore#//Auffuehrung/aktuelleEinnahmen"/>
       <genOperations ecoreOperation="My.ecore#//Auffuehrung/verfuegbarePlaetze">
         <genParameters ecoreParameter="My.ecore#//Auffuehrung/verfuegbarePlaetze/kategorie"/>
       </genOperations>
-      <genOperations ecoreOperation="My.ecore#//Auffuehrung/gesamtEinnahmen"/>
+      <genOperations ecoreOperation="My.ecore#//Auffuehrung/reservierungHinzufuegen">
+        <genParameters ecoreParameter="My.ecore#//Auffuehrung/reservierungHinzufuegen/reservierung"/>
+      </genOperations>
+      <genOperations ecoreOperation="My.ecore#//Auffuehrung/buchungHinzufuegen">
+        <genParameters ecoreParameter="My.ecore#//Auffuehrung/buchungHinzufuegen/buchung"/>
+      </genOperations>
+      <genOperations ecoreOperation="My.ecore#//Auffuehrung/reservierungLoeschen">
+        <genParameters ecoreParameter="My.ecore#//Auffuehrung/reservierungLoeschen/reservierung"/>
+      </genOperations>
     </genClasses>
     <genClasses ecoreClass="My.ecore#//Sitzreihe">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute My.ecore#//Sitzreihe/reihennummer"/>
@@ -62,12 +84,14 @@
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute My.ecore#//Sitzreihe/anzahlSitze"/>
       <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference My.ecore#//Sitzreihe/plaetze"/>
       <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference My.ecore#//Sitzreihe/saal"/>
+      <genOperations ecoreOperation="My.ecore#//Sitzreihe/plaetzeAnlegen"/>
     </genClasses>
     <genClasses ecoreClass="My.ecore#//Sitzplatz">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute My.ecore#//Sitzplatz/platznummer"/>
       <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference My.ecore#//Sitzplatz/reihe"/>
       <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference My.ecore#//Sitzplatz/reservierung"/>
       <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference My.ecore#//Sitzplatz/buchung"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute My.ecore#//Sitzplatz/isFrei"/>
     </genClasses>
     <genClasses ecoreClass="My.ecore#//Kunde">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute My.ecore#//Kunde/name"/>
@@ -80,6 +104,7 @@
       </genOperations>
       <genOperations ecoreOperation="My.ecore#//Kunde/reservierungStornieren">
         <genParameters ecoreParameter="My.ecore#//Kunde/reservierungStornieren/reservierung"/>
+        <genParameters ecoreParameter="My.ecore#//Kunde/reservierungStornieren/auffuehrung"/>
       </genOperations>
       <genOperations ecoreOperation="My.ecore#//Kunde/direktBuchung">
         <genParameters ecoreParameter="My.ecore#//Kunde/direktBuchung/auffuehrung"/>
@@ -95,8 +120,9 @@
       <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference My.ecore#//Reservierung/kunde"/>
       <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference My.ecore#//Reservierung/auffuehrung"/>
       <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference My.ecore#//Reservierung/plaetze"/>
-      <genOperations ecoreOperation="My.ecore#//Reservierung/stornieren"/>
-      <genOperations ecoreOperation="My.ecore#//Reservierung/inBuchungUmwandeln"/>
+      <genOperations ecoreOperation="My.ecore#//Reservierung/plaetzeHinzufuegen">
+        <genParameters ecoreParameter="My.ecore#//Reservierung/plaetzeHinzufuegen/plaetze"/>
+      </genOperations>
     </genClasses>
     <genClasses ecoreClass="My.ecore#//Buchung">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute My.ecore#//Buchung/buchungsnummer"/>
@@ -106,6 +132,9 @@
       <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference My.ecore#//Buchung/auffuehrung"/>
       <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference My.ecore#//Buchung/plaetze"/>
       <genOperations ecoreOperation="My.ecore#//Buchung/gesamtpreis"/>
+      <genOperations ecoreOperation="My.ecore#//Buchung/plaetzeHinzufuegen">
+        <genParameters ecoreParameter="My.ecore#//Buchung/plaetzeHinzufuegen/plaetze"/>
+      </genOperations>
     </genClasses>
   </genPackages>
 </genmodel:GenModel>

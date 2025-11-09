@@ -132,17 +132,9 @@ public interface Reservierung extends EObject {
 	/**
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
-	 * @model
+	 * @model plaetzeRequired="true" plaetzeMany="true"
 	 * @generated
 	 */
-	void stornieren();
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @model
-	 * @generated
-	 */
-	Buchung inBuchungUmwandeln();
+	void plaetzeHinzufuegen(EList<Sitzplatz> plaetze);
 
 } // Reservierung

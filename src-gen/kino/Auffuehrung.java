@@ -22,6 +22,7 @@ import org.eclipse.emf.ecore.EObject;
  *   <li>{@link kino.Auffuehrung#getReservierungen <em>Reservierungen</em>}</li>
  *   <li>{@link kino.Auffuehrung#getBuchungen <em>Buchungen</em>}</li>
  *   <li>{@link kino.Auffuehrung#getFilm <em>Film</em>}</li>
+ *   <li>{@link kino.Auffuehrung#getAktuelleEinnahmen <em>Aktuelle Einnahmen</em>}</li>
  * </ul>
  *
  * @see kino.KinoPackage#getAuffuehrung()
@@ -120,6 +121,28 @@ public interface Auffuehrung extends EObject {
 	void setFilm(Film value);
 
 	/**
+	 * Returns the value of the '<em><b>Aktuelle Einnahmen</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the value of the '<em>Aktuelle Einnahmen</em>' attribute.
+	 * @see #setAktuelleEinnahmen(double)
+	 * @see kino.KinoPackage#getAuffuehrung_AktuelleEinnahmen()
+	 * @model
+	 * @generated
+	 */
+	double getAktuelleEinnahmen();
+
+	/**
+	 * Sets the value of the '{@link kino.Auffuehrung#getAktuelleEinnahmen <em>Aktuelle Einnahmen</em>}' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @param value the new value of the '<em>Aktuelle Einnahmen</em>' attribute.
+	 * @see #getAktuelleEinnahmen()
+	 * @generated
+	 */
+	void setAktuelleEinnahmen(double value);
+
+	/**
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
 	 * @model
@@ -133,6 +156,22 @@ public interface Auffuehrung extends EObject {
 	 * @model
 	 * @generated
 	 */
-	double gesamtEinnahmen();
+	void reservierungHinzufuegen(Reservierung reservierung);
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @model
+	 * @generated
+	 */
+	void buchungHinzufuegen(Buchung buchung);
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @model
+	 * @generated
+	 */
+	void reservierungLoeschen(Reservierung reservierung);
 
 } // Auffuehrung

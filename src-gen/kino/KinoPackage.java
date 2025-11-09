@@ -87,13 +87,22 @@ public interface KinoPackage extends EPackage {
 	int KINO__SAELE = 1;
 
 	/**
+	 * The feature id for the '<em><b>Kunden</b></em>' reference list.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int KINO__KUNDEN = 2;
+
+	/**
 	 * The number of structural features of the '<em>Kino</em>' class.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
 	 * @generated
 	 * @ordered
 	 */
-	int KINO_FEATURE_COUNT = 2;
+	int KINO_FEATURE_COUNT = 3;
 
 	/**
 	 * The operation id for the '<em>Saal Anlegen</em>' operation.
@@ -120,7 +129,34 @@ public interface KinoPackage extends EPackage {
 	 * @generated
 	 * @ordered
 	 */
-	int KINO___EINNAHMEN_BERECHNEN__DATE_DATE = 2;
+	int KINO___EINNAHMEN_BERECHNEN__AUFFUEHRUNG = 2;
+
+	/**
+	 * The operation id for the '<em>Einnahmen Berechnen</em>' operation.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int KINO___EINNAHMEN_BERECHNEN__FILM = 3;
+
+	/**
+	 * The operation id for the '<em>Sitzreihe Anlegen</em>' operation.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int KINO___SITZREIHE_ANLEGEN__INT_SITZREIHENKATEGORIE_INT_KINOSAAL = 4;
+
+	/**
+	 * The operation id for the '<em>Kunde Anlegen</em>' operation.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int KINO___KUNDE_ANLEGEN__STRING_STRING = 5;
 
 	/**
 	 * The number of operations of the '<em>Kino</em>' class.
@@ -129,7 +165,7 @@ public interface KinoPackage extends EPackage {
 	 * @generated
 	 * @ordered
 	 */
-	int KINO_OPERATION_COUNT = 3;
+	int KINO_OPERATION_COUNT = 6;
 
 	/**
 	 * The meta object id for the '{@link kino.impl.KinosaalImpl <em>Kinosaal</em>}' class.
@@ -351,13 +387,22 @@ public interface KinoPackage extends EPackage {
 	int AUFFUEHRUNG__FILM = 4;
 
 	/**
+	 * The feature id for the '<em><b>Aktuelle Einnahmen</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int AUFFUEHRUNG__AKTUELLE_EINNAHMEN = 5;
+
+	/**
 	 * The number of structural features of the '<em>Auffuehrung</em>' class.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
 	 * @generated
 	 * @ordered
 	 */
-	int AUFFUEHRUNG_FEATURE_COUNT = 5;
+	int AUFFUEHRUNG_FEATURE_COUNT = 6;
 
 	/**
 	 * The operation id for the '<em>Verfuegbare Plaetze</em>' operation.
@@ -369,13 +414,31 @@ public interface KinoPackage extends EPackage {
 	int AUFFUEHRUNG___VERFUEGBARE_PLAETZE__SITZREIHENKATEGORIE = 0;
 
 	/**
-	 * The operation id for the '<em>Gesamt Einnahmen</em>' operation.
+	 * The operation id for the '<em>Reservierung Hinzufuegen</em>' operation.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
 	 * @generated
 	 * @ordered
 	 */
-	int AUFFUEHRUNG___GESAMT_EINNAHMEN = 1;
+	int AUFFUEHRUNG___RESERVIERUNG_HINZUFUEGEN__RESERVIERUNG = 1;
+
+	/**
+	 * The operation id for the '<em>Buchung Hinzufuegen</em>' operation.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int AUFFUEHRUNG___BUCHUNG_HINZUFUEGEN__BUCHUNG = 2;
+
+	/**
+	 * The operation id for the '<em>Reservierung Loeschen</em>' operation.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int AUFFUEHRUNG___RESERVIERUNG_LOESCHEN__RESERVIERUNG = 3;
 
 	/**
 	 * The number of operations of the '<em>Auffuehrung</em>' class.
@@ -384,7 +447,7 @@ public interface KinoPackage extends EPackage {
 	 * @generated
 	 * @ordered
 	 */
-	int AUFFUEHRUNG_OPERATION_COUNT = 2;
+	int AUFFUEHRUNG_OPERATION_COUNT = 4;
 
 	/**
 	 * The meta object id for the '{@link kino.impl.SitzreiheImpl <em>Sitzreihe</em>}' class.
@@ -451,13 +514,22 @@ public interface KinoPackage extends EPackage {
 	int SITZREIHE_FEATURE_COUNT = 5;
 
 	/**
+	 * The operation id for the '<em>Plaetze Anlegen</em>' operation.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int SITZREIHE___PLAETZE_ANLEGEN = 0;
+
+	/**
 	 * The number of operations of the '<em>Sitzreihe</em>' class.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
 	 * @generated
 	 * @ordered
 	 */
-	int SITZREIHE_OPERATION_COUNT = 0;
+	int SITZREIHE_OPERATION_COUNT = 1;
 
 	/**
 	 * The meta object id for the '{@link kino.impl.SitzplatzImpl <em>Sitzplatz</em>}' class.
@@ -506,13 +578,22 @@ public interface KinoPackage extends EPackage {
 	int SITZPLATZ__BUCHUNG = 3;
 
 	/**
+	 * The feature id for the '<em><b>Is Frei</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int SITZPLATZ__IS_FREI = 4;
+
+	/**
 	 * The number of structural features of the '<em>Sitzplatz</em>' class.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
 	 * @generated
 	 * @ordered
 	 */
-	int SITZPLATZ_FEATURE_COUNT = 4;
+	int SITZPLATZ_FEATURE_COUNT = 5;
 
 	/**
 	 * The number of operations of the '<em>Sitzplatz</em>' class.
@@ -594,7 +675,7 @@ public interface KinoPackage extends EPackage {
 	 * @generated
 	 * @ordered
 	 */
-	int KUNDE___RESERVIERUNG_STORNIEREN__RESERVIERUNG = 1;
+	int KUNDE___RESERVIERUNG_STORNIEREN__RESERVIERUNG_AUFFUEHRUNG = 1;
 
 	/**
 	 * The operation id for the '<em>Direkt Buchung</em>' operation.
@@ -688,22 +769,13 @@ public interface KinoPackage extends EPackage {
 	int RESERVIERUNG_FEATURE_COUNT = 5;
 
 	/**
-	 * The operation id for the '<em>Stornieren</em>' operation.
+	 * The operation id for the '<em>Plaetze Hinzufuegen</em>' operation.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
 	 * @generated
 	 * @ordered
 	 */
-	int RESERVIERUNG___STORNIEREN = 0;
-
-	/**
-	 * The operation id for the '<em>In Buchung Umwandeln</em>' operation.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 * @ordered
-	 */
-	int RESERVIERUNG___IN_BUCHUNG_UMWANDELN = 1;
+	int RESERVIERUNG___PLAETZE_HINZUFUEGEN__ELIST = 0;
 
 	/**
 	 * The number of operations of the '<em>Reservierung</em>' class.
@@ -712,7 +784,7 @@ public interface KinoPackage extends EPackage {
 	 * @generated
 	 * @ordered
 	 */
-	int RESERVIERUNG_OPERATION_COUNT = 2;
+	int RESERVIERUNG_OPERATION_COUNT = 1;
 
 	/**
 	 * The meta object id for the '{@link kino.impl.BuchungImpl <em>Buchung</em>}' class.
@@ -797,13 +869,22 @@ public interface KinoPackage extends EPackage {
 	int BUCHUNG___GESAMTPREIS = 0;
 
 	/**
+	 * The operation id for the '<em>Plaetze Hinzufuegen</em>' operation.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int BUCHUNG___PLAETZE_HINZUFUEGEN__ELIST = 1;
+
+	/**
 	 * The number of operations of the '<em>Buchung</em>' class.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
 	 * @generated
 	 * @ordered
 	 */
-	int BUCHUNG_OPERATION_COUNT = 1;
+	int BUCHUNG_OPERATION_COUNT = 2;
 
 	/**
 	 * The meta object id for the '{@link kino.SitzreihenKategorie <em>Sitzreihen Kategorie</em>}' enum.
@@ -849,6 +930,17 @@ public interface KinoPackage extends EPackage {
 	EReference getKino_Saele();
 
 	/**
+	 * Returns the meta object for the reference list '{@link kino.Kino#getKunden <em>Kunden</em>}'.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the meta object for the reference list '<em>Kunden</em>'.
+	 * @see kino.Kino#getKunden()
+	 * @see #getKino()
+	 * @generated
+	 */
+	EReference getKino_Kunden();
+
+	/**
 	 * Returns the meta object for the '{@link kino.Kino#saalAnlegen(java.lang.String) <em>Saal Anlegen</em>}' operation.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
@@ -869,14 +961,44 @@ public interface KinoPackage extends EPackage {
 	EOperation getKino__FilmAnlegen__String_int_String();
 
 	/**
-	 * Returns the meta object for the '{@link kino.Kino#einnahmenBerechnen(java.util.Date, java.util.Date) <em>Einnahmen Berechnen</em>}' operation.
+	 * Returns the meta object for the '{@link kino.Kino#einnahmenBerechnen(kino.Auffuehrung) <em>Einnahmen Berechnen</em>}' operation.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
 	 * @return the meta object for the '<em>Einnahmen Berechnen</em>' operation.
-	 * @see kino.Kino#einnahmenBerechnen(java.util.Date, java.util.Date)
+	 * @see kino.Kino#einnahmenBerechnen(kino.Auffuehrung)
 	 * @generated
 	 */
-	EOperation getKino__EinnahmenBerechnen__Date_Date();
+	EOperation getKino__EinnahmenBerechnen__Auffuehrung();
+
+	/**
+	 * Returns the meta object for the '{@link kino.Kino#einnahmenBerechnen(kino.Film) <em>Einnahmen Berechnen</em>}' operation.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the meta object for the '<em>Einnahmen Berechnen</em>' operation.
+	 * @see kino.Kino#einnahmenBerechnen(kino.Film)
+	 * @generated
+	 */
+	EOperation getKino__EinnahmenBerechnen__Film();
+
+	/**
+	 * Returns the meta object for the '{@link kino.Kino#sitzreiheAnlegen(int, kino.SitzreihenKategorie, int, kino.Kinosaal) <em>Sitzreihe Anlegen</em>}' operation.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the meta object for the '<em>Sitzreihe Anlegen</em>' operation.
+	 * @see kino.Kino#sitzreiheAnlegen(int, kino.SitzreihenKategorie, int, kino.Kinosaal)
+	 * @generated
+	 */
+	EOperation getKino__SitzreiheAnlegen__int_SitzreihenKategorie_int_Kinosaal();
+
+	/**
+	 * Returns the meta object for the '{@link kino.Kino#kundeAnlegen(java.lang.String, java.lang.String) <em>Kunde Anlegen</em>}' operation.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the meta object for the '<em>Kunde Anlegen</em>' operation.
+	 * @see kino.Kino#kundeAnlegen(java.lang.String, java.lang.String)
+	 * @generated
+	 */
+	EOperation getKino__KundeAnlegen__String_String();
 
 	/**
 	 * Returns the meta object for class '{@link kino.Kinosaal <em>Kinosaal</em>}'.
@@ -1092,6 +1214,17 @@ public interface KinoPackage extends EPackage {
 	EReference getAuffuehrung_Film();
 
 	/**
+	 * Returns the meta object for the attribute '{@link kino.Auffuehrung#getAktuelleEinnahmen <em>Aktuelle Einnahmen</em>}'.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the meta object for the attribute '<em>Aktuelle Einnahmen</em>'.
+	 * @see kino.Auffuehrung#getAktuelleEinnahmen()
+	 * @see #getAuffuehrung()
+	 * @generated
+	 */
+	EAttribute getAuffuehrung_AktuelleEinnahmen();
+
+	/**
 	 * Returns the meta object for the '{@link kino.Auffuehrung#verfuegbarePlaetze(kino.SitzreihenKategorie) <em>Verfuegbare Plaetze</em>}' operation.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
@@ -1102,14 +1235,34 @@ public interface KinoPackage extends EPackage {
 	EOperation getAuffuehrung__VerfuegbarePlaetze__SitzreihenKategorie();
 
 	/**
-	 * Returns the meta object for the '{@link kino.Auffuehrung#gesamtEinnahmen() <em>Gesamt Einnahmen</em>}' operation.
+	 * Returns the meta object for the '{@link kino.Auffuehrung#reservierungHinzufuegen(kino.Reservierung) <em>Reservierung Hinzufuegen</em>}' operation.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
-	 * @return the meta object for the '<em>Gesamt Einnahmen</em>' operation.
-	 * @see kino.Auffuehrung#gesamtEinnahmen()
+	 * @return the meta object for the '<em>Reservierung Hinzufuegen</em>' operation.
+	 * @see kino.Auffuehrung#reservierungHinzufuegen(kino.Reservierung)
 	 * @generated
 	 */
-	EOperation getAuffuehrung__GesamtEinnahmen();
+	EOperation getAuffuehrung__ReservierungHinzufuegen__Reservierung();
+
+	/**
+	 * Returns the meta object for the '{@link kino.Auffuehrung#buchungHinzufuegen(kino.Buchung) <em>Buchung Hinzufuegen</em>}' operation.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the meta object for the '<em>Buchung Hinzufuegen</em>' operation.
+	 * @see kino.Auffuehrung#buchungHinzufuegen(kino.Buchung)
+	 * @generated
+	 */
+	EOperation getAuffuehrung__BuchungHinzufuegen__Buchung();
+
+	/**
+	 * Returns the meta object for the '{@link kino.Auffuehrung#reservierungLoeschen(kino.Reservierung) <em>Reservierung Loeschen</em>}' operation.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the meta object for the '<em>Reservierung Loeschen</em>' operation.
+	 * @see kino.Auffuehrung#reservierungLoeschen(kino.Reservierung)
+	 * @generated
+	 */
+	EOperation getAuffuehrung__ReservierungLoeschen__Reservierung();
 
 	/**
 	 * Returns the meta object for class '{@link kino.Sitzreihe <em>Sitzreihe</em>}'.
@@ -1177,6 +1330,16 @@ public interface KinoPackage extends EPackage {
 	EReference getSitzreihe_Saal();
 
 	/**
+	 * Returns the meta object for the '{@link kino.Sitzreihe#plaetzeAnlegen() <em>Plaetze Anlegen</em>}' operation.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the meta object for the '<em>Plaetze Anlegen</em>' operation.
+	 * @see kino.Sitzreihe#plaetzeAnlegen()
+	 * @generated
+	 */
+	EOperation getSitzreihe__PlaetzeAnlegen();
+
+	/**
 	 * Returns the meta object for class '{@link kino.Sitzplatz <em>Sitzplatz</em>}'.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
@@ -1229,6 +1392,17 @@ public interface KinoPackage extends EPackage {
 	 * @generated
 	 */
 	EReference getSitzplatz_Buchung();
+
+	/**
+	 * Returns the meta object for the attribute '{@link kino.Sitzplatz#isIsFrei <em>Is Frei</em>}'.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the meta object for the attribute '<em>Is Frei</em>'.
+	 * @see kino.Sitzplatz#isIsFrei()
+	 * @see #getSitzplatz()
+	 * @generated
+	 */
+	EAttribute getSitzplatz_IsFrei();
 
 	/**
 	 * Returns the meta object for class '{@link kino.Kunde <em>Kunde</em>}'.
@@ -1295,14 +1469,14 @@ public interface KinoPackage extends EPackage {
 	EOperation getKunde__Reservieren__Auffuehrung_EList();
 
 	/**
-	 * Returns the meta object for the '{@link kino.Kunde#reservierungStornieren(kino.Reservierung) <em>Reservierung Stornieren</em>}' operation.
+	 * Returns the meta object for the '{@link kino.Kunde#reservierungStornieren(kino.Reservierung, kino.Auffuehrung) <em>Reservierung Stornieren</em>}' operation.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
 	 * @return the meta object for the '<em>Reservierung Stornieren</em>' operation.
-	 * @see kino.Kunde#reservierungStornieren(kino.Reservierung)
+	 * @see kino.Kunde#reservierungStornieren(kino.Reservierung, kino.Auffuehrung)
 	 * @generated
 	 */
-	EOperation getKunde__ReservierungStornieren__Reservierung();
+	EOperation getKunde__ReservierungStornieren__Reservierung_Auffuehrung();
 
 	/**
 	 * Returns the meta object for the '{@link kino.Kunde#direktBuchung(kino.Auffuehrung, org.eclipse.emf.common.util.EList) <em>Direkt Buchung</em>}' operation.
@@ -1390,24 +1564,14 @@ public interface KinoPackage extends EPackage {
 	EReference getReservierung_Plaetze();
 
 	/**
-	 * Returns the meta object for the '{@link kino.Reservierung#stornieren() <em>Stornieren</em>}' operation.
+	 * Returns the meta object for the '{@link kino.Reservierung#plaetzeHinzufuegen(org.eclipse.emf.common.util.EList) <em>Plaetze Hinzufuegen</em>}' operation.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
-	 * @return the meta object for the '<em>Stornieren</em>' operation.
-	 * @see kino.Reservierung#stornieren()
+	 * @return the meta object for the '<em>Plaetze Hinzufuegen</em>' operation.
+	 * @see kino.Reservierung#plaetzeHinzufuegen(org.eclipse.emf.common.util.EList)
 	 * @generated
 	 */
-	EOperation getReservierung__Stornieren();
-
-	/**
-	 * Returns the meta object for the '{@link kino.Reservierung#inBuchungUmwandeln() <em>In Buchung Umwandeln</em>}' operation.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @return the meta object for the '<em>In Buchung Umwandeln</em>' operation.
-	 * @see kino.Reservierung#inBuchungUmwandeln()
-	 * @generated
-	 */
-	EOperation getReservierung__InBuchungUmwandeln();
+	EOperation getReservierung__PlaetzeHinzufuegen__EList();
 
 	/**
 	 * Returns the meta object for class '{@link kino.Buchung <em>Buchung</em>}'.
@@ -1496,6 +1660,16 @@ public interface KinoPackage extends EPackage {
 	EOperation getBuchung__Gesamtpreis();
 
 	/**
+	 * Returns the meta object for the '{@link kino.Buchung#plaetzeHinzufuegen(org.eclipse.emf.common.util.EList) <em>Plaetze Hinzufuegen</em>}' operation.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the meta object for the '<em>Plaetze Hinzufuegen</em>' operation.
+	 * @see kino.Buchung#plaetzeHinzufuegen(org.eclipse.emf.common.util.EList)
+	 * @generated
+	 */
+	EOperation getBuchung__PlaetzeHinzufuegen__EList();
+
+	/**
 	 * Returns the meta object for enum '{@link kino.SitzreihenKategorie <em>Sitzreihen Kategorie</em>}'.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
@@ -1555,6 +1729,14 @@ public interface KinoPackage extends EPackage {
 		EReference KINO__SAELE = eINSTANCE.getKino_Saele();
 
 		/**
+		 * The meta object literal for the '<em><b>Kunden</b></em>' reference list feature.
+		 * <!-- begin-user-doc -->
+		 * <!-- end-user-doc -->
+		 * @generated
+		 */
+		EReference KINO__KUNDEN = eINSTANCE.getKino_Kunden();
+
+		/**
 		 * The meta object literal for the '<em><b>Saal Anlegen</b></em>' operation.
 		 * <!-- begin-user-doc -->
 		 * <!-- end-user-doc -->
@@ -1576,7 +1758,31 @@ public interface KinoPackage extends EPackage {
 		 * <!-- end-user-doc -->
 		 * @generated
 		 */
-		EOperation KINO___EINNAHMEN_BERECHNEN__DATE_DATE = eINSTANCE.getKino__EinnahmenBerechnen__Date_Date();
+		EOperation KINO___EINNAHMEN_BERECHNEN__AUFFUEHRUNG = eINSTANCE.getKino__EinnahmenBerechnen__Auffuehrung();
+
+		/**
+		 * The meta object literal for the '<em><b>Einnahmen Berechnen</b></em>' operation.
+		 * <!-- begin-user-doc -->
+		 * <!-- end-user-doc -->
+		 * @generated
+		 */
+		EOperation KINO___EINNAHMEN_BERECHNEN__FILM = eINSTANCE.getKino__EinnahmenBerechnen__Film();
+
+		/**
+		 * The meta object literal for the '<em><b>Sitzreihe Anlegen</b></em>' operation.
+		 * <!-- begin-user-doc -->
+		 * <!-- end-user-doc -->
+		 * @generated
+		 */
+		EOperation KINO___SITZREIHE_ANLEGEN__INT_SITZREIHENKATEGORIE_INT_KINOSAAL = eINSTANCE.getKino__SitzreiheAnlegen__int_SitzreihenKategorie_int_Kinosaal();
+
+		/**
+		 * The meta object literal for the '<em><b>Kunde Anlegen</b></em>' operation.
+		 * <!-- begin-user-doc -->
+		 * <!-- end-user-doc -->
+		 * @generated
+		 */
+		EOperation KINO___KUNDE_ANLEGEN__STRING_STRING = eINSTANCE.getKino__KundeAnlegen__String_String();
 
 		/**
 		 * The meta object literal for the '{@link kino.impl.KinosaalImpl <em>Kinosaal</em>}' class.
@@ -1745,6 +1951,14 @@ public interface KinoPackage extends EPackage {
 		EReference AUFFUEHRUNG__FILM = eINSTANCE.getAuffuehrung_Film();
 
 		/**
+		 * The meta object literal for the '<em><b>Aktuelle Einnahmen</b></em>' attribute feature.
+		 * <!-- begin-user-doc -->
+		 * <!-- end-user-doc -->
+		 * @generated
+		 */
+		EAttribute AUFFUEHRUNG__AKTUELLE_EINNAHMEN = eINSTANCE.getAuffuehrung_AktuelleEinnahmen();
+
+		/**
 		 * The meta object literal for the '<em><b>Verfuegbare Plaetze</b></em>' operation.
 		 * <!-- begin-user-doc -->
 		 * <!-- end-user-doc -->
@@ -1753,12 +1967,28 @@ public interface KinoPackage extends EPackage {
 		EOperation AUFFUEHRUNG___VERFUEGBARE_PLAETZE__SITZREIHENKATEGORIE = eINSTANCE.getAuffuehrung__VerfuegbarePlaetze__SitzreihenKategorie();
 
 		/**
-		 * The meta object literal for the '<em><b>Gesamt Einnahmen</b></em>' operation.
+		 * The meta object literal for the '<em><b>Reservierung Hinzufuegen</b></em>' operation.
 		 * <!-- begin-user-doc -->
 		 * <!-- end-user-doc -->
 		 * @generated
 		 */
-		EOperation AUFFUEHRUNG___GESAMT_EINNAHMEN = eINSTANCE.getAuffuehrung__GesamtEinnahmen();
+		EOperation AUFFUEHRUNG___RESERVIERUNG_HINZUFUEGEN__RESERVIERUNG = eINSTANCE.getAuffuehrung__ReservierungHinzufuegen__Reservierung();
+
+		/**
+		 * The meta object literal for the '<em><b>Buchung Hinzufuegen</b></em>' operation.
+		 * <!-- begin-user-doc -->
+		 * <!-- end-user-doc -->
+		 * @generated
+		 */
+		EOperation AUFFUEHRUNG___BUCHUNG_HINZUFUEGEN__BUCHUNG = eINSTANCE.getAuffuehrung__BuchungHinzufuegen__Buchung();
+
+		/**
+		 * The meta object literal for the '<em><b>Reservierung Loeschen</b></em>' operation.
+		 * <!-- begin-user-doc -->
+		 * <!-- end-user-doc -->
+		 * @generated
+		 */
+		EOperation AUFFUEHRUNG___RESERVIERUNG_LOESCHEN__RESERVIERUNG = eINSTANCE.getAuffuehrung__ReservierungLoeschen__Reservierung();
 
 		/**
 		 * The meta object literal for the '{@link kino.impl.SitzreiheImpl <em>Sitzreihe</em>}' class.
@@ -1811,6 +2041,14 @@ public interface KinoPackage extends EPackage {
 		EReference SITZREIHE__SAAL = eINSTANCE.getSitzreihe_Saal();
 
 		/**
+		 * The meta object literal for the '<em><b>Plaetze Anlegen</b></em>' operation.
+		 * <!-- begin-user-doc -->
+		 * <!-- end-user-doc -->
+		 * @generated
+		 */
+		EOperation SITZREIHE___PLAETZE_ANLEGEN = eINSTANCE.getSitzreihe__PlaetzeAnlegen();
+
+		/**
 		 * The meta object literal for the '{@link kino.impl.SitzplatzImpl <em>Sitzplatz</em>}' class.
 		 * <!-- begin-user-doc -->
 		 * <!-- end-user-doc -->
@@ -1851,6 +2089,14 @@ public interface KinoPackage extends EPackage {
 		 * @generated
 		 */
 		EReference SITZPLATZ__BUCHUNG = eINSTANCE.getSitzplatz_Buchung();
+
+		/**
+		 * The meta object literal for the '<em><b>Is Frei</b></em>' attribute feature.
+		 * <!-- begin-user-doc -->
+		 * <!-- end-user-doc -->
+		 * @generated
+		 */
+		EAttribute SITZPLATZ__IS_FREI = eINSTANCE.getSitzplatz_IsFrei();
 
 		/**
 		 * The meta object literal for the '{@link kino.impl.KundeImpl <em>Kunde</em>}' class.
@@ -1908,7 +2154,7 @@ public interface KinoPackage extends EPackage {
 		 * <!-- end-user-doc -->
 		 * @generated
 		 */
-		EOperation KUNDE___RESERVIERUNG_STORNIEREN__RESERVIERUNG = eINSTANCE.getKunde__ReservierungStornieren__Reservierung();
+		EOperation KUNDE___RESERVIERUNG_STORNIEREN__RESERVIERUNG_AUFFUEHRUNG = eINSTANCE.getKunde__ReservierungStornieren__Reservierung_Auffuehrung();
 
 		/**
 		 * The meta object literal for the '<em><b>Direkt Buchung</b></em>' operation.
@@ -1977,20 +2223,12 @@ public interface KinoPackage extends EPackage {
 		EReference RESERVIERUNG__PLAETZE = eINSTANCE.getReservierung_Plaetze();
 
 		/**
-		 * The meta object literal for the '<em><b>Stornieren</b></em>' operation.
+		 * The meta object literal for the '<em><b>Plaetze Hinzufuegen</b></em>' operation.
 		 * <!-- begin-user-doc -->
 		 * <!-- end-user-doc -->
 		 * @generated
 		 */
-		EOperation RESERVIERUNG___STORNIEREN = eINSTANCE.getReservierung__Stornieren();
-
-		/**
-		 * The meta object literal for the '<em><b>In Buchung Umwandeln</b></em>' operation.
-		 * <!-- begin-user-doc -->
-		 * <!-- end-user-doc -->
-		 * @generated
-		 */
-		EOperation RESERVIERUNG___IN_BUCHUNG_UMWANDELN = eINSTANCE.getReservierung__InBuchungUmwandeln();
+		EOperation RESERVIERUNG___PLAETZE_HINZUFUEGEN__ELIST = eINSTANCE.getReservierung__PlaetzeHinzufuegen__EList();
 
 		/**
 		 * The meta object literal for the '{@link kino.impl.BuchungImpl <em>Buchung</em>}' class.
@@ -2057,6 +2295,14 @@ public interface KinoPackage extends EPackage {
 		 * @generated
 		 */
 		EOperation BUCHUNG___GESAMTPREIS = eINSTANCE.getBuchung__Gesamtpreis();
+
+		/**
+		 * The meta object literal for the '<em><b>Plaetze Hinzufuegen</b></em>' operation.
+		 * <!-- begin-user-doc -->
+		 * <!-- end-user-doc -->
+		 * @generated
+		 */
+		EOperation BUCHUNG___PLAETZE_HINZUFUEGEN__ELIST = eINSTANCE.getBuchung__PlaetzeHinzufuegen__EList();
 
 		/**
 		 * The meta object literal for the '{@link kino.SitzreihenKategorie <em>Sitzreihen Kategorie</em>}' enum.

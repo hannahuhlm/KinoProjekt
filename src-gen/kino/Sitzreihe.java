@@ -130,4 +130,12 @@ public interface Sitzreihe extends EObject {
 	 */
 	void setSaal(Kinosaal value);
 
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @model
+	 * @generated
+	 */
+	void plaetzeAnlegen();
+
 } // Sitzreihe
