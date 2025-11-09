@@ -143,6 +143,19 @@ public class FilmImpl extends MinimalEObjectImpl.Container implements Film {
 	 * @generated
 	 */
 	@Override
+	public void setTitel(String newTitel) {
+		String oldTitel = titel;
+		titel = newTitel;
+		if (eNotificationRequired())
+			eNotify(new ENotificationImpl(this, Notification.SET, KinoPackage.FILM__TITEL, oldTitel, titel));
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
 	public int getDauer() {
 		return dauer;
 	}
@@ -237,6 +250,9 @@ public class FilmImpl extends MinimalEObjectImpl.Container implements Film {
 	@Override
 	public void eSet(int featureID, Object newValue) {
 		switch (featureID) {
+			case KinoPackage.FILM__TITEL:
+				setTitel((String)newValue);
+				return;
 			case KinoPackage.FILM__DAUER:
 				setDauer((Integer)newValue);
 				return;
@@ -259,6 +275,9 @@ public class FilmImpl extends MinimalEObjectImpl.Container implements Film {
 	@Override
 	public void eUnset(int featureID) {
 		switch (featureID) {
+			case KinoPackage.FILM__TITEL:
+				setTitel(TITEL_EDEFAULT);
+				return;
 			case KinoPackage.FILM__DAUER:
 				setDauer(DAUER_EDEFAULT);
 				return;

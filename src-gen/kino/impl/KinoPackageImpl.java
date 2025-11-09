@@ -977,7 +977,7 @@ public class KinoPackageImpl extends EPackageImpl implements KinoPackage {
 		initEOperation(getKinosaal__IstFreigegeben(), ecorePackage.getEBoolean(), "istFreigegeben", 0, 1, IS_UNIQUE, IS_ORDERED);
 
 		initEClass(filmEClass, Film.class, "Film", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
-		initEAttribute(getFilm_Titel(), ecorePackage.getEString(), "titel", null, 0, 1, Film.class, !IS_TRANSIENT, !IS_VOLATILE, !IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
+		initEAttribute(getFilm_Titel(), ecorePackage.getEString(), "titel", null, 0, 1, Film.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 		initEAttribute(getFilm_Dauer(), ecorePackage.getEInt(), "dauer", null, 0, 1, Film.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 		initEAttribute(getFilm_Beschreibung(), ecorePackage.getEString(), "beschreibung", null, 0, 1, Film.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 		initEReference(getFilm_Auffuehrungen(), this.getAuffuehrung(), null, "auffuehrungen", null, 0, -1, Film.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_COMPOSITE, IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);

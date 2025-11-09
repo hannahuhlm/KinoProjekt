@@ -31,11 +31,22 @@ public interface Film extends EObject {
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
 	 * @return the value of the '<em>Titel</em>' attribute.
+	 * @see #setTitel(String)
 	 * @see kino.KinoPackage#getFilm_Titel()
-	 * @model changeable="false"
+	 * @model
 	 * @generated
 	 */
 	String getTitel();
+
+	/**
+	 * Sets the value of the '{@link kino.Film#getTitel <em>Titel</em>}' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @param value the new value of the '<em>Titel</em>' attribute.
+	 * @see #getTitel()
+	 * @generated
+	 */
+	void setTitel(String value);
 
 	/**
 	 * Returns the value of the '<em><b>Dauer</b></em>' attribute.

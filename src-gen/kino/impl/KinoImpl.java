@@ -12,8 +12,6 @@ import kino.Kino;
 import kino.KinoPackage;
 import kino.Kinosaal;
 import kino.KinoFactory;
-import kino.Kinosaal;
-
 import org.eclipse.emf.common.notify.Notification;
 
 import org.eclipse.emf.common.util.EList;
@@ -132,7 +130,6 @@ public class KinoImpl extends MinimalEObjectImpl.Container implements Kino {
 	 */
 	@Override
 	public Kinosaal saalAnlegen(String name) {
-		// TODO: implement this method
 		Kinosaal neuerSaal = KinoFactory.eINSTANCE.createKinosaal();
 	    neuerSaal.setName(name);
 	    // In die Liste der Säle des Kinos einfügen
@@ -143,13 +140,18 @@ public class KinoImpl extends MinimalEObjectImpl.Container implements Kino {
 	/**
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
-	 * @generated
+	 * @generated NOT
 	 */
 	@Override
 	public Film filmAnlegen(String titel, int dauer, String beschreibung) {
-		// TODO: implement this method
-		// Ensure that you remove @generated or mark it @generated NOT
-		throw new UnsupportedOperationException();
+		Film neuerFilm = KinoFactory.eINSTANCE.createFilm();
+		
+		//attribute setzen
+		neuerFilm.setTitel(titel);
+		neuerFilm.setDauer(dauer);
+		neuerFilm.setBeschreibung(beschreibung);
+
+		return neuerFilm;
 	}
 
 	/**
