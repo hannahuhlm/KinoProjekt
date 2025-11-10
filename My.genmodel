@@ -131,7 +131,7 @@
       <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference My.ecore#//Buchung/kunde"/>
       <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference My.ecore#//Buchung/auffuehrung"/>
       <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference My.ecore#//Buchung/plaetze"/>
-      <genOperations ecoreOperation="My.ecore#//Buchung/gesamtpreis"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute My.ecore#//Buchung/gesamtpreis"/>
       <genOperations ecoreOperation="My.ecore#//Buchung/plaetzeHinzufuegen">
         <genParameters ecoreParameter="My.ecore#//Buchung/plaetzeHinzufuegen/plaetze"/>
       </genOperations>

@@ -343,6 +343,7 @@ public class AuffuehrungImpl extends MinimalEObjectImpl.Container implements Auf
 	@Override
 	public void buchungHinzufuegen(Buchung buchung) {
 		this.buchungen.add(buchung);
+		setAktuelleEinnahmen(getAktuelleEinnahmen() + buchung.getGesamtpreis());
 	}
 
 	/**

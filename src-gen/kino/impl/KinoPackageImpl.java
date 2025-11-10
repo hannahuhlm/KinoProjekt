@@ -877,8 +877,8 @@ public class KinoPackageImpl extends EPackageImpl implements KinoPackage {
 	 * @generated
 	 */
 	@Override
-	public EOperation getBuchung__Gesamtpreis() {
-		return buchungEClass.getEOperations().get(0);
+	public EAttribute getBuchung_Gesamtpreis() {
+		return (EAttribute)buchungEClass.getEStructuralFeatures().get(6);
 	}
 
 	/**
@@ -888,7 +888,7 @@ public class KinoPackageImpl extends EPackageImpl implements KinoPackage {
 	 */
 	@Override
 	public EOperation getBuchung__PlaetzeHinzufuegen__EList() {
-		return buchungEClass.getEOperations().get(1);
+		return buchungEClass.getEOperations().get(0);
 	}
 
 	/**
@@ -1009,7 +1009,7 @@ public class KinoPackageImpl extends EPackageImpl implements KinoPackage {
 		createEReference(buchungEClass, BUCHUNG__KUNDE);
 		createEReference(buchungEClass, BUCHUNG__AUFFUEHRUNG);
 		createEReference(buchungEClass, BUCHUNG__PLAETZE);
-		createEOperation(buchungEClass, BUCHUNG___GESAMTPREIS);
+		createEAttribute(buchungEClass, BUCHUNG__GESAMTPREIS);
 		createEOperation(buchungEClass, BUCHUNG___PLAETZE_HINZUFUEGEN__ELIST);
 
 		// Create enums
@@ -1170,8 +1170,7 @@ public class KinoPackageImpl extends EPackageImpl implements KinoPackage {
 		initEReference(getBuchung_Kunde(), this.getKunde(), null, "kunde", null, 1, 1, Buchung.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_COMPOSITE, IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 		initEReference(getBuchung_Auffuehrung(), this.getAuffuehrung(), null, "auffuehrung", null, 1, 1, Buchung.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_COMPOSITE, IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 		initEReference(getBuchung_Plaetze(), this.getSitzplatz(), null, "plaetze", null, 1, -1, Buchung.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_COMPOSITE, IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
-
-		initEOperation(getBuchung__Gesamtpreis(), ecorePackage.getEDouble(), "gesamtpreis", 0, 1, IS_UNIQUE, IS_ORDERED);
+		initEAttribute(getBuchung_Gesamtpreis(), ecorePackage.getEDouble(), "gesamtpreis", null, 0, 1, Buchung.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 
 		op = initEOperation(getBuchung__PlaetzeHinzufuegen__EList(), null, "plaetzeHinzufuegen", 0, 1, IS_UNIQUE, IS_ORDERED);
 		addEParameter(op, this.getSitzplatz(), "plaetze", 1, -1, IS_UNIQUE, IS_ORDERED);

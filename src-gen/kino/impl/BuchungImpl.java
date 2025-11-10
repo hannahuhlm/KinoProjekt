@@ -39,6 +39,7 @@ import org.eclipse.emf.ecore.util.EObjectResolvingEList;
  *   <li>{@link kino.impl.BuchungImpl#getKunde <em>Kunde</em>}</li>
  *   <li>{@link kino.impl.BuchungImpl#getAuffuehrung <em>Auffuehrung</em>}</li>
  *   <li>{@link kino.impl.BuchungImpl#getPlaetze <em>Plaetze</em>}</li>
+ *   <li>{@link kino.impl.BuchungImpl#getGesamtpreis <em>Gesamtpreis</em>}</li>
  * </ul>
  *
  * @generated
@@ -133,6 +134,26 @@ public class BuchungImpl extends MinimalEObjectImpl.Container implements Buchung
 	 * @ordered
 	 */
 	protected EList<Sitzplatz> plaetze;
+
+	/**
+	 * The default value of the '{@link #getGesamtpreis() <em>Gesamtpreis</em>}' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @see #getGesamtpreis()
+	 * @generated
+	 * @ordered
+	 */
+	protected static final double GESAMTPREIS_EDEFAULT = 0.0;
+
+	/**
+	 * The cached value of the '{@link #getGesamtpreis() <em>Gesamtpreis</em>}' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @see #getGesamtpreis()
+	 * @generated
+	 * @ordered
+	 */
+	protected double gesamtpreis = GESAMTPREIS_EDEFAULT;
 
 	/**
 	 * <!-- begin-user-doc -->
@@ -321,10 +342,8 @@ public class BuchungImpl extends MinimalEObjectImpl.Container implements Buchung
 	 * @generated
 	 */
 	@Override
-	public double gesamtpreis() {
-		// TODO: implement this method
-		// Ensure that you remove @generated or mark it @generated NOT
-		throw new UnsupportedOperationException();
+	public double getGesamtpreis() {
+		return gesamtpreis;
 	}
 
 	/**
@@ -333,10 +352,21 @@ public class BuchungImpl extends MinimalEObjectImpl.Container implements Buchung
 	 * @generated
 	 */
 	@Override
+	public void setGesamtpreis(double newGesamtpreis) {
+		double oldGesamtpreis = gesamtpreis;
+		gesamtpreis = newGesamtpreis;
+		if (eNotificationRequired())
+			eNotify(new ENotificationImpl(this, Notification.SET, KinoPackage.BUCHUNG__GESAMTPREIS, oldGesamtpreis, gesamtpreis));
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated NOT
+	 */
+	@Override
 	public void plaetzeHinzufuegen(EList<Sitzplatz> plaetze) {
-		// TODO: implement this method
-		// Ensure that you remove @generated or mark it @generated NOT
-		throw new UnsupportedOperationException();
+		this.plaetze= plaetze;
 	}
 
 	/**
@@ -361,6 +391,8 @@ public class BuchungImpl extends MinimalEObjectImpl.Container implements Buchung
 				return basicGetAuffuehrung();
 			case KinoPackage.BUCHUNG__PLAETZE:
 				return getPlaetze();
+			case KinoPackage.BUCHUNG__GESAMTPREIS:
+				return getGesamtpreis();
 		}
 		return super.eGet(featureID, resolve, coreType);
 	}
@@ -393,6 +425,9 @@ public class BuchungImpl extends MinimalEObjectImpl.Container implements Buchung
 				getPlaetze().clear();
 				getPlaetze().addAll((Collection<? extends Sitzplatz>)newValue);
 				return;
+			case KinoPackage.BUCHUNG__GESAMTPREIS:
+				setGesamtpreis((Double)newValue);
+				return;
 		}
 		super.eSet(featureID, newValue);
 	}
@@ -423,6 +458,9 @@ public class BuchungImpl extends MinimalEObjectImpl.Container implements Buchung
 			case KinoPackage.BUCHUNG__PLAETZE:
 				getPlaetze().clear();
 				return;
+			case KinoPackage.BUCHUNG__GESAMTPREIS:
+				setGesamtpreis(GESAMTPREIS_EDEFAULT);
+				return;
 		}
 		super.eUnset(featureID);
 	}
@@ -447,6 +485,8 @@ public class BuchungImpl extends MinimalEObjectImpl.Container implements Buchung
 				return auffuehrung != null;
 			case KinoPackage.BUCHUNG__PLAETZE:
 				return plaetze != null && !plaetze.isEmpty();
+			case KinoPackage.BUCHUNG__GESAMTPREIS:
+				return gesamtpreis != GESAMTPREIS_EDEFAULT;
 		}
 		return super.eIsSet(featureID);
 	}
@@ -460,8 +500,6 @@ public class BuchungImpl extends MinimalEObjectImpl.Container implements Buchung
 	@SuppressWarnings("unchecked")
 	public Object eInvoke(int operationID, EList<?> arguments) throws InvocationTargetException {
 		switch (operationID) {
-			case KinoPackage.BUCHUNG___GESAMTPREIS:
-				return gesamtpreis();
 			case KinoPackage.BUCHUNG___PLAETZE_HINZUFUEGEN__ELIST:
 				plaetzeHinzufuegen((EList<Sitzplatz>)arguments.get(0));
 				return null;
@@ -485,6 +523,8 @@ public class BuchungImpl extends MinimalEObjectImpl.Container implements Buchung
 		result.append(buchungsZeitstempel);
 		result.append(", bezahlt: ");
 		result.append(bezahlt);
+		result.append(", gesamtpreis: ");
+		result.append(gesamtpreis);
 		result.append(')');
 		return result.toString();
 	}

@@ -851,22 +851,22 @@ public interface KinoPackage extends EPackage {
 	int BUCHUNG__PLAETZE = 5;
 
 	/**
+	 * The feature id for the '<em><b>Gesamtpreis</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int BUCHUNG__GESAMTPREIS = 6;
+
+	/**
 	 * The number of structural features of the '<em>Buchung</em>' class.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
 	 * @generated
 	 * @ordered
 	 */
-	int BUCHUNG_FEATURE_COUNT = 6;
-
-	/**
-	 * The operation id for the '<em>Gesamtpreis</em>' operation.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 * @ordered
-	 */
-	int BUCHUNG___GESAMTPREIS = 0;
+	int BUCHUNG_FEATURE_COUNT = 7;
 
 	/**
 	 * The operation id for the '<em>Plaetze Hinzufuegen</em>' operation.
@@ -875,7 +875,7 @@ public interface KinoPackage extends EPackage {
 	 * @generated
 	 * @ordered
 	 */
-	int BUCHUNG___PLAETZE_HINZUFUEGEN__ELIST = 1;
+	int BUCHUNG___PLAETZE_HINZUFUEGEN__ELIST = 0;
 
 	/**
 	 * The number of operations of the '<em>Buchung</em>' class.
@@ -884,7 +884,7 @@ public interface KinoPackage extends EPackage {
 	 * @generated
 	 * @ordered
 	 */
-	int BUCHUNG_OPERATION_COUNT = 2;
+	int BUCHUNG_OPERATION_COUNT = 1;
 
 	/**
 	 * The meta object id for the '{@link kino.SitzreihenKategorie <em>Sitzreihen Kategorie</em>}' enum.
@@ -1650,14 +1650,15 @@ public interface KinoPackage extends EPackage {
 	EReference getBuchung_Plaetze();
 
 	/**
-	 * Returns the meta object for the '{@link kino.Buchung#gesamtpreis() <em>Gesamtpreis</em>}' operation.
+	 * Returns the meta object for the attribute '{@link kino.Buchung#getGesamtpreis <em>Gesamtpreis</em>}'.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
-	 * @return the meta object for the '<em>Gesamtpreis</em>' operation.
-	 * @see kino.Buchung#gesamtpreis()
+	 * @return the meta object for the attribute '<em>Gesamtpreis</em>'.
+	 * @see kino.Buchung#getGesamtpreis()
+	 * @see #getBuchung()
 	 * @generated
 	 */
-	EOperation getBuchung__Gesamtpreis();
+	EAttribute getBuchung_Gesamtpreis();
 
 	/**
 	 * Returns the meta object for the '{@link kino.Buchung#plaetzeHinzufuegen(org.eclipse.emf.common.util.EList) <em>Plaetze Hinzufuegen</em>}' operation.
@@ -2289,12 +2290,12 @@ public interface KinoPackage extends EPackage {
 		EReference BUCHUNG__PLAETZE = eINSTANCE.getBuchung_Plaetze();
 
 		/**
-		 * The meta object literal for the '<em><b>Gesamtpreis</b></em>' operation.
+		 * The meta object literal for the '<em><b>Gesamtpreis</b></em>' attribute feature.
 		 * <!-- begin-user-doc -->
 		 * <!-- end-user-doc -->
 		 * @generated
 		 */
-		EOperation BUCHUNG___GESAMTPREIS = eINSTANCE.getBuchung__Gesamtpreis();
+		EAttribute BUCHUNG__GESAMTPREIS = eINSTANCE.getBuchung_Gesamtpreis();
 
 		/**
 		 * The meta object literal for the '<em><b>Plaetze Hinzufuegen</b></em>' operation.

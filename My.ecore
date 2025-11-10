@@ -134,7 +134,6 @@
         upperBound="-1" eType="#//Sitzplatz"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="Buchung">
-    <eOperations name="gesamtpreis" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDouble"/>
     <eOperations name="plaetzeHinzufuegen">
       <eParameters name="plaetze" lowerBound="1" upperBound="-1" eType="#//Sitzplatz"/>
     </eOperations>
@@ -147,5 +146,6 @@
         eType="#//Auffuehrung"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="plaetze" lowerBound="1"
         upperBound="-1" eType="#//Sitzplatz"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="gesamtpreis" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDouble"/>
   </eClassifiers>
 </ecore:EPackage>

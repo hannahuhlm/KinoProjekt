@@ -23,6 +23,7 @@ import org.eclipse.emf.ecore.EObject;
  *   <li>{@link kino.Buchung#getKunde <em>Kunde</em>}</li>
  *   <li>{@link kino.Buchung#getAuffuehrung <em>Auffuehrung</em>}</li>
  *   <li>{@link kino.Buchung#getPlaetze <em>Plaetze</em>}</li>
+ *   <li>{@link kino.Buchung#getGesamtpreis <em>Gesamtpreis</em>}</li>
  * </ul>
  *
  * @see kino.KinoPackage#getBuchung()
@@ -154,12 +155,26 @@ public interface Buchung extends EObject {
 	EList<Sitzplatz> getPlaetze();
 
 	/**
+	 * Returns the value of the '<em><b>Gesamtpreis</b></em>' attribute.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
+	 * @return the value of the '<em>Gesamtpreis</em>' attribute.
+	 * @see #setGesamtpreis(double)
+	 * @see kino.KinoPackage#getBuchung_Gesamtpreis()
 	 * @model
 	 * @generated
 	 */
-	double gesamtpreis();
+	double getGesamtpreis();
+
+	/**
+	 * Sets the value of the '{@link kino.Buchung#getGesamtpreis <em>Gesamtpreis</em>}' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @param value the new value of the '<em>Gesamtpreis</em>' attribute.
+	 * @see #getGesamtpreis()
+	 * @generated
+	 */
+	void setGesamtpreis(double value);
 
 	/**
 	 * <!-- begin-user-doc -->

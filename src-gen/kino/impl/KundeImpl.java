@@ -278,6 +278,23 @@ public class KundeImpl extends MinimalEObjectImpl.Container implements Kunde {
 		buchung.setAuffuehrung(auffuehrung);
 		buchung.plaetzeHinzufuegen(plaetze);
 		
+		//Preis berechnen
+		double preis= 0;
+		for (Sitzplatz sitzplatz : plaetze) {
+			double currPreis;
+			switch (sitzplatz.getReihe().getKategorie())	{		
+				case PARKETT: {
+					currPreis=8;
+				} case LOGE: {
+					currPreis=10;
+				}case LOGE_MIT_SERVICE: {
+					currPreis=10.5;
+				}
+				preis= preis+ currPreis;
+			}
+		}
+		//Preis setzen
+		buchung.setGesamtpreis(preis);
 		//Buchung der Liste an Buchungen von Kunde/Aufführung hinzufügen
 		this.buchungen.add(buchung);
 		auffuehrung.getBuchungen().add(buchung);
@@ -304,6 +321,23 @@ public class KundeImpl extends MinimalEObjectImpl.Container implements Kunde {
 		buchung.setAuffuehrung(reservierung.getAuffuehrung());
 		buchung.plaetzeHinzufuegen(reservierung.getPlaetze());
 		
+		//Preis berechnen
+		double preis= 0;
+		for (Sitzplatz sitzplatz : reservierung.getPlaetze()) {
+			double currPreis;
+			switch (sitzplatz.getReihe().getKategorie())	{		
+				case PARKETT: {
+					currPreis=8;
+				} case LOGE: {
+					currPreis=10;
+				}case LOGE_MIT_SERVICE: {
+					currPreis=10.5;
+				}
+				preis= preis+ currPreis;
+			}
+		}
+		//Preis setzen
+		buchung.setGesamtpreis(preis);
 		//Buchung der Liste an Buchungen von Kunde/Aufführung hinzufügen
 		this.buchungen.add(buchung);
 		reservierung.getAuffuehrung().getBuchungen().add(buchung);
