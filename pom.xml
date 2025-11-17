@@ -17,6 +17,55 @@
           <release>17</release>
         </configuration>
       </plugin>
+       <plugin>
+            <groupId>com.vaadin</groupId>
+            <artifactId>vaadin-maven-plugin</artifactId>
+            <version>24.3.0</version>
+            <executions>
+                <execution>
+                    <goals>
+                        <goal>prepare-frontend</goal>
+                        <goal>build-frontend</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
+        <plugin>
+		    <groupId>org.springframework.boot</groupId>
+		    <artifactId>spring-boot-maven-plugin</artifactId>
+		    <version>3.3.2</version>
+		    <executions>
+		        <execution>
+		            <goals>
+		                <goal>repackage</goal>
+		            </goals>
+		        </execution>
+		    </executions>
+		</plugin>
+
     </plugins>
   </build>
+  <dependencyManagement>
+    <dependencies>
+        <dependency>
+            <groupId>com.vaadin</groupId>
+            <artifactId>vaadin-bom</artifactId>
+            <version>24.3.0</version>
+            <type>pom</type>
+            <scope>import</scope> <!-- nur hier erlaubt -->
+        </dependency>
+    </dependencies>
+</dependencyManagement>
+  <dependencies>
+	    <dependency>
+        <groupId>com.vaadin</groupId>
+        <artifactId>vaadin-core</artifactId>
+	    </dependency>
+	    <dependency>
+		    <groupId>org.springframework.boot</groupId>
+		    <artifactId>spring-boot-starter</artifactId>
+		    <version>3.3.2</version> 
+		</dependency>
+	</dependencies>
+	
 </project>
