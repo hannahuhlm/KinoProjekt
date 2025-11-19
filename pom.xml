@@ -6,11 +6,23 @@
     <groupId>kino.application</groupId>
     <artifactId>kino.application</artifactId>
     <version>0.0.1-SNAPSHOT</version>
+    
+	<repositories>
+	    <repository>
+	        <id>vaadin-addons</id>
+	        <url>https://maven.vaadin.com/vaadin-addons</url>
+	    </repository>
+	
+	    <repository>
+	        <id>flowingcode-mirror</id>
+	        <url>https://raw.githubusercontent.com/FlowingCode/vaadin-maven-repository/master</url>
+	    </repository>
+	</repositories>
 
-    <!-- WICHTIG: Spring Boot BOM + Vaadin BOM -->
+
+
     <dependencyManagement>
         <dependencies>
-            <!-- Vaadin 24 -->
             <dependency>
                 <groupId>com.vaadin</groupId>
                 <artifactId>vaadin-bom</artifactId>
@@ -19,7 +31,6 @@
                 <scope>import</scope>
             </dependency>
 
-            <!-- Spring Boot 3.3 -->
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
@@ -32,39 +43,40 @@
 
     <dependencies>
 
-        <!-- Vaadin + Spring Boot Integration -->
         <dependency>
             <groupId>com.vaadin</groupId>
             <artifactId>vaadin-spring-boot-starter</artifactId>
         </dependency>
 
-        <!-- Standard Webserver + DispatcherServlet -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
-        <!-- Auto-Restart -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-devtools</artifactId>
             <scope>runtime</scope>
             <optional>true</optional>
         </dependency>
+        
+		<dependency>
+		    <groupId>com.flowingcode.addons.carousel</groupId>
+		    <artifactId>carousel</artifactId>
+		    <version>3.0.1</version>
+		</dependency>
 
     </dependencies>
 
     <build>
         <plugins>
 
-            <!-- Vaadin Plugin -->
             <plugin>
                 <groupId>com.vaadin</groupId>
                 <artifactId>vaadin-maven-plugin</artifactId>
                 <version>24.3.0</version>
             </plugin>
 
-            <!-- Spring Boot Plugin -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>

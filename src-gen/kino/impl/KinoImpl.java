@@ -219,6 +219,8 @@ public class KinoImpl extends MinimalEObjectImpl.Container implements Kino {
 
 	/**
 	 * <!-- begin-user-doc -->
+	 * Methode um neue Kunden anzulegen
+	 * nutzt Namen und Email
 	 * <!-- end-user-doc -->
 	 * @generated NOT
 	 */
