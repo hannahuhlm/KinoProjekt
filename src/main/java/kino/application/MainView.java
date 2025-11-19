@@ -1,12 +1,14 @@
 package kino.application;
 
+import java.util.List;
+
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-import com.vaadin.flow.component.carousel.Carousel;
+
 import com.vaadin.flow.router.Route;
 
 @Route("")
@@ -17,27 +19,21 @@ public class MainView extends VerticalLayout {
         setSpacing(false);
         setWidthFull();
 
-        // Banner / Carousel
-        Carousel carousel = new Carousel();
-        carousel.setWidth("100%");
-        carousel.setHeight("400px");
+        
+        // Der Banner
+        List<String> images = List.of(
+        		"images/avatar.jpg"
+         
+        );
+        ImageSlider slider = new ImageSlider(images);
+        add(slider);
 
-        Image img1 = new Image("https://picsum.photos/1200/400?random=1", "Kino 1");
-        img1.setWidth("100%");
-        Image img2 = new Image("https://picsum.photos/1200/400?random=2", "Kino 2");
-        img2.setWidth("100%");
-        Image img3 = new Image("https://picsum.photos/1200/400?random=3", "Kino 3");
-        img3.setWidth("100%");
-
-        carousel.add(img1, img2, img3);
-        add(carousel);
-
-        // Titel
+        // Titel für Textfeld
         H1 title = new H1("Kinotastisch – Willkommen!");
         title.getStyle().set("text-align", "center");
         add(title);
 
-        // Menü / Navigationsmöglichkeiten
+        // Menü links
         HorizontalLayout menu = new HorizontalLayout();
         menu.setWidthFull();
         menu.setJustifyContentMode(JustifyContentMode.CENTER);

@@ -69,11 +69,7 @@
             <optional>true</optional>
         </dependency>
         
-		<dependency>
-		    <groupId>com.flowingcode.addons.carousel</groupId>
-		    <artifactId>carousel</artifactId>
-		    <version>3.0.1</version>
-		</dependency>
+	
 
     </dependencies>
 
