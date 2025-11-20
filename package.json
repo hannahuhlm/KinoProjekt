@@ -8,6 +8,7 @@
     "@vaadin/common-frontend": "0.0.19",
     "@vaadin/polymer-legacy-adapter": "24.9.1",
     "@vaadin/react-components": "24.9.1",
+    "@vaadin/router": "2.0.0",
     "@vaadin/vaadin-development-mode-detector": "2.0.7",
     "@vaadin/vaadin-lumo-styles": "24.9.1",
     "@vaadin/vaadin-material-styles": "24.9.1",
@@ -81,7 +82,7 @@
       "workbox-core": "7.3.0",
       "workbox-precaching": "7.3.0"
     },
-    "hash": "7ef4bdbbaf7185ce564cf92d4589bc744605ae6639dd00ba4ebd6c4cb3837799"
+    "hash": "0180f61614d7f3b634932434d38a107d0a3d74b9a71d216f9099ed899b0a4a99"
   },
   "overrides": {
     "@vaadin/bundles": "$@vaadin/bundles",
