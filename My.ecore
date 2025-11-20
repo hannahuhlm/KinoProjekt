@@ -31,6 +31,8 @@
         eType="#//Kinosaal"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="kunden" lowerBound="1"
         upperBound="-1" eType="#//Kunde"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="programm" upperBound="-1"
+        eType="#//Film"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="Kinosaal">
     <eOperations name="reiheHinzufügen">

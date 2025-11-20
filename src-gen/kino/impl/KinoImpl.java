@@ -36,6 +36,7 @@ import org.eclipse.emf.ecore.util.EObjectResolvingEList;
  *   <li>{@link kino.impl.KinoImpl#getName <em>Name</em>}</li>
  *   <li>{@link kino.impl.KinoImpl#getSaele <em>Saele</em>}</li>
  *   <li>{@link kino.impl.KinoImpl#getKunden <em>Kunden</em>}</li>
+ *   <li>{@link kino.impl.KinoImpl#getProgramm <em>Programm</em>}</li>
  * </ul>
  *
  * @generated
@@ -80,6 +81,16 @@ public class KinoImpl extends MinimalEObjectImpl.Container implements Kino {
 	 * @ordered
 	 */
 	protected EList<Kunde> kunden;
+
+	/**
+	 * The cached value of the '{@link #getProgramm() <em>Programm</em>}' reference list.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @see #getProgramm()
+	 * @generated
+	 * @ordered
+	 */
+	protected EList<Film> programm;
 
 	/**
 	 * <!-- begin-user-doc -->
@@ -152,6 +163,19 @@ public class KinoImpl extends MinimalEObjectImpl.Container implements Kino {
 	/**
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
+	public EList<Film> getProgramm() {
+		if (programm == null) {
+			programm = new EObjectResolvingEList<Film>(Film.class, this, KinoPackage.KINO__PROGRAMM);
+		}
+		return programm;
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
 	 * @generated NOT
 	 */
 	@Override
@@ -176,6 +200,8 @@ public class KinoImpl extends MinimalEObjectImpl.Container implements Kino {
 		neuerFilm.setTitel(titel);
 		neuerFilm.setDauer(dauer);
 		neuerFilm.setBeschreibung(beschreibung);
+		
+		this.programm.add(neuerFilm);
 
 		return neuerFilm;
 	}
@@ -247,6 +273,8 @@ public class KinoImpl extends MinimalEObjectImpl.Container implements Kino {
 				return getSaele();
 			case KinoPackage.KINO__KUNDEN:
 				return getKunden();
+			case KinoPackage.KINO__PROGRAMM:
+				return getProgramm();
 		}
 		return super.eGet(featureID, resolve, coreType);
 	}
@@ -271,6 +299,10 @@ public class KinoImpl extends MinimalEObjectImpl.Container implements Kino {
 				getKunden().clear();
 				getKunden().addAll((Collection<? extends Kunde>)newValue);
 				return;
+			case KinoPackage.KINO__PROGRAMM:
+				getProgramm().clear();
+				getProgramm().addAll((Collection<? extends Film>)newValue);
+				return;
 		}
 		super.eSet(featureID, newValue);
 	}
@@ -292,6 +324,9 @@ public class KinoImpl extends MinimalEObjectImpl.Container implements Kino {
 			case KinoPackage.KINO__KUNDEN:
 				getKunden().clear();
 				return;
+			case KinoPackage.KINO__PROGRAMM:
+				getProgramm().clear();
+				return;
 		}
 		super.eUnset(featureID);
 	}
@@ -310,6 +345,8 @@ public class KinoImpl extends MinimalEObjectImpl.Container implements Kino {
 				return saele != null && !saele.isEmpty();
 			case KinoPackage.KINO__KUNDEN:
 				return kunden != null && !kunden.isEmpty();
+			case KinoPackage.KINO__PROGRAMM:
+				return programm != null && !programm.isEmpty();
 		}
 		return super.eIsSet(featureID);
 	}

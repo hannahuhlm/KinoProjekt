@@ -15,6 +15,7 @@
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute My.ecore#//Kino/name"/>
       <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference My.ecore#//Kino/saele"/>
       <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference My.ecore#//Kino/kunden"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference My.ecore#//Kino/programm"/>
       <genOperations ecoreOperation="My.ecore#//Kino/saalAnlegen">
         <genParameters ecoreParameter="My.ecore#//Kino/saalAnlegen/name"/>
       </genOperations>

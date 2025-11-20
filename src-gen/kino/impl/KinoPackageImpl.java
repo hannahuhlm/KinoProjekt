@@ -207,6 +207,16 @@ public class KinoPackageImpl extends EPackageImpl implements KinoPackage {
 	 * @generated
 	 */
 	@Override
+	public EReference getKino_Programm() {
+		return (EReference)kinoEClass.getEStructuralFeatures().get(3);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
 	public EOperation getKino__SaalAnlegen__String() {
 		return kinoEClass.getEOperations().get(0);
 	}
@@ -934,6 +944,7 @@ public class KinoPackageImpl extends EPackageImpl implements KinoPackage {
 		createEAttribute(kinoEClass, KINO__NAME);
 		createEReference(kinoEClass, KINO__SAELE);
 		createEReference(kinoEClass, KINO__KUNDEN);
+		createEReference(kinoEClass, KINO__PROGRAMM);
 		createEOperation(kinoEClass, KINO___SAAL_ANLEGEN__STRING);
 		createEOperation(kinoEClass, KINO___FILM_ANLEGEN__STRING_INT_STRING);
 		createEOperation(kinoEClass, KINO___EINNAHMEN_BERECHNEN__AUFFUEHRUNG);
@@ -1050,6 +1061,7 @@ public class KinoPackageImpl extends EPackageImpl implements KinoPackage {
 		initEAttribute(getKino_Name(), ecorePackage.getEString(), "name", null, 0, 1, Kino.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 		initEReference(getKino_Saele(), this.getKinosaal(), null, "saele", null, 1, -1, Kino.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_COMPOSITE, IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 		initEReference(getKino_Kunden(), this.getKunde(), null, "kunden", null, 1, -1, Kino.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_COMPOSITE, IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
+		initEReference(getKino_Programm(), this.getFilm(), null, "programm", null, 0, -1, Kino.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_COMPOSITE, IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 
 		EOperation op = initEOperation(getKino__SaalAnlegen__String(), this.getKinosaal(), "saalAnlegen", 0, 1, IS_UNIQUE, IS_ORDERED);
 		addEParameter(op, ecorePackage.getEString(), "name", 0, 1, IS_UNIQUE, IS_ORDERED);

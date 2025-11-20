@@ -6,54 +6,96 @@ import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Image;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
+import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.router.Route;
 
 @Route("")
-public class MainView extends VerticalLayout {
+public class MainView extends AppLayout {
 
     public MainView() {
-        setPadding(false);
-        setSpacing(false);
-        setWidthFull();
 
+    	menueErstellen();
+    	mainBereichErstellen();
         
-        // Der Banner
-        List<String> images = List.of(
-        		"images/avatar.jpg"
-         
-        );
-        ImageSlider slider = new ImageSlider(images);
-        add(slider);
+    }
+    
+    private void menueErstellen() {
+    	 // Menü füllen
+        VerticalLayout menuLayout = new VerticalLayout();
+        menuLayout.setPadding(true);
+        menuLayout.setSpacing(true);
 
-        // Titel für Textfeld
-        H1 title = new H1("Kinotastisch – Willkommen!");
-        title.getStyle().set("text-align", "center");
-        add(title);
-
-        // Menü links
-        HorizontalLayout menu = new HorizontalLayout();
-        menu.setWidthFull();
-        menu.setJustifyContentMode(JustifyContentMode.CENTER);
-
-        Paragraph filmListe = new Paragraph("➡ Filmliste anzeigen");
+        Paragraph filmListe = new Paragraph("Filmliste");
         filmListe.getStyle().set("font-size", "1.3em").set("cursor", "pointer");
         filmListe.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate("filmliste")));
 
-        Paragraph reservierung = new Paragraph("➡ Meine Reservierungen");
-        reservierung.getStyle().set("font-size", "1.3em").set("cursor", "pointer");
-        reservierung.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate("reservierungen")));
+        Paragraph reservierungen = new Paragraph("Reservierungen");
+        reservierungen.getStyle().set("font-size", "1.3em").set("cursor", "pointer");
+        reservierungen.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate("reservierungen")));
 
-        menu.add(filmListe, reservierung);
-        add(menu);
+        Paragraph kontakt = new Paragraph("Kontakt");
+        kontakt.getStyle().set("font-size", "1.3em").set("cursor", "pointer");
+        kontakt.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate("kontakt")));
 
-        // Freier Textbereich
+        menuLayout.add(filmListe, reservierungen, kontakt);
+        addToDrawer(menuLayout);
+
+        // Burger Button hinzufügen
+        Button menuButton = new Button(new Icon(VaadinIcon.MENU));
+        menuButton.addClickListener(e -> setDrawerOpened(!isDrawerOpened()));
+
+        addToNavbar(menuButton);
+        setDrawerOpened(false);
+    }
+    
+    //
+    private void mainBereichErstellen() {
+    	VerticalLayout content = new VerticalLayout();
+        content.setSizeFull();
+        content.setPadding(false);
+        content.setSpacing(false);
+
+        // Fullscreen Slider
+        List<String> images = List.of("images/avatar.jpg", "images/zoomania.jpg", "images/nussknacker.jpg", "images/heldslider.jpg");
+        ImageSlider slider = new ImageSlider(images);
+        slider.setWidthFull();
+
+        content.add(slider);
+
+        
+        // Titel 
+        H1 title = new H1("CINEMAn Bun - das exklusive Kino");
+        title.getStyle().set("text-align", "center").set("margin-top", "40px");
+        content.add(title);
+        
+        //Programm Button
+        Button programmButton = new Button("Zum Programm");
+        programmButton.getStyle()
+        .set("border-radius", "20px")
+        .set("padding", "12px 24px")
+        .set("background", "#ff1744")
+        .set("color", "white")
+        .set("font-size", "1.1em")
+        .set("cursor", "pointer");
+        programmButton.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate("filmliste")));
+        programmButton.getStyle().set("margin", "20px auto");
+        content.add(programmButton);
+
+        // Text block
         Div textBlock = new Div();
         textBlock.setWidth("80%");
         textBlock.getStyle().set("margin", "auto");
-        textBlock.add(new Paragraph("Hier kann das Kino aktuelle Informationen, Werbung oder Hinweise einfügen. Dieser Textbereich ist frei anpassbar und kann für News oder Events genutzt werden."));
-        add(textBlock);
+        textBlock.add(new Paragraph(
+                "Willkommen im CINEMANn Bun"));
+
+        content.add(textBlock);
+
+        setContent(content);
     }
 }

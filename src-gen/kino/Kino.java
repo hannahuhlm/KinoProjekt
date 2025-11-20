@@ -18,6 +18,7 @@ import org.eclipse.emf.ecore.EObject;
  *   <li>{@link kino.Kino#getName <em>Name</em>}</li>
  *   <li>{@link kino.Kino#getSaele <em>Saele</em>}</li>
  *   <li>{@link kino.Kino#getKunden <em>Kunden</em>}</li>
+ *   <li>{@link kino.Kino#getProgramm <em>Programm</em>}</li>
  * </ul>
  *
  * @see kino.KinoPackage#getKino()
@@ -70,6 +71,18 @@ public interface Kino extends EObject {
 	 * @generated
 	 */
 	EList<Kunde> getKunden();
+
+	/**
+	 * Returns the value of the '<em><b>Programm</b></em>' reference list.
+	 * The list contents are of type {@link kino.Film}.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the value of the '<em>Programm</em>' reference list.
+	 * @see kino.KinoPackage#getKino_Programm()
+	 * @model
+	 * @generated
+	 */
+	EList<Film> getProgramm();
 
 	/**
 	 * <!-- begin-user-doc -->

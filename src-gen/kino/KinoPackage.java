@@ -96,13 +96,22 @@ public interface KinoPackage extends EPackage {
 	int KINO__KUNDEN = 2;
 
 	/**
+	 * The feature id for the '<em><b>Programm</b></em>' reference list.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int KINO__PROGRAMM = 3;
+
+	/**
 	 * The number of structural features of the '<em>Kino</em>' class.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
 	 * @generated
 	 * @ordered
 	 */
-	int KINO_FEATURE_COUNT = 3;
+	int KINO_FEATURE_COUNT = 4;
 
 	/**
 	 * The operation id for the '<em>Saal Anlegen</em>' operation.
@@ -941,6 +950,17 @@ public interface KinoPackage extends EPackage {
 	EReference getKino_Kunden();
 
 	/**
+	 * Returns the meta object for the reference list '{@link kino.Kino#getProgramm <em>Programm</em>}'.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the meta object for the reference list '<em>Programm</em>'.
+	 * @see kino.Kino#getProgramm()
+	 * @see #getKino()
+	 * @generated
+	 */
+	EReference getKino_Programm();
+
+	/**
 	 * Returns the meta object for the '{@link kino.Kino#saalAnlegen(java.lang.String) <em>Saal Anlegen</em>}' operation.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
@@ -1736,6 +1756,14 @@ public interface KinoPackage extends EPackage {
 		 * @generated
 		 */
 		EReference KINO__KUNDEN = eINSTANCE.getKino_Kunden();
+
+		/**
+		 * The meta object literal for the '<em><b>Programm</b></em>' reference list feature.
+		 * <!-- begin-user-doc -->
+		 * <!-- end-user-doc -->
+		 * @generated
+		 */
+		EReference KINO__PROGRAMM = eINSTANCE.getKino_Programm();
 
 		/**
 		 * The meta object literal for the '<em><b>Saal Anlegen</b></em>' operation.
