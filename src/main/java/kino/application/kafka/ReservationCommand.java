@@ -1,6 +1,6 @@
 package kino.application.kafka;
 
-/** Max S. Jonas C. 21.11.2026 00:20
+/** Max S. Jonas C. 21.11.2025 00:20
  * Kommandodaten, die der Server an Kafka sendet,
  * wenn eine Reservierung ausgelöst wird.
  *
