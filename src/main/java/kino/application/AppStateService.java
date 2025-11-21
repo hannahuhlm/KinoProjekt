@@ -7,7 +7,7 @@ import kino.KinoFactory;
 import kino.Kunde;
 
 
-@Service
+//@Service
 public class AppStateService {
 
 //    private final Kino kino;

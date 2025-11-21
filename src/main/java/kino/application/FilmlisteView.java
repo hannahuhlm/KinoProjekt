@@ -2,8 +2,11 @@ package kino.application;
 
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.applayout.AppLayout;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Paragraph;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
@@ -19,13 +22,47 @@ public class FilmlisteView extends AppLayout {
     private static final long serialVersionUID = -3842231281780942154L;
 
     public FilmlisteView() {
+    	
+    	menueErstellen();
+    	
         // Alle Film-Daten
         // List<Film> filme = KinoImpl.getProgramm();
         // Jeden Film als eigenen Block hinzufügen
         // for (Film film : filme) {
         // add(createFilmBlock(film));
+    	
+//    		}
     }
-//    }
+    
+    private void menueErstellen() {
+   	 // Menü füllen
+       VerticalLayout menuLayout = new VerticalLayout();
+       menuLayout.setPadding(true);
+       menuLayout.setSpacing(true);
+
+       Paragraph filmListe = new Paragraph("Filmliste");
+       filmListe.getStyle().set("font-size", "1.3em").set("cursor", "pointer");
+       filmListe.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate("filmliste")));
+
+       Paragraph reservierungen = new Paragraph("Reservierungen");
+       reservierungen.getStyle().set("font-size", "1.3em").set("cursor", "pointer");
+       reservierungen.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate("reservierungen")));
+
+       Paragraph kontakt = new Paragraph("Kontakt");
+       kontakt.getStyle().set("font-size", "1.3em").set("cursor", "pointer");
+       kontakt.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate("kontakt")));
+
+       menuLayout.add(filmListe, reservierungen, kontakt);
+       addToDrawer(menuLayout);
+
+       // Burger Button hinzufügen
+       Button menuButton = new Button(new Icon(VaadinIcon.MENU));
+       menuButton.addClickListener(e -> setDrawerOpened(!isDrawerOpened()));
+
+       addToNavbar(menuButton);
+       setDrawerOpened(false);
+   }
+   
 
     private HorizontalLayout createFilmBlock(Film film) {
         HorizontalLayout layout = new HorizontalLayout();

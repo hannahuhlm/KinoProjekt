@@ -48,10 +48,11 @@ public class MainView extends AppLayout {
 
         // Burger Button hinzufügen
         Button menuButton = new Button(new Icon(VaadinIcon.MENU));
+        menuButton.getStyle().set("margin-left", "20px");
         menuButton.addClickListener(e -> setDrawerOpened(!isDrawerOpened()));
 
         addToNavbar(menuButton);
-        setDrawerOpened(false);
+//        setDrawerOpened(false);
     }
     
     //
