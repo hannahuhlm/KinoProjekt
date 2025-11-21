@@ -2,9 +2,6 @@ package kino.application;
 
 import org.springframework.stereotype.Service;
 
-import kino.Kino;
-import kino.KinoFactory;
-import kino.Kunde;
 
 
 //@Service
