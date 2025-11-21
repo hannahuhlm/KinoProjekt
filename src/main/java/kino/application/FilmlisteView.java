@@ -8,25 +8,23 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
 
-import kino.impl.KinoImpl;
-import kino.Kino;
+//import kino.impl.KinoImpl;
+//import kino.Kino;
 
 import java.util.List;
 
 @Route("filmliste")
 public class FilmlisteView extends AppLayout {
 
-	private static final long serialVersionUID = -3842231281780942154L;
+    private static final long serialVersionUID = -3842231281780942154L;
 
-	public FilmlisteView() {
-       
+    public FilmlisteView() {
         // Alle Film-Daten
-//        List<Film> filme = KinoImpl.getProgramm();
-
+        // List<Film> filme = KinoImpl.getProgramm();
         // Jeden Film als eigenen Block hinzufügen
-//        for (Film film : filme) {
-//            add(createFilmBlock(film));
-        }
+        // for (Film film : filme) {
+        // add(createFilmBlock(film));
+    }
 //    }
 
     private HorizontalLayout createFilmBlock(Film film) {
@@ -75,9 +73,22 @@ public class FilmlisteView extends AppLayout {
             this.auffuehrungen = auffuehrungen;
         }
 
-        public String getTitel() { return titel; }
-        public String getCoverUrl() { return coverUrl; }
-        public String getBeschreibung() { return beschreibung; }
-        public List<String> getAuffuehrungen() { return auffuehrungen; }
+        public String getTitel() {
+            return titel;
+        }
+
+        public String getCoverUrl() {
+            return coverUrl;
+        }
+
+        public String getBeschreibung() {
+            return beschreibung;
+        }
+
+        public List<String> getAuffuehrungen() {
+            return auffuehrungen;
+        }
     }
+
+
 }
