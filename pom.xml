@@ -43,6 +43,13 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+
+            <!-- Apache Kafka Integration über Spring Max S. Jonas C. 21.11.2026 00:08 -->
+            <dependency>
+                <groupId>org.springframework.kafka</groupId>
+                <artifactId>spring-kafka</artifactId>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 

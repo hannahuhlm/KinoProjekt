@@ -8,8 +8,8 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
 
-import kino.impl.KinoImpl;
-import kino.Kino;
+//import kino.Impl.KinoImpl;
+//import kino.Kino;
 
 import java.util.List;
 
