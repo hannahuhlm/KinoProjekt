@@ -19,6 +19,13 @@ import com.vaadin.flow.router.Route;
 @Route("")
 @PageTitle("CINEMAn Roll")
 public class MainView extends AppLayout {
+	private boolean adminItemsVisible = false;
+	//Reiter die sichtbar und unsichtbar werden können
+	private Paragraph saalAnlegen = new Paragraph("Saal anlegen");
+	private Paragraph filmEinpflegen = new Paragraph("Film einpflegen");
+	private Paragraph auffuehrungenPlanen = new Paragraph("Aufführungen planen");
+	private Paragraph einnahmenKalkulieren = new Paragraph("Einnahmen Kalkulieren");
+
 
     public MainView() {
 
@@ -56,7 +63,7 @@ public class MainView extends AppLayout {
         menuButton.getStyle().set("margin-left", "20px");
         menuButton.addClickListener(e -> setDrawerOpened(!isDrawerOpened()));
         
-     // Branding-Bild als Button
+        // Branding-Bild als Button
         Image brandingImage = new Image("images/logoLang.png", "CINEMANn Logo");
         brandingImage.setHeight("40px"); 
         
@@ -66,6 +73,7 @@ public class MainView extends AppLayout {
         // Burger + Branding nebeneinander
         HorizontalLayout navbarLayout = new HorizontalLayout(menuButton, homeButton);
         navbarLayout.setAlignItems(FlexComponent.Alignment.CENTER);
+        navbarLayout.setSpacing(true);
 
         addToNavbar(menuButton);
     }
@@ -113,6 +121,7 @@ public class MainView extends AppLayout {
         content.add(textBlock);
 
         setContent(content);
+        
     }
     
     private void adminButtonhinzufuegen(VerticalLayout layout) {
@@ -128,43 +137,59 @@ public class MainView extends AppLayout {
         
         layout.add(adminButton);
 
-//        // Container, damit er unten bleibt
-//        VerticalLayout drawerContainer = new VerticalLayout();
-//        drawerContainer.setSizeFull();
-//        drawerContainer.setPadding(true);
-//        drawerContainer.setSpacing(true);
-//
-//        drawerContainer.add(layout);
-//        drawerContainer.add(adminButton);
-//
-//        drawerContainer.setFlexGrow(1, layout); // Menü nimmt oberen Bereich ein
-//        drawerContainer.setAlignSelf(FlexComponent.Alignment.START, adminButton);
-//
-//        addToDrawer(drawerContainer);
     }
     
     private void addAdminMenuItems(VerticalLayout menuLayout) {
+		
 
-        Paragraph saalAnlegen = new Paragraph("Saal anlegen");
-        saalAnlegen.getStyle()
-                .set("font-size", "1.2em")
-                .set("cursor", "pointer")
-                .set("margin-left", "10px");
-        saalAnlegen.addClickListener(e ->
-                getUI().ifPresent(ui -> ui.navigate("saal-anlegen"))
-        );
+    	//wenn noch nicht eingeblendet- einblenden
+    	if(!adminItemsVisible) {
+            saalAnlegen.getStyle()
+                    .set("font-size", "1.2em")
+                    .set("cursor", "pointer")
+                    .set("margin-left", "10px");
+            saalAnlegen.addClickListener(e ->
+                    getUI().ifPresent(ui -> ui.navigate("saal-anlegen"))
+            );
 
-        Paragraph filmEinpflegen = new Paragraph("Film einpflegen");
-        filmEinpflegen.getStyle()
-                .set("font-size", "1.2em")
-                .set("cursor", "pointer")
-                .set("margin-left", "10px");
-        filmEinpflegen.addClickListener(e ->
-                getUI().ifPresent(ui -> ui.navigate("film-einpflegen"))
-        );
+            filmEinpflegen.getStyle()
+                    .set("font-size", "1.2em")
+                    .set("cursor", "pointer")
+                    .set("margin-left", "10px");
+            filmEinpflegen.addClickListener(e ->
+                    getUI().ifPresent(ui -> ui.navigate("film-einpflegen"))
+            );
+            auffuehrungenPlanen.getStyle()
+            .set("font-size", "1.2em")
+            .set("cursor", "pointer")
+            .set("margin-left", "10px");
+            auffuehrungenPlanen.addClickListener(e ->
+		            getUI().ifPresent(ui -> ui.navigate("auffuehrungen-planen"))
+		    );
+		
+		    einnahmenKalkulieren.getStyle()
+		            .set("font-size", "1.2em")
+		            .set("cursor", "pointer")
+		            .set("margin-left", "10px");
+		    einnahmenKalkulieren.addClickListener(e ->
+		            getUI().ifPresent(ui -> ui.navigate("einnahmen-kalkulieren"))
+		    );
 
-        // Hinzufügen zum Menü
-        menuLayout.add(saalAnlegen, filmEinpflegen);
+
+            // Hinzufügen zum Menü
+            menuLayout.add(saalAnlegen, filmEinpflegen, auffuehrungenPlanen, einnahmenKalkulieren);
+            
+            adminItemsVisible = true;
+    	}else {
+    		menuLayout.remove(saalAnlegen);
+            menuLayout.remove(filmEinpflegen);
+
+            adminItemsVisible = false;
+        }
     }
+        
+        
+        
+        
 
 }
