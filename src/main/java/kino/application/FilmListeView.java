@@ -86,10 +86,7 @@ public class FilmListeView extends VerticalLayout {
         Button more = new Button("Mehr lesen");
         more.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
         more.addClassName("film-more-button");
-        // TODO: hier könnte man auf eine Detail-View navigieren:
-        // more.addClickListener(e ->
-        //     getUI().ifPresent(ui -> ui.navigate(FilmDetailView.class, film.getId().toString()))
-        // );
+        // hier click listener für button
 
         HorizontalLayout bottom = new HorizontalLayout(more);
         bottom.setWidthFull();
