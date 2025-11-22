@@ -9,12 +9,15 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import kino.application.MainView;
 import kino.application.data.Film;
 import kino.application.data.FilmRepository;
+
+import java.time.format.DateTimeFormatter;
 
 @Route(value = "film-verwalten", layout = MainView.class)
 @PageTitle("Admin – Filme")
@@ -28,6 +31,8 @@ public class AdminFilmAnlegenView extends VerticalLayout {
     // Formular-Felder
     private TextField titel = new TextField("Titel");
     private IntegerField dauer = new IntegerField("Dauer (Minuten)");
+    private DatePicker filmstart = new DatePicker("Filmstart");
+    private TextField posterUrl = new TextField("Poster-URL");
     private TextArea beschreibung = new TextArea("Beschreibung");
 
     private Button neuButton = new Button("Neu");
@@ -36,6 +41,9 @@ public class AdminFilmAnlegenView extends VerticalLayout {
 
     private Binder<Film> binder = new Binder<>(Film.class);
     private Film currentFilm;
+
+    private final DateTimeFormatter dateFormatter =
+            DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
     public AdminFilmAnlegenView(FilmRepository filmRepository) {
         this.filmRepository = filmRepository;
@@ -53,10 +61,12 @@ public class AdminFilmAnlegenView extends VerticalLayout {
         VerticalLayout formLayout = new VerticalLayout(
                 titel,
                 dauer,
+                filmstart,
+                posterUrl,
                 beschreibung,
                 new HorizontalLayout(neuButton, speichernButton, loeschenButton)
         );
-        formLayout.setWidth("400px");
+        formLayout.setWidth("420px");
 
         HorizontalLayout content = new HorizontalLayout(grid, formLayout);
         content.setSizeFull();
@@ -70,9 +80,21 @@ public class AdminFilmAnlegenView extends VerticalLayout {
     }
 
     private void configureGrid() {
-        grid.addColumn(Film::getTitel).setHeader("Titel").setAutoWidth(true);
-        grid.addColumn(Film::getDauer).setHeader("Dauer (Minuten)");
-        grid.addColumn(Film::getBeschreibung).setHeader("Beschreibung").setFlexGrow(1);
+        grid.addColumn(Film::getTitel)
+                .setHeader("Titel")
+                .setAutoWidth(true);
+
+        grid.addColumn(Film::getDauer)
+                .setHeader("Dauer (Minuten)");
+
+        grid.addColumn(f -> f.getFilmstart() != null
+                        ? f.getFilmstart().format(dateFormatter)
+                        : "")
+                .setHeader("Filmstart");
+
+        grid.addColumn(Film::getBeschreibung)
+                .setHeader("Beschreibung")
+                .setFlexGrow(1);
 
         grid.setSizeFull();
 
@@ -84,6 +106,8 @@ public class AdminFilmAnlegenView extends VerticalLayout {
 
     private void configureForm() {
         dauer.setMin(1);
+
+        posterUrl.setWidthFull();
 
         beschreibung.setWidthFull();
         beschreibung.setMinHeight("120px");
@@ -98,6 +122,12 @@ public class AdminFilmAnlegenView extends VerticalLayout {
                 .withValidator(v -> v != null && v > 0,
                         "Dauer muss größer als 0 sein")
                 .bind(Film::getDauer, Film::setDauer);
+
+        binder.forField(filmstart)
+                .bind(Film::getFilmstart, Film::setFilmstart);
+
+        binder.forField(posterUrl)
+                .bind(Film::getPosterUrl, Film::setPosterUrl);
 
         binder.forField(beschreibung)
                 .bind(Film::getBeschreibung, Film::setBeschreibung);
