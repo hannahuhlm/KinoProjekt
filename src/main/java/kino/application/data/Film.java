@@ -6,6 +6,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -115,20 +116,15 @@ public class Film {
         this.auffuehrungen = auffuehrungen;
     }
 
-    /*
-     * Hinweis zur EMF-Methode gesamtEinnahmen():
-     * -----------------------------------------
-     * Die Methode "double gesamtEinnahmen()" aus dem EMF-Modell ist
-     * fachliche Logik ("berechne Einnahmen aus allen Aufführungen").
-     *
-     * Sie muss NICHT als Feld gespeichert werden, kann aber bei Bedarf
-     * als normale Java-Methode hier implementiert werden, die z.B.
-     * über alle Aufführungen iteriert und deren Einnahmen aufsummiert.
-     *
-     * public double gesamtEinnahmen() {
-     *     return auffuehrungen.stream()
-     *             .mapToDouble(Auffuehrung::getAktuelleEinnahmen)
-     *             .sum();
-     * }
-     */
+    // Nicht aus dem EMF entnommende Infos: Poster zum anzeigen und Filmstart
+
+    private String posterUrl;      // z.B. "images/monster.jpg"
+    private java.time.LocalDate filmstart;
+
+    // Getter/Setter
+    public String getPosterUrl() { return posterUrl; }
+    public void setPosterUrl(String posterUrl) { this.posterUrl = posterUrl; }
+
+    public LocalDate getFilmstart() { return filmstart; }
+    public void setFilmstart(LocalDate filmstart) { this.filmstart = filmstart; }
 }
