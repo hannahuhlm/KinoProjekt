@@ -8,7 +8,6 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
@@ -60,9 +59,9 @@ public class FilmListeView extends AppLayout {
 
         // Branding-Bild als Button
         Image brandingImage = new Image("images/logoLang.png", "CINEMANn Logo");
-        brandingImage.setHeight("40px"); 
-        
-        Button homeButton = new Button(brandingImage, e -> getUI().ifPresent(ui -> ui.navigate(""))); 
+        brandingImage.setHeight("40px");
+
+        Button homeButton = new Button(brandingImage, e -> getUI().ifPresent(ui -> ui.navigate("")));
         homeButton.getStyle().set("background", "none").set("border", "none").set("cursor", "pointer");
 
         // Burger + Branding nebeneinander
