@@ -68,15 +68,6 @@ public class ImageSlider extends VerticalLayout {
         imageContainer.add(displayImage, prev, next);
         add(imageContainer);
 
-        
-//        //Automatisches weiterskippen konfigurieren
-//        Timer timer = new Timer(true);
-//        timer.scheduleAtFixedRate(new TimerTask() {
-//            @Override
-//            public void run() {
-//                getUI().ifPresent(ui -> ui.access(() -> weiterSkippen(imageUrls)));
-//            }
-//        }, 5000, 5000); // 5 Sekunden Delay
 
     }
 
