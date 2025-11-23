@@ -8,6 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.FetchType;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -21,9 +22,8 @@ public class Kinosaal {
 
     private boolean freigegeben = false;
 
-    @OneToMany(mappedBy = "saal", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Sitzreihe> reihen;
-
+    @OneToMany(mappedBy = "saal", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    private List<Sitzreihe> reihen = new ArrayList<>();
 
     // Alle Aufführungen sofort mitladen
     @OneToMany(mappedBy = "saal", fetch = FetchType.EAGER)

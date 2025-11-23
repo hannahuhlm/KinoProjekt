@@ -181,8 +181,11 @@ public class MainView extends AppLayout {
             
             adminItemsVisible = true;
     	}else {
+    		//alle vier entfernen
     		menuLayout.remove(saalAnlegen);
             menuLayout.remove(filmVerwalten);
+            menuLayout.remove(auffuehrungenPlanen);
+            menuLayout.remove(einnahmenKalkulieren);
 
             adminItemsVisible = false;
         }
