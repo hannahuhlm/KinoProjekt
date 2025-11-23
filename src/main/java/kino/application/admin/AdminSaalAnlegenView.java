@@ -69,6 +69,7 @@ public class AdminSaalAnlegenView extends VerticalLayout {
         clearForm();
     }
 
+    // Layout für das Formular zusammenbauen
     private VerticalLayout createFormLayout() {
         HorizontalLayout reihenLayout = new HorizontalLayout(anzahlReihen, reihenBearbeitenButton);
         reihenLayout.setAlignItems(Alignment.END);
@@ -84,6 +85,7 @@ public class AdminSaalAnlegenView extends VerticalLayout {
         return formLayout;
     }
 
+    // Grid Spalten konfigurieren und Auswahl-Listener setzen
     private void configureGrid() {
         grid.addColumn(Kinosaal::getName).setHeader("Name").setAutoWidth(true);
         grid.addColumn(k -> k.getReihen() != null ? k.getReihen().size() : 0)
@@ -91,6 +93,7 @@ public class AdminSaalAnlegenView extends VerticalLayout {
         grid.addColumn(Kinosaal::isFreigegeben).setHeader("Freigegeben").setAutoWidth(true);
         grid.setSizeFull();
 
+        // Wenn ein Saal ausgewählt wird, Formular laden
         grid.asSingleSelect().addValueChangeListener(event -> {
             if (event.getValue() != null) {
                 selectKinosaal(event.getValue());
@@ -98,6 +101,7 @@ public class AdminSaalAnlegenView extends VerticalLayout {
         });
     }
 
+    // Formularfelder binden und Buttons konfigurieren
     private void configureForm() {
         binder.forField(name)
                 .asRequired("Name darf nicht leer sein")
@@ -126,9 +130,11 @@ public class AdminSaalAnlegenView extends VerticalLayout {
                             updateFreiGegebenStatus();
                         });
 
+        // Button für das Bearbeiten der Reihen
         reihenBearbeitenButton.addClickListener(e -> openReihenDialog());
 
         istFreiGegeben.setEnabled(false);
+        // Freigabe ändern wenn Checkbox aktiviert ist
         istFreiGegeben.addValueChangeListener(e -> {
             if (currentKinosaal != null && istFreiGegeben.isEnabled()) {
                 currentKinosaal.setFreigegeben(istFreiGegeben.getValue());
@@ -142,6 +148,7 @@ public class AdminSaalAnlegenView extends VerticalLayout {
         loeschenButton.addClickListener(e -> deleteKinosaal());
     }
 
+    // Prüfen, ob Freigabe-Checkbox aktiviert werden kann
     private void updateFreiGegebenStatus() {
         if (currentKinosaal == null) {
             istFreiGegeben.setEnabled(false);
@@ -150,10 +157,11 @@ public class AdminSaalAnlegenView extends VerticalLayout {
         }
         boolean ready = isSaalFreiGebenBereit();
         istFreiGegeben.setEnabled(ready);
-        // Immer aktualisieren, damit vollständig konfigurierte Säle freigegeben werden können
+        // Checkbox anpassen je nach Status
         istFreiGegeben.setValue(currentKinosaal.isFreigegeben() && ready);
     }
 
+    // Prüfen, ob alle Reihen und Plätze korrekt angelegt sind
     private boolean isSaalFreiGebenBereit() {
         if (currentKinosaal.getName() == null || currentKinosaal.getName().trim().isEmpty()) return false;
         if (currentKinosaal.getReihen() == null || currentKinosaal.getReihen().isEmpty()) return false;
@@ -165,6 +173,7 @@ public class AdminSaalAnlegenView extends VerticalLayout {
         return true;
     }
 
+    // Dialog öffnen um Reihen zu bearbeiten
     private void openReihenDialog() {
         if (currentKinosaal == null) {
             Notification.show("Bitte zuerst Saal auswählen oder anlegen.", 2000, Notification.Position.MIDDLE);
@@ -189,6 +198,7 @@ public class AdminSaalAnlegenView extends VerticalLayout {
             combo.setItems(SitzreihenKategorie.values());
             combo.setValue(reihe.getKategorie());
             combo.setWidth("180px");
+            // Kategorie ändern
             combo.addValueChangeListener(ev -> {
                 reihe.setKategorie(ev.getValue());
                 currentKinosaal.setFreigegeben(false);
@@ -203,6 +213,7 @@ public class AdminSaalAnlegenView extends VerticalLayout {
             platzField.setMin(0);
             platzField.setValue(reihe.getAnzahlSitze());
             platzField.setWidth("120px");
+            // Sitzplätze anpassen
             platzField.addValueChangeListener(ev -> {
                 int newCount = ev.getValue() == null ? 0 : ev.getValue();
                 if (newCount == reihe.getAnzahlSitze()) return;
@@ -233,6 +244,7 @@ public class AdminSaalAnlegenView extends VerticalLayout {
         reihenGrid.setHeight("320px");
         layout.add(reihenGrid);
 
+        // Dialog schließen Button
         Button close = new Button("Schließen", ev -> {
             binder.setBean(currentKinosaal);
             updateFreiGegebenStatus();
@@ -244,6 +256,7 @@ public class AdminSaalAnlegenView extends VerticalLayout {
         dialog.open();
     }
 
+    // Saal auswählen aus der Tabelle
     private void selectKinosaal(Kinosaal kinosaal) {
         if (kinosaal != null && kinosaal.getId() != null) {
             currentKinosaal = kinosaalRepository.findById(kinosaal.getId()).orElse(kinosaal);
@@ -254,6 +267,7 @@ public class AdminSaalAnlegenView extends VerticalLayout {
         }
     }
 
+    // Formular leeren und neuen Saal vorbereiten
     private void clearForm() {
         currentKinosaal = new Kinosaal();
         binder.setBean(currentKinosaal);
@@ -261,6 +275,7 @@ public class AdminSaalAnlegenView extends VerticalLayout {
         updateFreiGegebenStatus();
     }
 
+    // Saal speichern
     private void saveKinosaal() {
         if (!binder.validate().isOk()) return;
         kinosaalRepository.save(currentKinosaal);
@@ -268,6 +283,7 @@ public class AdminSaalAnlegenView extends VerticalLayout {
         Notification.show("Kinosaal gespeichert", 2000, Notification.Position.MIDDLE);
     }
 
+    // Saal löschen
     private void deleteKinosaal() {
         if (currentKinosaal == null || currentKinosaal.getId() == null) return;
         kinosaalRepository.delete(currentKinosaal);
@@ -276,6 +292,7 @@ public class AdminSaalAnlegenView extends VerticalLayout {
         Notification.show("Kinosaal gelöscht", 2000, Notification.Position.MIDDLE);
     }
 
+    // Grid aktualisieren
     private void updateGrid() {
         grid.setItems(kinosaalRepository.findAll());
     }

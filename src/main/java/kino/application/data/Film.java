@@ -1,12 +1,15 @@
 package kino.application.data;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -63,9 +66,11 @@ public class Film {
      * - Die Spalte FILM_ID liegt in der Tabelle AUFFUEHRUNG.
      * - Diese Seite der Beziehung ist rein "lesend" organisiert
      *   und erzeugt keine zusätzliche Join-Tabelle.
-     */
-    @OneToMany(mappedBy = "film")
-    private List<Auffuehrung> auffuehrungen;
+     */   
+    @OneToMany(mappedBy = "film", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    private List<Auffuehrung> auffuehrungen = new ArrayList<>();
+
+
 
     /**
      * Leerer Konstruktor, den JPA/Hibernate für das Anlegen
