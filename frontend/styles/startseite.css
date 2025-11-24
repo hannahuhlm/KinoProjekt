@@ -1,0 +1,105 @@
+/* Gesamte Startseite */
+.startseite-view {
+    background: radial-gradient(circle at top, #1a237e 0, #000000 55%);
+    color: #f8f0d0;              /* leicht beige */
+    min-height: 100vh;
+}
+
+/* Slider oben */
+.startseite-slider {
+    position: relative;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.8);
+    overflow: hidden; /* wichtig für den Fade-Effekt */
+}
+
+/* macht den Übergang von slider zur Seite cooler */
+.startseite-slider::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 140px; /* Höhe des Übergangs */
+    background: linear-gradient(
+            to bottom,
+            rgba(0, 0, 0, 0) 0%,
+            #000000 100%
+    );
+    pointer-events: none; /* Klicks gehen weiter an den Slider */
+}
+
+/* Bereich mit Titel, Button, Text */
+.startseite-hero {
+    margin-top: 32px;
+    margin-bottom: 48px;
+    position: relative;
+    padding: 16px 0;
+}
+
+/* weiche Farbe hinter dem gesamten Schriftbereich unten */
+.startseite-hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 90%;
+    max-width: 700px;
+    height: 220px;
+    background: radial-gradient(
+            circle,
+            rgba(255, 80, 80, 0.25) 0%,   /* besserer Akzent */
+            rgba(0, 0, 0, 0.0) 70%        /* nach außen etwas scharz */
+    );
+    opacity: 0.8;
+    pointer-events: none;
+    z-index: -1; /* liegt hinter Titel/Button/Text unten */
+}
+
+/* Titelzeile */
+.startseite-title {
+    margin: 0 0 16px;
+    text-align: center;
+    letter-spacing: 0.12em;
+    color: #ffcc80;
+}
+
+/* "Zum Programm"-Button */
+.startseite-button {
+    border-radius: 24px;
+    padding: 12px 32px;
+    background: linear-gradient(90deg, #ff1744, #ff9100); /* Rot, orange Verlauf */
+    color: #ffffff;
+    font-size: 1.1rem;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 8px 25px rgba(255, 50, 80, 0.7);       /* farbiger Schatten */
+}
+
+.startseite-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 30px rgba(255, 50, 80, 0.9);
+}
+
+/* Textblock unter dem Button */
+.startseite-textblock {
+    width: 80%;
+    max-width: 600px;
+    text-align: center;
+    margin-top: 16px;
+    padding: 8px 16px;
+    border-radius: 12px;
+    background: rgba(20, 20, 20, 0.7); /*  deutlicher, aber nicht krass schwarz */
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 204, 128, 0.25); /* goldener Rand */
+}
+
+/* etwas kleiner auf schmalen Bildschirmen */
+@media (max-width: 768px) {
+    .startseite-title {
+        font-size: 1.5rem;
+    }
+
+    .startseite-button {
+        width: 80%;
+    }
+}
