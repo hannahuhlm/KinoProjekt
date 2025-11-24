@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Locale;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.repository.CrudRepository;
 
 @Route(value = "sitzplatzwahl/:auffuehrungId", layout = MainViewLayout.class)
 @PageTitle("Sitzplatzwahl")
@@ -41,12 +42,12 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
 
     @Autowired
     private KundeRepository kundeRepository;
-
     @Autowired
     private ReservierungRepository reservierungRepository;
-
     @Autowired
     private ReservierungSitzplatzRepository reservierungSitzplatzRepository;
+    @Autowired
+	private SitzplatzRepository sitzplatzRepository;
 
     public SitzplatzWahlView(AuffuehrungRepository auffuehrungRepository) {
         this.auffuehrungRepository = auffuehrungRepository;
@@ -325,6 +326,11 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
     }
 
     private void saveReservierung(Kunde kunde) {
+        if (aktuelleAuffuehrung == null || ausgewähltePlaetze.isEmpty()) {
+            Notification.show("Bitte zuerst Sitzplätze auswählen.");
+            return;
+        }
+
         // Reservierung erstellen
         Reservierung reservierung = new Reservierung();
         reservierung.setKunde(kunde);
@@ -334,8 +340,12 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
 
         reservierungRepository.save(reservierung);
 
-        // Sitzplätze reservieren
+        // Sitzplätze reservieren und blocken
         for (Sitzplatz platz : ausgewähltePlaetze) {
+            // Sitzplatz in DB blocken
+            platz.setFrei(false);
+            sitzplatzRepository.save(platz);
+
             ReservierungSitzplatz reservierungSitzplatz = new ReservierungSitzplatz();
             reservierungSitzplatz.setReservierung(reservierung);
             reservierungSitzplatz.setSitzplatz(platz);
@@ -343,7 +353,13 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
         }
 
         Notification.show("Reservierung erfolgreich!");
+
+        // Optional: Auswahl leeren und UI aktualisieren
+        ausgewähltePlaetze.clear();
+        // Einfachste Variante: Seite neu laden, damit die Buttons grau werden
+        UI.getCurrent().getPage().reload();
     }
+
 
     private int generateReservierungsnummer() {
         return (int) (Math.random() * 10000); // Zufällige Reservierungsnummer

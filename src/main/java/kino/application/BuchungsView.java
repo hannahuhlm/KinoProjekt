@@ -2,11 +2,8 @@ package kino.application;
 
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.html.H2;
-import com.vaadin.flow.component.html.Hr;
-import com.vaadin.flow.component.html.Image;
-import com.vaadin.flow.component.html.Paragraph;
+import com.vaadin.flow.component.dialog.Dialog;
+import com.vaadin.flow.component.html.*;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -17,22 +14,12 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 import jakarta.annotation.security.PermitAll;
 import kino.application.buchung.BuchungContext;
-import kino.application.data.Auffuehrung;
-import kino.application.data.AuffuehrungRepository;
-import kino.application.data.Film;
-import kino.application.data.Kunde;
-import kino.application.data.KundeRepository;
-import kino.application.data.Reservierung;
-import kino.application.data.ReservierungRepository;
-import kino.application.data.ReservierungSitzplatz;
-import kino.application.data.ReservierungSitzplatzRepository;
-import kino.application.data.Sitzplatz;
-import kino.application.data.SitzplatzRepository;
-import kino.application.data.SitzreihenKategorie;
+import kino.application.data.*;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Date;
 import java.util.List;
 
 @Route(value = "buchung", layout = MainViewLayout.class)
@@ -43,8 +30,9 @@ public class BuchungsView extends VerticalLayout implements BeforeEnterObserver 
     private final AuffuehrungRepository auffuehrungRepository;
     private final KundeRepository kundeRepository;
     private final SitzplatzRepository sitzplatzRepository;
-    private final ReservierungRepository reservierungRepository;
-    private final ReservierungSitzplatzRepository reservierungSitzplatzRepository;
+
+    private final BuchungRepository buchungRepository;
+    private final BuchungSitzplatzRepository buchungSitzplatzRepository;
 
     private BuchungContext ctx;
     private Auffuehrung auffuehrung;
@@ -61,14 +49,14 @@ public class BuchungsView extends VerticalLayout implements BeforeEnterObserver 
             AuffuehrungRepository auffuehrungRepository,
             KundeRepository kundeRepository,
             SitzplatzRepository sitzplatzRepository,
-            ReservierungRepository reservierungRepository,
-            ReservierungSitzplatzRepository reservierungSitzplatzRepository
+            BuchungRepository buchungRepository,
+            BuchungSitzplatzRepository buchungSitzplatzRepository
     ) {
         this.auffuehrungRepository = auffuehrungRepository;
         this.kundeRepository = kundeRepository;
         this.sitzplatzRepository = sitzplatzRepository;
-        this.reservierungRepository = reservierungRepository;
-        this.reservierungSitzplatzRepository = reservierungSitzplatzRepository;
+        this.buchungRepository = buchungRepository;
+        this.buchungSitzplatzRepository = buchungSitzplatzRepository;
 
         setWidthFull();
         setPadding(true);
@@ -87,10 +75,8 @@ public class BuchungsView extends VerticalLayout implements BeforeEnterObserver 
 
         auffuehrung = auffuehrungRepository.findById(ctx.getAuffuehrungId())
                 .orElseThrow(() -> new IllegalStateException("Aufführung nicht gefunden"));
-
         kunde = kundeRepository.findById(ctx.getKundeId())
                 .orElseThrow(() -> new IllegalStateException("Kunde nicht gefunden"));
-
         sitzplaetze = sitzplatzRepository.findAllById(ctx.getSitzplatzIds());
 
         buildUI();
@@ -107,12 +93,11 @@ public class BuchungsView extends VerticalLayout implements BeforeEnterObserver 
                 .set("margin-top", "0");
         add(heading);
 
-        // Optional eine Trennlinie
         add(new Hr());
 
         Film film = auffuehrung.getFilm();
 
-        // ===== Details mit Poster (wie FilmDetailView, aber ohne Beschreibung) =====
+        // ===== Block wie Filmdetail (Poster + Kacheln, ohne Beschreibung) =====
         HorizontalLayout details = new HorizontalLayout();
         details.setWidthFull();
         details.setPadding(true);
@@ -125,7 +110,8 @@ public class BuchungsView extends VerticalLayout implements BeforeEnterObserver 
         Image poster = new Image(film.getPosterUrl(), "Poster");
         poster.setWidth("160px");
         poster.setHeight("240px");
-        poster.getStyle().set("box-shadow", "0 4px 12px rgba(0,0,0,0.4)")
+        poster.getStyle()
+                .set("box-shadow", "0 4px 12px rgba(0,0,0,0.4)")
                 .set("border-radius", "8px");
 
         VerticalLayout info = new VerticalLayout();
@@ -141,17 +127,15 @@ public class BuchungsView extends VerticalLayout implements BeforeEnterObserver 
         HorizontalLayout metaRow = new HorizontalLayout();
         metaRow.setSpacing(true);
 
-        // FSK & Genre sind bei dir im Beispiel hart kodiert – hier genauso:
         Div fskBox = createInfoBox("FSK 6");
         Div genreBox = createInfoBox("Abenteuer | Animation");
-
         Div dauerBox = createInfoBox(film.getDauer() + " Minuten");
+
         String filmstartText = film.getFilmstart() != null
                 ? film.getFilmstart().format(filmStartFormatter)
                 : "-";
         Div startBox = createInfoBox("Start: " + filmstartText);
 
-        // Aufführungsdatum/-zeit extra Box
         String auffText = auffuehrung.getStartzeitpunkt()
                 .toInstant()
                 .atZone(ZoneId.systemDefault())
@@ -160,8 +144,8 @@ public class BuchungsView extends VerticalLayout implements BeforeEnterObserver 
         Div auffBox = createInfoBox("Vorstellung: " + auffText);
 
         metaRow.add(fskBox, genreBox, dauerBox, startBox, auffBox);
-
         info.add(title, metaRow);
+
         details.add(poster, info);
         details.expand(info);
 
@@ -177,7 +161,7 @@ public class BuchungsView extends VerticalLayout implements BeforeEnterObserver 
 
         String plaetze = sitzplaetze.stream()
                 .map(p -> "Reihe " + p.getReihe().getReihennummer()
-                        + ", Platz " + p.getPlatznummer())
+                           + ", Platz " + p.getPlatznummer())
                 .reduce((a, b) -> a + " | " + b)
                 .orElse("-");
 
@@ -227,32 +211,64 @@ public class BuchungsView extends VerticalLayout implements BeforeEnterObserver 
         return preis;
     }
 
+    private String generateBuchungsnummer() {
+        // z.B. einfache 8-stellige Nummer
+        int num = (int) (Math.random() * 1_0000_0000);
+        return String.format("%08d", num);
+    }
+
     private void finalizeBooking() {
-        // Reservierung anlegen
-        Reservierung reservierung = new Reservierung();
-        reservierung.setAuffuehrung(auffuehrung);
-        reservierung.setKunde(kunde);
-        reservierung.setStartZeitstempel(new java.util.Date());
-        // falls du eine Nummer brauchst, kannst du hier ähnlich wie in der Sitzplatzwahl generieren
-        reservierung.setReservierungsnummer((int) (Math.random() * 10000));
+        // 1) Preis berechnen
+        double gesamtPreis = berechnePreis(sitzplaetze);
 
-        reservierungRepository.save(reservierung);
+        // 2) Buchung anlegen
+        Buchung buchung = new Buchung();
+        buchung.setKunde(kunde);
+        buchung.setAuffuehrung(auffuehrung);
+        buchung.setGesamtpreis(gesamtPreis);
+        buchung.setBezahlt(false);
+        buchung.setBuchungsZeitstempel(new Date());
+        buchung.setBuchungsnummer(generateBuchungsnummer());
 
-        // Sitzplätze belegen & ReservierungSitzplatz anlegen
+        buchungRepository.save(buchung);
+
+        // 3) Sitzplätze auf belegt setzen + BuchungSitzplatz anlegen
         for (Sitzplatz s : sitzplaetze) {
-            s.setFrei(false);
-            sitzplatzRepository.save(s);
+            if (s.isFrei()) {
+                s.setFrei(false);
+                sitzplatzRepository.save(s);
+            }
 
-            ReservierungSitzplatz rsp = new ReservierungSitzplatz();
-            rsp.setReservierung(reservierung);
-            rsp.setSitzplatz(s);
-            reservierungSitzplatzRepository.save(rsp);
+            BuchungSitzplatz bs = new BuchungSitzplatz();
+            bs.setBuchung(buchung);
+            bs.setSitzplatz(s);
+            buchungSitzplatzRepository.save(bs);
         }
 
-        // Kontext leeren
+        // 4) BuchungContext leeren
         VaadinSession.getCurrent().setAttribute(BuchungContext.class, null);
 
-        Notification.show("Buchung erfolgreich!", 3000, Notification.Position.MIDDLE);
-        UI.getCurrent().navigate(ReservierungenView.class);
+        // 5) Danke-Dialog anzeigen
+        Dialog dialog = new Dialog();
+        dialog.setCloseOnEsc(false);
+        dialog.setCloseOnOutsideClick(false);
+
+        H2 title = new H2("Vielen Dank für Ihre Buchung!");
+        Paragraph info = new Paragraph("Ihre Buchungsnummer: " + buchung.getBuchungsnummer());
+        Paragraph hint = new Paragraph("Bitte notieren Sie sich diese Nummer für Rückfragen.");
+
+        Button close = new Button("Schließen", e -> {
+            dialog.close();
+            // z.B. zurück auf Startseite oder Reservierungsübersicht
+            UI.getCurrent().navigate("");
+        });
+
+        VerticalLayout layout = new VerticalLayout(title, info, hint, close);
+        layout.setSpacing(true);
+        layout.setPadding(true);
+        layout.setAlignItems(Alignment.START);
+
+        dialog.add(layout);
+        dialog.open();
     }
 }
