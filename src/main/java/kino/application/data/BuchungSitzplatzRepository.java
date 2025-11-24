@@ -1,6 +1,6 @@
 package kino.application.data;
 
-import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface BuchungSitzplatzRepository extends CrudRepository<BuchungSitzplatz, Long> {
+public interface BuchungSitzplatzRepository extends JpaRepository<BuchungSitzplatz, Long> {
 }

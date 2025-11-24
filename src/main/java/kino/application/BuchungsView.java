@@ -218,10 +218,10 @@ public class BuchungsView extends VerticalLayout implements BeforeEnterObserver 
     }
 
     private void finalizeBooking() {
-        // 1) Preis berechnen
+        //Preis berechnen
         double gesamtPreis = berechnePreis(sitzplaetze);
 
-        // 2) Buchung anlegen
+        // Buchung anlegen
         Buchung buchung = new Buchung();
         buchung.setKunde(kunde);
         buchung.setAuffuehrung(auffuehrung);
@@ -231,8 +231,13 @@ public class BuchungsView extends VerticalLayout implements BeforeEnterObserver 
         buchung.setBuchungsnummer(generateBuchungsnummer());
 
         buchungRepository.save(buchung);
+        
+        //Einnahmen der Aufführung hochzählen
+        double neueEinnahmen = auffuehrung.getAktuelleEinnahmen() + gesamtPreis;
+        auffuehrung.setAktuelleEinnahmen(neueEinnahmen);
+        auffuehrungRepository.save(auffuehrung);
 
-        // 3) Sitzplätze auf belegt setzen + BuchungSitzplatz anlegen
+        // Sitzplätze auf belegt setzen + BuchungSitzplatz anlegen
         for (Sitzplatz s : sitzplaetze) {
             if (s.isFrei()) {
                 s.setFrei(false);

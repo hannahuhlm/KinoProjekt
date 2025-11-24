@@ -21,7 +21,7 @@ public class MainViewLayout extends AppLayout {
 	//Reiter die sichtbar und unsichtbar werden können
 	private Paragraph saalAnlegen = new Paragraph("Saal anlegen");
 	private Paragraph filmVerwalten = new Paragraph("Film einpflegen");
-	private Paragraph einnahmenKalkulieren = new Paragraph("Einnahmen Kalkulieren");
+	private Paragraph einnahmenKalkulieren = new Paragraph("Einnahmen Anzeigen");
 
 
     public MainViewLayout() {
@@ -179,7 +179,7 @@ public class MainViewLayout extends AppLayout {
 		            .set("cursor", "pointer")
 		            .set("margin-left", "10px");
 		    einnahmenKalkulieren.addClickListener(e ->
-		            getUI().ifPresent(ui -> ui.navigate("einnahmen-kalkulieren"))
+		            getUI().ifPresent(ui -> ui.navigate("einnahmen"))
 		    );
 
 

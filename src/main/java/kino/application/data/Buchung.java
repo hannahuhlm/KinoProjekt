@@ -1,6 +1,7 @@
 package kino.application.data;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -58,7 +59,7 @@ public class Buchung {
      * - Dieses Feld ist die "besitzende" Seite der Beziehung (ManyToOne).
      * - Hier in Buchung wird die umgekehrte Richtung abgebildet (OneToMany).
      */
-    @OneToMany(mappedBy = "buchung")
+    @OneToMany(mappedBy = "buchung", fetch = FetchType.EAGER)
     private List<BuchungSitzplatz> buchungSitzplaetze;
 
     public Buchung() {

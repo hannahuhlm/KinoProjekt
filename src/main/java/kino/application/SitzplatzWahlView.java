@@ -47,7 +47,7 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
     @Autowired
     private ReservierungSitzplatzRepository reservierungSitzplatzRepository;
     @Autowired
-	private SitzplatzRepository sitzplatzRepository;
+    private SitzplatzRepository sitzplatzRepository;
 
     public SitzplatzWahlView(AuffuehrungRepository auffuehrungRepository) {
         this.auffuehrungRepository = auffuehrungRepository;
@@ -159,9 +159,8 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
         // Reservierungs- und Warenkorb-Buttons
         HorizontalLayout buttonLayout = new HorizontalLayout();
         buttonLayout.setSpacing(true);
-        
-        //reservierungsbuttons
-     // Reservierungs-Button
+
+        // Reservierungs-Button
         Button reservierungsButton = new Button("Reservieren");
         reservierungsButton.getStyle().set("background", "white").set("color", "black");
         reservierungsButton.addClickListener(event -> openCustomerDialog(false)); // <-- Reservierung
@@ -184,7 +183,6 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
                 startDirektbuchung();
             }
         });
-
 
         buttonLayout.add(reservierungsButton, buchungsButton);
         content.add(buttonLayout);
@@ -236,7 +234,8 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
                 .set("width", "30px")
                 .set("margin", "2px");
 
-        if (!platz.isFrei()) {
+        // *** geändert: nicht mehr platz.isFrei(), sondern: belegt für diese Aufführung? ***
+        if (isPlatzBelegtFuerAktuelleAuffuehrung(platz)) {
             btn.getStyle().set("background", "#9e9e9e");
             btn.setEnabled(false);
         } else {
@@ -256,14 +255,13 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
             });
 
             System.out.println("Ausgewählte Plätze: " + ausgewähltePlaetze.size());
-
         }
 
         return btn;
     }
 
     private void openCustomerDialog(Boolean isDirektBuchung) {
-    	Dialog dialog = new Dialog();
+        Dialog dialog = new Dialog();
 
         VerticalLayout layout = new VerticalLayout();
         layout.setSpacing(true);
@@ -340,12 +338,8 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
 
         reservierungRepository.save(reservierung);
 
-        // Sitzplätze reservieren und blocken
+        // Sitzplätze reservieren (NICHT mehr global am Sitzplatz blocken)
         for (Sitzplatz platz : ausgewähltePlaetze) {
-            // Sitzplatz in DB blocken
-            platz.setFrei(false);
-            sitzplatzRepository.save(platz);
-
             ReservierungSitzplatz reservierungSitzplatz = new ReservierungSitzplatz();
             reservierungSitzplatz.setReservierung(reservierung);
             reservierungSitzplatz.setSitzplatz(platz);
@@ -354,18 +348,54 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
 
         Notification.show("Reservierung erfolgreich!");
 
-        // Optional: Auswahl leeren und UI aktualisieren
+        // Auswahl leeren und UI aktualisieren
         ausgewähltePlaetze.clear();
-        // Einfachste Variante: Seite neu laden, damit die Buttons grau werden
         UI.getCurrent().getPage().reload();
     }
-
 
     private int generateReservierungsnummer() {
         return (int) (Math.random() * 10000); // Zufällige Reservierungsnummer
     }
 
-    
+    // *** NEU: Belegungsprüfung pro Aufführung ***
+    private boolean isPlatzBelegtFuerAktuelleAuffuehrung(Sitzplatz platz) {
+        if (aktuelleAuffuehrung == null || platz == null || platz.getId() == null) {
+            return false;
+        }
+
+        Long platzId = platz.getId();
+
+        // Reservierungen dieser Aufführung prüfen
+        if (aktuelleAuffuehrung.getReservierungen() != null) {
+            for (Reservierung r : aktuelleAuffuehrung.getReservierungen()) {
+                if (r.getReservierungSitzplaetze() != null) {
+                    for (ReservierungSitzplatz rsp : r.getReservierungSitzplaetze()) {
+                        if (rsp.getSitzplatz() != null
+                                && platzId.equals(rsp.getSitzplatz().getId())) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Buchungen dieser Aufführung prüfen
+        if (aktuelleAuffuehrung.getBuchungen() != null) {
+            for (Buchung b : aktuelleAuffuehrung.getBuchungen()) {
+                if (b.getBuchungSitzplaetze() != null) {
+                    for (BuchungSitzplatz bsp : b.getBuchungSitzplaetze()) {
+                        if (bsp.getSitzplatz() != null
+                                && platzId.equals(bsp.getSitzplatz().getId())) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
         Long auffId = event.getRouteParameters()
@@ -381,13 +411,13 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
         }
 
         auffuehrungRepository.findById(auffId).ifPresentOrElse(
-            auff -> {
-                this.aktuelleAuffuehrung = auff;
+                auff -> {
+                    this.aktuelleAuffuehrung = auff;
 
-                content.add(createInfoLeiste(auff));
-                buildSitzplatzLayout(auff.getSaal());
-            },
-            () -> content.add(new H2("Aufführung nicht gefunden"))
+                    content.add(createInfoLeiste(auff));
+                    buildSitzplatzLayout(auff.getSaal());
+                },
+                () -> content.add(new H2("Aufführung nicht gefunden"))
         );
     }
 }
