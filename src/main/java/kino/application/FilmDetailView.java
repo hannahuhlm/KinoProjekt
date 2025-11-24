@@ -37,9 +37,17 @@ public class FilmDetailView extends VerticalLayout implements BeforeEnterObserve
         setSpacing(false);
         setWidthFull();
 
+        getStyle()
+                .set("background-color", "#2b2520")
+                .set("color", "#f5f1e6");
+
         inhaltLayout.setWidth("90%");
-        inhaltLayout.getStyle().set("margin", "0 auto");
+        inhaltLayout.getStyle()
+                .set("margin", "0 auto")
+                .set("color", "#f5f1e6");
+
         add(inhaltLayout);
+
     }
 
     @Override
@@ -51,8 +59,8 @@ public class FilmDetailView extends VerticalLayout implements BeforeEnterObserve
 
         if (filmId != null) {
             filmRepository.findById(filmId).ifPresentOrElse(
-                this::buildLayout,
-                () -> inhaltLayout.add(new H2("Film nicht gefunden"))
+                    this::buildLayout,
+                    () -> inhaltLayout.add(new H2("Film nicht gefunden"))
             );
         }
     }
@@ -63,17 +71,20 @@ public class FilmDetailView extends VerticalLayout implements BeforeEnterObserve
         // === Hero-Banner ===
         Div hero = new Div();
         hero.getStyle()
-            .set("background-image", "url('" + film.getPosterUrl() + "')")
-            .set("background-size", "cover")
-            .set("background-position", "center")
-            .set("height", "400px")
-            .set("width", "100%")
-            .set("position", "relative")
-            .set("filter", "brightness(0.7)");
+                .set("background-image", "url('" + film.getPosterUrl() + "')")
+                .set("background-size", "cover")
+                .set("background-position", "center")
+                .set("height", "400px")
+                .set("width", "100%")
+                .set("position", "relative")
+                .set("filter", "brightness(0.7)");
         inhaltLayout.add(hero);
 
         H3 sectionTitle = new H3("Filmdetails");
-        sectionTitle.getStyle().set("margin-top", "30px");
+        sectionTitle.getStyle()
+                .set("margin-top", "30px")
+                .set("color", "#f5d27a")
+                .set("font-weight", "bold");
         inhaltLayout.add(sectionTitle);
 
         // === Details mit Poster ===
@@ -93,6 +104,9 @@ public class FilmDetailView extends VerticalLayout implements BeforeEnterObserve
         info.setSpacing(true);
 
         H2 title = new H2(film.getTitel());
+        title.getStyle()
+                .set("color", "#f5f1e6")
+                .set("text-shadow", "0 2px 6px rgba(0,0,0,0.7)");
 
         // === Info-Kacheln ===
         HorizontalLayout metaRow = new HorizontalLayout();
@@ -114,7 +128,11 @@ public class FilmDetailView extends VerticalLayout implements BeforeEnterObserve
 
         // === Vorstellungstage & Auswahlleiste ===
         H3 vorstellungenUeberschrift = new H3("Vorhandene Vorstellungen");
-        vorstellungenUeberschrift.getStyle().set("margin-top", "40px").set("margin-bottom", "0px");
+        vorstellungenUeberschrift.getStyle()
+                .set("margin-top", "40px")
+                .set("margin-bottom", "0px")
+                .set("color", "#f5d27a");
+
 
         HorizontalLayout tageZeile = new HorizontalLayout();
         tageZeile.setPadding(true);
@@ -168,53 +186,52 @@ public class FilmDetailView extends VerticalLayout implements BeforeEnterObserve
             HorizontalLayout kachelReihe = new HorizontalLayout();
             kachelReihe.setSpacing(true);
             for (Auffuehrung auff : gefiltert) {
-            	Div kachel = new Div();
-            	kachel.getStyle()
-            	        .set("background-color", "#a18f66") // gleiche Farbe wie Datumsleiste
-            	        .set("border-radius", "16px")
-            	        .set("width", "100px")
-            	        .set("height", "120px")
-            	        .set("box-shadow", "0 4px 10px rgba(0,0,0,0.3)")
-            	        .set("display", "flex")
-            	        .set("flex-direction", "column")
-            	        .set("justify-content", "space-between")
-            	        .set("align-items", "center")
-            	        .set("padding", "0")
-            	        .set("overflow", "hidden");
+                Div kachel = new Div();
+                kachel.getStyle()
+                        .set("background-color", "#a18f66") // gleiche Farbe wie Datumsleiste
+                        .set("border-radius", "16px")
+                        .set("width", "100px")
+                        .set("height", "120px")
+                        .set("box-shadow", "0 4px 10px rgba(0,0,0,0.3)")
+                        .set("display", "flex")
+                        .set("flex-direction", "column")
+                        .set("justify-content", "space-between")
+                        .set("align-items", "center")
+                        .set("padding", "0")
+                        .set("overflow", "hidden");
 
-            	// Saal-Banner oben
-            	Div saalBanner = new Div();
-            	saalBanner.setText(auff.getSaal().getName());
-            	saalBanner.getStyle()
-            	        .set("background-color", "white")
-            	        .set("color", "black")
-            	        .set("font-weight", "bold")
-            	        .set("width", "100%")
-            	        .set("text-align", "center")
-            	        .set("padding", "4px 0");
+                // Saal-Banner oben
+                Div saalBanner = new Div();
+                saalBanner.setText(auff.getSaal().getName());
+                saalBanner.getStyle()
+                        .set("background-color", "white")
+                        .set("color", "black")
+                        .set("font-weight", "bold")
+                        .set("width", "100%")
+                        .set("text-align", "center")
+                        .set("padding", "4px 0");
 
-            	// Uhrzeit unten
-            	String uhrzeit = auff.getStartzeitpunkt().toInstant().atZone(ZoneId.systemDefault())
-            	        .toLocalTime().format(zeitFormatter);
-            	Span zeitText = new Span(uhrzeit);
-            	zeitText.getStyle()
-            	        .set("color", "white")
-            	        .set("font-size", "20px")
-            	        .set("margin-bottom", "12px")
-            	        .set("font-weight", "bold");
+                // Uhrzeit unten
+                String uhrzeit = auff.getStartzeitpunkt().toInstant().atZone(ZoneId.systemDefault())
+                        .toLocalTime().format(zeitFormatter);
+                Span zeitText = new Span(uhrzeit);
+                zeitText.getStyle()
+                        .set("color", "white")
+                        .set("font-size", "20px")
+                        .set("margin-bottom", "12px")
+                        .set("font-weight", "bold");
 
-            	kachel.add(saalBanner, zeitText);
+                kachel.add(saalBanner, zeitText);
 
-            	// Kachel klickbar machen → Navigieren zu Sitzplatzwahl
-            	kachel.getStyle().set("cursor", "pointer");
+                // Kachel klickbar machen → Navigieren zu Sitzplatzwahl
+                kachel.getStyle().set("cursor", "pointer");
 
-            	kachel.addClickListener(ev -> {
-            	    // Route: sitzplatzwahl/:auffuehrungId
-            	    getUI().ifPresent(ui ->
-            	            ui.navigate("sitzplatzwahl/" + auff.getId())
-            	    );
-            	});
-
+                kachel.addClickListener(ev -> {
+                    // Route: sitzplatzwahl/:auffuehrungId
+                    getUI().ifPresent(ui ->
+                            ui.navigate("sitzplatzwahl/" + auff.getId())
+                    );
+                });
 
                 kachelReihe.add(kachel);
             }
@@ -228,9 +245,11 @@ public class FilmDetailView extends VerticalLayout implements BeforeEnterObserve
         box.getStyle()
                 .set("background-color", "#e0e0e0")
                 .set("padding", "6px 12px")
+                .set("color", "#333333")
                 .set("border-radius", "12px")
                 .set("font-size", "14px")
-                .set("font-weight", "500");
+                .set("font-weight", "500")
+                .set("font-weight", "600");
         return box;
     }
 }
