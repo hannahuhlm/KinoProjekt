@@ -206,6 +206,16 @@ public class FilmDetailView extends VerticalLayout implements BeforeEnterObserve
 
             	kachel.add(saalBanner, zeitText);
 
+            	// Kachel klickbar machen → Navigieren zu Sitzplatzwahl
+            	kachel.getStyle().set("cursor", "pointer");
+
+            	kachel.addClickListener(ev -> {
+            	    // Route: sitzplatzwahl/:auffuehrungId
+            	    getUI().ifPresent(ui ->
+            	            ui.navigate("sitzplatzwahl/" + auff.getId())
+            	    );
+            	});
+
 
                 kachelReihe.add(kachel);
             }

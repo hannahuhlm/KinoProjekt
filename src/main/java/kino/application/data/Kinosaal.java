@@ -25,9 +25,8 @@ public class Kinosaal {
     @OneToMany(mappedBy = "saal", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<Sitzreihe> reihen = new ArrayList<>();
 
-    // Alle Aufführungen sofort mitladen
-    @OneToMany(mappedBy = "saal", fetch = FetchType.EAGER)
-    private List<Auffuehrung> auffuehrungen;
+    @OneToMany(mappedBy = "saal")
+    private List<Auffuehrung> auffuehrungen = new ArrayList<>();
 
     public Kinosaal() {
     }

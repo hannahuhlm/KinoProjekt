@@ -289,6 +289,10 @@ public class AdminSaalAnlegenView extends VerticalLayout {
         kinosaalRepository.delete(currentKinosaal);
         updateGrid();
         clearForm();
+        //korrekt löschen 
+        binder.removeBean();
+        grid.asSingleSelect().clear();
+
         Notification.show("Kinosaal gelöscht", 2000, Notification.Position.MIDDLE);
     }
 
