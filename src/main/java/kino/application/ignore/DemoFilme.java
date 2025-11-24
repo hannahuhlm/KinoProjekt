@@ -1,4 +1,4 @@
-package kino.application;
+package kino.application.ignore;
 
 import kino.application.data.Film;
 import kino.application.data.FilmRepository;

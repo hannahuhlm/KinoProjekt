@@ -181,6 +181,10 @@ public class AdminFilmAnlegenView extends VerticalLayout {
         layout.setSizeFull();
         layout.add(new H2("Aufführungen planen für: " + film.getTitel()));
 
+        // *** HIER: Aufführungen explizit laden ***
+        List<Auffuehrung> auffuehrungen =
+                auffuehrungRepository.findByFilmOrderByStartzeitpunktAsc(film);
+
         TreeGrid<Object> treeGrid = new TreeGrid<>();
         treeGrid.setWidthFull();
         treeGrid.setHeight("400px");
@@ -191,10 +195,13 @@ public class AdminFilmAnlegenView extends VerticalLayout {
             return "";
         }).setHeader("Kalenderwoche / Aufführung");
 
+        // *** Statt film.getAuffuehrungen() → die geladene Liste verwenden ***
         treeGrid.addColumn(obj -> {
             if (obj instanceof Integer) {
                 int week = (Integer) obj;
-                long count = film.getAuffuehrungen().stream().filter(a -> getKalenderwoche(a) == week).count();
+                long count = auffuehrungen.stream()
+                        .filter(a -> getKalenderwoche(a) == week)
+                        .count();
                 return count;
             }
             return "";
@@ -205,27 +212,22 @@ public class AdminFilmAnlegenView extends VerticalLayout {
                 Auffuehrung auff = (Auffuehrung) obj;
                 Button loeschen = new Button("Löschen");
                 loeschen.addClickListener(ev -> {
-                    // Beziehung auflösen
-                    film.getAuffuehrungen().remove(auff);
-                    auff.setFilm(null);  // WICHTIG: Nullify the reference on the child side
-
-                    // Aufführung löschen
+                    // Aufführung löschen – NICHT film null setzen!
                     auffuehrungRepository.delete(auff);
 
-                    // Elternobjekt (Film) speichern
-                    filmRepository.save(film);
+                    // Dialog neu öffnen, um UI zu aktualisieren
+                    dialog.close();
+                    openAuffuehrungenDialog(film);
 
-                    // UI aktualisieren
-                    treeGrid.setDataProvider(new TreeDataProvider<>(buildTreeData(film)));
+                    Notification.show("Aufführung gelöscht", 2000, Notification.Position.MIDDLE);
                 });
-
-
                 return loeschen;
             }
             return null;
         }).setHeader("Aktionen").setAutoWidth(true);
 
-        TreeData<Object> treeData = buildTreeData(film);
+        // *** TreeData mit der Liste aufbauen ***
+        TreeData<Object> treeData = buildTreeData(auffuehrungen);
         treeGrid.setDataProvider(new TreeDataProvider<>(treeData));
 
         layout.add(treeGrid);
@@ -319,10 +321,10 @@ public class AdminFilmAnlegenView extends VerticalLayout {
         dialog.open();
     }
 
-    private TreeData<Object> buildTreeData(Film film) {
+    private TreeData<Object> buildTreeData(List<Auffuehrung> auffuehrungen) {
         TreeData<Object> treeData = new TreeData<>();
 
-        List<Integer> wochen = film.getAuffuehrungen().stream()
+        List<Integer> wochen = auffuehrungen.stream()
                 .map(this::getKalenderwoche)
                 .distinct()
                 .sorted()
@@ -330,10 +332,12 @@ public class AdminFilmAnlegenView extends VerticalLayout {
 
         for (Integer woche : wochen) {
             treeData.addItem(null, woche);
-            List<Auffuehrung> auffuehrungen = film.getAuffuehrungen().stream()
+
+            List<Auffuehrung> auffInWoche = auffuehrungen.stream()
                     .filter(a -> getKalenderwoche(a) == woche)
                     .toList();
-            auffuehrungen.forEach(auff -> treeData.addItem(woche, auff));
+
+            auffInWoche.forEach(auff -> treeData.addItem(woche, auff));
         }
 
         return treeData;
