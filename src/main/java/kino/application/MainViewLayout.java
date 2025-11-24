@@ -25,15 +25,15 @@ public class MainViewLayout extends AppLayout {
 
 
     public MainViewLayout() {
-    	//Hintergrund- und schriftfarbe setzen : 
+    	//Hintergrund- und schriftfarbe setzen :
     	getElement().getStyle().set("background-color", "#2c2723");
         getElement().getStyle().set("color", "white");
-        
+
     	menueLeisteErstellen();
     	mainBereichErstellen();
-        
+
     }
-    
+
     private void menueLeisteErstellen() {
     	 // Menü füllen
         VerticalLayout menuLayout = new VerticalLayout();
@@ -59,7 +59,7 @@ public class MainViewLayout extends AppLayout {
         addToDrawer(menuLayout);
         //höhe ganz setzen
         menuLayout.getStyle().set("height", "100vh");
-        
+
         //adminButton einfügen
         adminButtonhinzufuegen(menuLayout);
 
@@ -67,12 +67,16 @@ public class MainViewLayout extends AppLayout {
         Button menuButton = new Button(new Icon(VaadinIcon.MENU));
         menuButton.getStyle().set("margin-left", "20px");
         menuButton.addClickListener(e -> setDrawerOpened(!isDrawerOpened()));
-        
+
         // Branding-Bild als Button
-        Image brandingImage = new Image("images/logoLang.png", "CINEMANn Logo");
-        brandingImage.setHeight("40px"); 
-        
-        Button homeButton = new Button(brandingImage, e -> getUI().ifPresent(ui -> ui.navigate(""))); 
+        Image brandingImage = new Image("images/cineman-logo.jpg", "CINEMANn Logo");
+        brandingImage.getStyle()
+                .set("height", "40px")
+                .set("border-radius", "8px")
+                .set("overflow", "hidden")
+                .set("filter", "drop-shadow(0 0 10px rgba(245, 210, 122, 0.9))");
+
+        Button homeButton = new Button(brandingImage, e -> getUI().ifPresent(ui -> ui.navigate("")));
         homeButton.getStyle().set("background", "none").set("border", "none").set("cursor", "pointer");
 
         // Burger + Branding nebeneinander
@@ -84,17 +88,17 @@ public class MainViewLayout extends AppLayout {
         .set("padding", "10px 20px").set("width", "100%")
         .set("border-top", "1px solid #f5e1a4");
 
-        
+
         addToNavbar(navbarLayout);
     }
-    
+
     //
     private void mainBereichErstellen() {
     	VerticalLayout content = new VerticalLayout();
         content.setSizeFull();
         content.setPadding(false);
         content.setSpacing(false);
-        
+
 
         // Fullscreen Slider
         List<String> images = List.of("images/avatar.jpg", "images/zoomania.jpg", "images/nussknacker.jpg", "images/heldslider.jpg");
@@ -103,12 +107,12 @@ public class MainViewLayout extends AppLayout {
 
         content.add(slider);
 
-        
-        // Titel 
+
+        // Titel
         H1 title = new H1("CINEMAn Roll - das exklusive Kino");
         title.getStyle().set("text-align", "center").set("margin-top", "40px");
         content.add(title);
-        
+
         //Programm Button
         Button programmButton = new Button("Zum Programm");
         programmButton.getStyle()
@@ -132,9 +136,9 @@ public class MainViewLayout extends AppLayout {
         content.add(textBlock);
 
         setContent(content);
-        
+
     }
-    
+
     private void adminButtonhinzufuegen(VerticalLayout layout) {
     	Button adminButton = new Button("Admin", new Icon(VaadinIcon.LOCK));
         adminButton.setWidthFull();
@@ -145,13 +149,13 @@ public class MainViewLayout extends AppLayout {
             .set("cursor", "pointer");
 
         adminButton.addClickListener(e -> addAdminMenuItems(layout));
-        
+
         layout.add(adminButton);
 
     }
-    
+
     private void addAdminMenuItems(VerticalLayout menuLayout) {
-		
+
 
     	//wenn noch nicht eingeblendet- einblenden
     	if(!adminItemsVisible) {
@@ -169,7 +173,7 @@ public class MainViewLayout extends AppLayout {
                     .set("margin-left", "10px");
             filmVerwalten.addClickListener(e ->
                     getUI().ifPresent(ui -> ui.navigate("film-verwalten"))
-            );		
+            );
 		    einnahmenKalkulieren.getStyle()
 		            .set("font-size", "1.2em")
 		            .set("cursor", "pointer")
@@ -181,7 +185,7 @@ public class MainViewLayout extends AppLayout {
 
             // Hinzufügen zum Menü
             menuLayout.add(saalAnlegen, filmVerwalten, einnahmenKalkulieren);
-            
+
             adminItemsVisible = true;
     	}else {
     		//alle vier entfernen
@@ -192,9 +196,4 @@ public class MainViewLayout extends AppLayout {
             adminItemsVisible = false;
         }
     }
-        
-        
-        
-        
-
 }
