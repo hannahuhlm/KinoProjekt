@@ -14,10 +14,9 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.router.PageTitle;
-import com.vaadin.flow.router.Route;
 
 @PageTitle("CINEMAn Roll")
-public class MainView extends AppLayout {
+public class MainViewLayout extends AppLayout {
 	private boolean adminItemsVisible = false;
 	//Reiter die sichtbar und unsichtbar werden können
 	private Paragraph saalAnlegen = new Paragraph("Saal anlegen");
@@ -25,7 +24,7 @@ public class MainView extends AppLayout {
 	private Paragraph einnahmenKalkulieren = new Paragraph("Einnahmen Kalkulieren");
 
 
-    public MainView() {
+    public MainViewLayout() {
 
     	menueLeisteErstellen();
     	mainBereichErstellen();

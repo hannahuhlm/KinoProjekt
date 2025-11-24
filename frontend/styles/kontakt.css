@@ -1,0 +1,89 @@
+/* Gesamter Kontakt-View-Bereich */
+.kontakt-view {
+    background: radial-gradient(circle at top, #1a237e 0, #000000 55%);
+    color: #f5f5dc;             /* leicht beige */
+    min-height: 100vh;
+    padding: 32px 16px 48px;
+}
+
+/* Überschrift "Kontakt & Anfahrt" */
+.kontakt-heading {
+    margin: 0 0 24px;
+    text-align: center;
+    letter-spacing: 0.12em;
+    color: #f5f5dc;
+}
+
+/* Karten-Container mit leicht wobbeligen (?) Hintergrund */
+.kontakt-card {
+    background: rgba(10, 10, 10, 0.9);
+    border-radius: 16px;
+    padding: 24px 32px;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Zeile mit den zwei Spalten */
+.kontakt-content-row {
+    align-items: flex-start;
+    flex-wrap: wrap;        /* auf kleinen Screens */
+    gap: 32px;
+}
+
+/* Einzelne Spalte (links/rechts) */
+.kontakt-column {
+    flex: 1 1 260px;        /* wächst mit, min. 260px breit */
+}
+
+/* Kino-Name */
+.kontakt-kino-name {
+    margin-top: 0;
+    margin-bottom: 8px;
+    font-size: 1.4rem;
+    color: #ffcc80;
+}
+
+/* Unterüberschriften wie "Öffnungszeiten" / "Anfahrt" */
+.kontakt-subheading {
+    margin-top: 20px;
+    margin-bottom: 4px;
+    font-weight: 600;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #ffcc80;         /* bisschen Highlight */
+}
+
+/* Normaler Text */
+.kontakt-text {
+    white-space: pre-line;   /* Zeilenumbruch */
+    margin-top: 0;
+    margin-bottom: 8px;
+    line-height: 1.4;
+}
+
+/* Links in türkis/blau */
+.kontakt-text a {
+    color: #4fc3f7;
+    text-decoration: none;
+}
+
+.kontakt-text a:hover {
+    text-decoration: underline;
+}
+
+/* Zur-Startseite-Button */
+.kontakt-back-button {
+    margin-top: 24px;
+}
+
+/*Feintuning für kleineer Bildschirme */
+@media (max-width: 768px) {
+    .kontakt-card {
+        padding: 16px 20px;
+    }
+
+    .kontakt-heading {
+        font-size: 1.4rem;
+    }
+}

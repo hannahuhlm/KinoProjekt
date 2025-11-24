@@ -17,7 +17,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
-@Route(value = "sitzplatzwahl/:auffuehrungId", layout = MainView.class)
+@Route(value = "sitzplatzwahl/:auffuehrungId", layout = MainViewLayout.class)
 @PageTitle("Sitzplatzwahl")
 @PermitAll
 public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObserver {

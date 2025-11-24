@@ -1,6 +1,5 @@
 package kino.application;
 
-import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.html.*;
@@ -18,7 +17,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Route(value = "film/:filmId", layout = MainView.class)
+@Route(value = "film/:filmId", layout = MainViewLayout.class)
 @PageTitle("Filmdetails")
 @PermitAll
 public class FilmDetailView extends VerticalLayout implements BeforeEnterObserver {

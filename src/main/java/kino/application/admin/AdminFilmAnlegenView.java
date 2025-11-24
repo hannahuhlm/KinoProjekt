@@ -20,7 +20,7 @@ import com.vaadin.flow.data.provider.hierarchy.TreeData;
 import com.vaadin.flow.data.provider.hierarchy.TreeDataProvider;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import kino.application.MainView;
+import kino.application.MainViewLayout;
 import kino.application.data.Film;
 import kino.application.data.FilmRepository;
 import kino.application.data.Kinosaal;
@@ -36,7 +36,7 @@ import java.util.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 
-@Route(value = "film-verwalten", layout = MainView.class)
+@Route(value = "film-verwalten", layout = MainViewLayout.class)
 @PageTitle("Admin – Filme")
 public class AdminFilmAnlegenView extends VerticalLayout {
 
@@ -205,10 +205,21 @@ public class AdminFilmAnlegenView extends VerticalLayout {
                 Auffuehrung auff = (Auffuehrung) obj;
                 Button loeschen = new Button("Löschen");
                 loeschen.addClickListener(ev -> {
+                    // Beziehung auflösen
                     film.getAuffuehrungen().remove(auff);
+                    auff.setFilm(null);  // WICHTIG: Nullify the reference on the child side
+
+                    // Aufführung löschen
                     auffuehrungRepository.delete(auff);
+
+                    // Elternobjekt (Film) speichern
+                    filmRepository.save(film);
+
+                    // UI aktualisieren
                     treeGrid.setDataProvider(new TreeDataProvider<>(buildTreeData(film)));
                 });
+
+
                 return loeschen;
             }
             return null;

@@ -1,6 +1,7 @@
 package kino.application;
 
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Paragraph;
@@ -10,14 +11,17 @@ import com.vaadin.flow.router.Route;
 
 import java.util.List;
 
-@Route(value = "", layout = MainView.class)
+@Route(value = "", layout = MainViewLayout.class)
 @PageTitle("CINEMAn Roll")
+@CssImport("./styles/startseite.css")
 public class StartseiteView extends VerticalLayout {
 
     public StartseiteView() {
+        addClassName("startseite-view");
         setSizeFull();
         setPadding(false);
         setSpacing(false);
+        setAlignItems(Alignment.CENTER);
 
         // Fullscreen Slider
         List<String> images = List.of(
@@ -28,34 +32,34 @@ public class StartseiteView extends VerticalLayout {
         );
         ImageSlider slider = new ImageSlider(images);
         slider.setWidthFull();
+        slider.addClassName("startseite-slider");
 
         add(slider);
 
+        // Bereich unter dem Slider (Titel + Text + Button)
+        VerticalLayout hero = new VerticalLayout();
+        hero.addClassName("startseite-hero");
+        hero.setWidthFull();
+        hero.setMaxWidth("900px");
+        hero.setPadding(false);
+        hero.setSpacing(true);
+        hero.setAlignItems(Alignment.CENTER);
+
         // Titel
         H1 title = new H1("CINEMAn Roll - das exklusive Kino");
-        title.getStyle()
-                .set("text-align", "center")
-                .set("margin-top", "40px");
-        add(title);
+        title.addClassName("startseite-title");
 
         // Programm-Button
         Button programmButton = new Button("Zum Programm",
                 e -> getUI().ifPresent(ui -> ui.navigate("filmliste")));
-        programmButton.getStyle()
-                .set("border-radius", "20px")
-                .set("padding", "12px 24px")
-                .set("background", "#ff1744")
-                .set("color", "white")
-                .set("font-size", "1.1em")
-                .set("cursor", "pointer")
-                .set("margin", "20px auto");
-        add(programmButton);
+        programmButton.addClassName("startseite-button");
 
         // Textblock
         Div textBlock = new Div();
-        textBlock.setWidth("80%");
-        textBlock.getStyle().set("margin", "auto");
+        textBlock.addClassName("startseite-textblock");
         textBlock.add(new Paragraph("Willkommen im CINEMANn Roll"));
-        add(textBlock);
+
+        hero.add(title, programmButton, textBlock);
+        add(hero);
     }
 }
