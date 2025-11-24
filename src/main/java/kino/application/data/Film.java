@@ -46,6 +46,7 @@ public class Film {
      * Freitext-Beschreibung oder Zusammenfassung des Films.
      * Entspricht dem EMF-Attribut "beschreibung : String".
      */
+    @Column(length = 1000) // Längere Beschreibung der Filme möglich. Standartwert ist auf 255
     private String beschreibung;
 
     /**
@@ -73,7 +74,7 @@ public class Film {
     public Film() {
     }
 
-    // === Getter und Setter ===
+    // === Getter Setter ===
 
     public Long getId() {
         return id;
@@ -115,12 +116,14 @@ public class Film {
         this.auffuehrungen = auffuehrungen;
     }
 
-    // Nicht aus dem EMF entnommende Infos: Poster zum anzeigen und Filmstart
+    // == Nicht aus dem EMF entnommende Infos: Poster zum anzeigen und Filmstart ==
 
-    private String posterUrl;      // z.B. "images/monster.jpg"
+    @Column(length = 500) // Für sehr lange URLs, damit man Adressen aus dem internet verwenden kann (dauerhafte verbindung erforderlich)
+    private String posterUrl;
+
     private java.time.LocalDate filmstart;
 
-    // Getter/Setter
+    // Getter Setter
     public String getPosterUrl() { return posterUrl; }
     public void setPosterUrl(String posterUrl) { this.posterUrl = posterUrl; }
 
