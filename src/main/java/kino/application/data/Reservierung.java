@@ -1,6 +1,7 @@
 package kino.application.data;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -94,7 +95,7 @@ public class Reservierung {
      * - Jede Reservierung kann mehrere Einträge in ReservierungSitzplatz haben.
      * - Jeder dieser Einträge verweist auf genau einen Sitzplatz.
      */
-    @OneToMany(mappedBy = "reservierung")
+    @OneToMany(mappedBy = "reservierung", fetch = FetchType.EAGER)
     private List<ReservierungSitzplatz> reservierungSitzplaetze;
 
     /**

@@ -204,8 +204,21 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
         } else {
             btn.getStyle().set("background", "#4caf50").set("color", "white");
             btn.addClickListener(e -> {
-                btn.getStyle().set("background", "#2196f3");
+                if (ausgewähltePlaetze.contains(platz)) {
+                    // Sitz wird abgewählt
+                    ausgewähltePlaetze.remove(platz);
+                    btn.getStyle().set("background", "#4caf50");  // zurück zur grünen Farbe
+                    System.out.println("Sitz entfernt: " + platz.getPlatznummer());
+                } else {
+                    // Sitz wird ausgewählt
+                    ausgewähltePlaetze.add(platz);
+                    btn.getStyle().set("background", "#ff9800");  // Markierung für ausgewählt (z.B. orange)
+                    System.out.println("Sitz hinzugefügt: " + platz.getPlatznummer());
+                }
             });
+
+            System.out.println("Ausgewählte Plätze: " + ausgewähltePlaetze.size());
+
         }
 
         return btn;

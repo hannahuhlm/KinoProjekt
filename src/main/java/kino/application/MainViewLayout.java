@@ -25,7 +25,10 @@ public class MainViewLayout extends AppLayout {
 
 
     public MainViewLayout() {
-
+    	//Hintergrund- und schriftfarbe setzen : 
+    	getElement().getStyle().set("background-color", "#2c2723");
+        getElement().getStyle().set("color", "white");
+        
     	menueLeisteErstellen();
     	mainBereichErstellen();
         
@@ -36,6 +39,9 @@ public class MainViewLayout extends AppLayout {
         VerticalLayout menuLayout = new VerticalLayout();
         menuLayout.setPadding(true);
         menuLayout.setSpacing(true);
+        menuLayout.getStyle().set("background-color", "#2c2723").set("color", "white")
+        .set("border-bottom", "4px solid #f5e1a4");  // Dickere, beige Linie unten im Menü
+
 
         Paragraph filmListe = new Paragraph("Filmliste");
         filmListe.getStyle().set("font-size", "1.3em").set("cursor", "pointer");
@@ -51,6 +57,8 @@ public class MainViewLayout extends AppLayout {
 
         menuLayout.add(filmListe, reservierungen, kontakt);
         addToDrawer(menuLayout);
+        //höhe ganz setzen
+        menuLayout.getStyle().set("height", "100vh");
         
         //adminButton einfügen
         adminButtonhinzufuegen(menuLayout);
@@ -72,7 +80,12 @@ public class MainViewLayout extends AppLayout {
         navbarLayout.setAlignItems(FlexComponent.Alignment.CENTER);
         navbarLayout.setSpacing(true);
 
-        addToNavbar(menuButton);
+        navbarLayout.getStyle().set("background-color", "#2c2723") // Dunkelbraun für den Header
+        .set("padding", "10px 20px").set("width", "100%")
+        .set("border-top", "1px solid #f5e1a4");
+
+        
+        addToNavbar(navbarLayout);
     }
     
     //
@@ -81,6 +94,7 @@ public class MainViewLayout extends AppLayout {
         content.setSizeFull();
         content.setPadding(false);
         content.setSpacing(false);
+        
 
         // Fullscreen Slider
         List<String> images = List.of("images/avatar.jpg", "images/zoomania.jpg", "images/nussknacker.jpg", "images/heldslider.jpg");
