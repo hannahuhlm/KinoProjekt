@@ -1,10 +1,13 @@
 package kino.application;
 
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.dialog.Dialog;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.html.*;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.orderedlayout.*;
 import com.vaadin.flow.router.*;
 import jakarta.annotation.security.PermitAll;
 
@@ -49,7 +52,6 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
     // INFO-LEISTE OBEN
     // ------------------------------------------------------
     private HorizontalLayout createInfoLeiste(Auffuehrung auff) {
-
         HorizontalLayout bar = new HorizontalLayout();
         bar.setWidthFull();
         bar.setPadding(true);
@@ -100,7 +102,6 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
         return bar;
     }
 
-
     // ------------------------------------------------------
     // SITZPLATZ-DARSTELLUNG
     // ------------------------------------------------------
@@ -111,17 +112,15 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
         VerticalLayout sitzLayout = new VerticalLayout();
         sitzLayout.setWidthFull();
         sitzLayout.setSpacing(true);
-        
-        //Duplikate löschen
+
+        // Duplikate löschen
         List<Sitzreihe> reihen = saal.getReihen()
                 .stream()
                 .distinct()
                 .sorted(Comparator.comparing(Sitzreihe::getReihennummer))
                 .toList();
 
-
         for (Sitzreihe reihe : reihen) {
-
             HorizontalLayout reihenLayout = new HorizontalLayout();
             reihenLayout.setSpacing(false);
             reihenLayout.setPadding(false);
@@ -145,11 +144,19 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
         }
 
         content.add(sitzLayout);
+        //Hinzufügen des Reservieren Buttons
+        Button reservierungsButton= new Button("Reservieren");
+        reservierungsButton.addClickListener(event -> reservieren());
+        content.add(reservierungsButton);
+        
+        // Hinzufügen des Bestätigungs-Buttons
+        Button bestatigenButton = new Button("Zum Warenkorb");
+        bestatigenButton.addClickListener(event -> openConfirmationDialog());
+        content.add(bestatigenButton);
+        
     }
 
-
     private Button createSitzButton(Sitzplatz platz, SitzreihenKategorie kategorie) {
-
         HorizontalLayout iconLayout = new HorizontalLayout();
         iconLayout.setSpacing(false);
         iconLayout.setPadding(false);
@@ -173,7 +180,6 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
         iconLayout.addComponentAsFirst(mainIcon);
 
         Button btn = new Button(iconLayout);
-
         btn.getStyle()
                 .set("border-radius", "4px")
                 .set("padding", "2px")
@@ -193,8 +199,35 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
 
         return btn;
     }
+    //reservieren Logik
+    private void reservieren() {
+    	
+    }
+    
+    // Dialog öffnen
+    private void openConfirmationDialog() {
+        Dialog dialog = new Dialog();
 
+        // Dialog-Inhalt
+        Div content = new Div();
+        content.add(new H3("Bestätigung"));
+        content.add(new Paragraph("Sind Sie sicher, dass Sie diese Auswahl bestätigen möchten?"));
 
+        Button closeButton = new Button("Schließen", e -> dialog.close());
+        content.add(closeButton);
+
+        dialog.add(content);
+        dialog.setWidth("90%"); // Breite des Dialogs
+        dialog.setHeight("300px"); // Höhe des Dialogs, damit es in den sichtbaren Bereich passt
+
+        // Dialog soll unter den Sitzreihen hochfahren
+        dialog.getElement().getStyle().set("transition", "transform 0.5s ease-out");
+        dialog.getElement().getStyle().set("transform", "translateY(100%)");
+        dialog.open();
+
+        // Animation, um das Popup hochzufahren
+        dialog.getElement().getStyle().set("transform", "translateY(0%)");
+    }
 
     // ------------------------------------------------------
     // beforeEnter: Daten laden
@@ -217,7 +250,9 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
             auff -> {
                 this.aktuelleAuffuehrung = auff;
 
+                // Hier wird die Methode für die Info-Leiste aufgerufen
                 content.add(createInfoLeiste(auff));
+
                 buildSitzplatzLayout(auff.getSaal());
             },
             () -> content.add(new H2("Aufführung nicht gefunden"))

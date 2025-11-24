@@ -20,6 +20,8 @@ import com.vaadin.flow.data.provider.hierarchy.TreeData;
 import com.vaadin.flow.data.provider.hierarchy.TreeDataProvider;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+
+import jakarta.transaction.Transactional;
 import kino.application.MainViewLayout;
 import kino.application.data.Film;
 import kino.application.data.FilmRepository;
@@ -212,7 +214,8 @@ public class AdminFilmAnlegenView extends VerticalLayout {
                 Auffuehrung auff = (Auffuehrung) obj;
                 Button loeschen = new Button("Löschen");
                 loeschen.addClickListener(ev -> {
-                    // Aufführung löschen – NICHT film null setzen!
+                    // Aufführung löschen
+                	//TODO: funktioniert nicht wenn fetchtype eager statt lazy
                     auffuehrungRepository.delete(auff);
 
                     // Dialog neu öffnen, um UI zu aktualisieren
@@ -247,6 +250,13 @@ public class AdminFilmAnlegenView extends VerticalLayout {
         dialog.add(layout);
         dialog.open();
     }
+    
+    //transaktionales löschen da sosnst probleme mit fetchtype.eager
+    @Transactional
+    public void deleteAuffuehrung(Auffuehrung auffuehrung) {
+        auffuehrungRepository.delete(auffuehrung);
+    }
+
 
     private void openNeueAuffuehrungDialog(Film film, Dialog parentDialog) {
         Dialog dialog = new Dialog();

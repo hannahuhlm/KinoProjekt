@@ -62,7 +62,7 @@ public class Film {
      * - Diese Seite der Beziehung ist rein "lesend" organisiert
      *   und erzeugt keine zusätzliche Join-Tabelle.
      */
-    @OneToMany(mappedBy = "film", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "film", cascade = CascadeType.ALL, orphanRemoval = true, fetch= FetchType.EAGER)
     private List<Auffuehrung> auffuehrungen;
 
 
