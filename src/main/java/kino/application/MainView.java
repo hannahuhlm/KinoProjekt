@@ -16,7 +16,6 @@ import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 
-@Route("")
 @PageTitle("CINEMAn Roll")
 public class MainView extends AppLayout {
 	private boolean adminItemsVisible = false;
