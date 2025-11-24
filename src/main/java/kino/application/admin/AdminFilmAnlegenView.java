@@ -213,17 +213,37 @@ public class AdminFilmAnlegenView extends VerticalLayout {
             if (obj instanceof Auffuehrung) {
                 Auffuehrung auff = (Auffuehrung) obj;
                 Button loeschen = new Button("Löschen");
+
                 loeschen.addClickListener(ev -> {
-                    // Aufführung löschen
-                	//TODO: funktioniert nicht wenn fetchtype eager statt lazy
-                    auffuehrungRepository.delete(auff);
+                    try {
+                        Long filmId = film.getId();
+                        Long auffId = auff.getId();
 
-                    // Dialog neu öffnen, um UI zu aktualisieren
-                    dialog.close();
-                    openAuffuehrungenDialog(film);
+                        // Film als managed Entity holen
+                        filmRepository.findById(filmId).ifPresent(managedFilm -> {
+                            // Aufführung aus der Liste des Films entfernen
+                            managedFilm.getAuffuehrungen()
+                                    .removeIf(a -> Objects.equals(a.getId(), auffId));
 
-                    Notification.show("Aufführung gelöscht", 2000, Notification.Position.MIDDLE);
+                            // wegen orphanRemoval = true wird die Aufführung in DB gelöscht
+                            filmRepository.save(managedFilm);
+                        });
+
+                        dialog.close();
+
+                        // Film nochmal frisch laden und Dialog neu öffnen
+                        filmRepository.findById(filmId)
+                                .ifPresent(this::openAuffuehrungenDialog);
+
+                        Notification.show("Aufführung gelöscht",
+                                2000, Notification.Position.MIDDLE);
+                    } catch (Exception ex) {
+                        Notification.show("Fehler beim Löschen: " + ex.getMessage(),
+                                4000, Notification.Position.MIDDLE);
+                        ex.printStackTrace();
+                    }
                 });
+
                 return loeschen;
             }
             return null;
@@ -249,12 +269,6 @@ public class AdminFilmAnlegenView extends VerticalLayout {
 
         dialog.add(layout);
         dialog.open();
-    }
-    
-    //transaktionales löschen da sosnst probleme mit fetchtype.eager
-    @Transactional
-    public void deleteAuffuehrung(Auffuehrung auffuehrung) {
-        auffuehrungRepository.delete(auffuehrung);
     }
 
 
