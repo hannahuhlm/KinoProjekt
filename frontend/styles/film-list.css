@@ -1,9 +1,11 @@
 
-/* gesamte filmliste --> Hintergrund schwarz, buchstaben weiß */
+/* Gesamte View der Filmliste */
 .film-list-view {
     background-color: #000000;
     color: #ffffff;
+    min-height: 1000vh;   /* angepasste höhe der view */
 }
+
 /* oben die Überschrift "Aktuelles Programm" */
 .film-list-view h2 {
     color: #f5f5dc;
@@ -17,7 +19,7 @@
 
 /* Poster links in der Spalte */
 .film-poster {
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.8); /* Schatten um das Poster */
+    box-shadow: 0 0 35px 5px rgba(180, 0, 0, 0.7); /* Schatten um das Poster */
 }
 
 /* Spalte rechts mit text (Titel, Filmstart Datum, Beschreibungstexte, Button "mehr lesen") */
@@ -52,4 +54,6 @@
 .film-back-button {
     margin-top: 24px;
 }
+
+
 
