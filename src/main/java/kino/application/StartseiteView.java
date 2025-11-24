@@ -10,7 +10,7 @@ import com.vaadin.flow.router.Route;
 
 import java.util.List;
 
-@Route(value = "", layout = MainView.class)
+@Route(value = "", layout = MainViewLayout.class)
 @PageTitle("CINEMAn Roll")
 public class StartseiteView extends VerticalLayout {
 

@@ -14,7 +14,7 @@ import kino.application.data.FilmRepository;
 import java.time.format.DateTimeFormatter;
 
 @CssImport("./styles/film-list.css")
-@Route(value = "filmliste", layout = MainView.class)
+@Route(value = "filmliste", layout = MainViewLayout.class)
 @PageTitle("Filmliste")
 public class FilmListeView extends VerticalLayout {
 

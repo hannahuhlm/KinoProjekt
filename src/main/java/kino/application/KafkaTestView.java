@@ -20,7 +20,7 @@ import kino.application.service.ReservierungsService;
 
  */
 
-@Route(value = "kafka-test", layout = MainView.class)
+@Route(value = "kafka-test", layout = MainViewLayout.class)
 
 @PageTitle("Kafka Test")
 

@@ -1,0 +1,60 @@
+/* Gesamter Kontakt-View-Bereich */
+.kontakt-view {
+    background-color: #000000;
+    color: #f5f5dc;          /* leicht beige */
+    min-height: 100vh;
+}
+
+/* Überschrift "Kontakt & Anfahrt" */
+.kontakt-heading {
+    margin-top: 24px;
+    margin-bottom: 32px;
+    color: #f5f5dc;
+}
+
+/* Spalten-Layout */
+.kontakt-content-row {
+    align-items: flex-start;
+}
+
+/* Einzelne Spalte (links/rechts) */
+.kontakt-column {
+    flex: 1;
+    min-width: 260px;
+}
+
+/* Kino-Name */
+.kontakt-kino-name {
+    margin-top: 0;
+    margin-bottom: 8px;
+    color: #f5f5dc;
+}
+
+/* Unterüberschriften */
+.kontakt-subheading {
+    margin-top: 24px;
+    margin-bottom: 4px;
+    font-weight: bold;
+}
+
+/* Normaler Text */
+.kontakt-text {
+    white-space: pre-line;
+    margin-top: 0;
+    margin-bottom: 8px;
+}
+
+/* Links in beige/blau abgehoben */
+.kontakt-text a {
+    color: #4fc3f7;
+    text-decoration: none;
+}
+
+.kontakt-text a:hover {
+    text-decoration: underline;
+}
+
+/* Zur-Startseite-Button */
+.kontakt-back-button {
+    margin-top: 32px;
+}
