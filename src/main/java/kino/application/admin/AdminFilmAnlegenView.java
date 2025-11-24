@@ -284,8 +284,9 @@ public class AdminFilmAnlegenView extends VerticalLayout {
             String zeitText = startzeitField.getValue();
             Kinosaal ausgewaehlterSaal = saalCombo.getValue();
 
-            if (datum == null || zeitText.isEmpty() || ausgewaehlterSaal == null) {
-                Notification.show("Bitte Datum, Uhrzeit und Kinosaal angeben", 3000, Notification.Position.MIDDLE);
+            if (datum == null || zeitText == null || zeitText.isEmpty() || ausgewaehlterSaal == null) {
+                Notification.show("Bitte Datum, Uhrzeit und Kinosaal angeben",
+                        3000, Notification.Position.MIDDLE);
                 return;
             }
 
@@ -293,26 +294,30 @@ public class AdminFilmAnlegenView extends VerticalLayout {
                 SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm");
                 Date startzeit = format.parse(datum.toString() + " " + zeitText);
 
+                // *** WICHTIG: Film als managed Entity neu laden ***
+                Film managedFilm = filmRepository.findById(film.getId())
+                        .orElseThrow(() -> new IllegalStateException("Film nicht mehr vorhanden"));
+
                 Auffuehrung neue = new Auffuehrung();
                 neue.setStartzeitpunkt(startzeit);
-                neue.setFilm(film);
+                neue.setFilm(managedFilm);      // statt detached film
                 neue.setSaal(ausgewaehlterSaal);
 
                 auffuehrungRepository.save(neue);
 
-                // Optional: für bidirektionale Beziehung hinzufügen
-                film.getAuffuehrungen().add(neue);
-
                 dialog.close();
                 parentDialog.close();
-                openAuffuehrungenDialog(film); // UI aktualisieren
+                openAuffuehrungenDialog(managedFilm);
 
-                Notification.show("Aufführung gespeichert", 2000, Notification.Position.MIDDLE);
+                Notification.show("Aufführung gespeichert",
+                        2000, Notification.Position.MIDDLE);
 
             } catch (ParseException e) {
-                Notification.show("Ungültiges Zeitformat, bitte HH:mm eingeben", 3000, Notification.Position.MIDDLE);
+                Notification.show("Ungültiges Zeitformat, bitte HH:mm eingeben",
+                        3000, Notification.Position.MIDDLE);
             } catch (Exception e) {
-                Notification.show("Fehler beim Speichern: " + e.getMessage(), 4000, Notification.Position.MIDDLE);
+                Notification.show("Fehler beim Speichern: " + e.getMessage(),
+                        4000, Notification.Position.MIDDLE);
                 e.printStackTrace();
             }
         });
