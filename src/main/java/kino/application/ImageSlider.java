@@ -2,13 +2,10 @@ package kino.application;
 
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.orderedlayout.FlexComponent;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 
 import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
 
 public class ImageSlider extends VerticalLayout {
 
@@ -18,6 +15,7 @@ public class ImageSlider extends VerticalLayout {
 
     public ImageSlider(List<String> imageUrls) {
         setWidthFull();
+        setHeightFull();
         setPadding(false);
         setSpacing(false);
 
@@ -40,6 +38,8 @@ public class ImageSlider extends VerticalLayout {
         // Buttons erstellen
         Button prev = new Button("⟵", e -> zurueckSkippen(imageUrls));
         Button next = new Button("⟶", e -> weiterSkippen(imageUrls));
+        UI.getCurrent().setPollInterval(4000); // alle 5 Sekunden
+        UI.getCurrent().addPollListener(event -> weiterSkippen(imageUrls));
 
         // Pfeile ohne Hintergrund und Rahmen
         for (Button b : new Button[]{prev, next}) {
