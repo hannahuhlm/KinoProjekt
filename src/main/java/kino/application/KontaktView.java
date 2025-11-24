@@ -2,6 +2,7 @@ package kino.application;
 
 import com.vaadin.flow.component.Html;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Paragraph;
@@ -11,7 +12,6 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.component.dependency.CssImport;
 
 @Route(value = "kontakt", layout = MainViewLayout.class)
 @PageTitle("Kontakt")
@@ -21,15 +21,24 @@ public class KontaktView extends VerticalLayout {
     public KontaktView() {
         addClassName("kontakt-view");
         setSizeFull();
-        setPadding(true);
+        setPadding(false);
         setSpacing(false);
+        setAlignItems(Alignment.CENTER);
 
         // Überschrift
         H2 heading = new H2("Kontakt & Anfahrt");
         heading.addClassName("kontakt-heading");
         add(heading);
 
-        // linke Spalte:Kontaktdaten
+        // „Card“ Container für den Inhalt
+        VerticalLayout card = new VerticalLayout();
+        card.addClassName("kontakt-card");
+        card.setPadding(true);
+        card.setSpacing(true);
+        card.setWidthFull();
+        card.setMaxWidth("900px");
+
+        // linke Spalte: Kontaktdaten
         VerticalLayout contactColumn = new VerticalLayout();
         contactColumn.addClassName("kontakt-column");
         contactColumn.setPadding(false);
@@ -44,7 +53,7 @@ public class KontaktView extends VerticalLayout {
         );
         adresse.addClassName("kontakt-text");
 
-        // E-Mail Tele als klickbare Links
+        // E-Mail & Telefon als klickbare Links
         Html email = new Html(
                 "<p class='kontakt-text'>E-Mail: " +
                         "<a href='mailto:info@cineman-roll.de'>info@cineman-roll.de</a></p>"
@@ -67,7 +76,7 @@ public class KontaktView extends VerticalLayout {
         contactColumn.add(kinoName, adresse, email, telefon,
                 oeffnungszeitenHeader, oeffnungszeiten);
 
-        // rechte Spalte: Anreise /Info
+        // rechte Spalte: Anreise / Info
         VerticalLayout infoColumn = new VerticalLayout();
         infoColumn.addClassName("kontakt-column");
         infoColumn.setPadding(false);
@@ -92,18 +101,20 @@ public class KontaktView extends VerticalLayout {
 
         infoColumn.add(anfahrtHeader, anfahrt, parkhinweis);
 
-        // Spalten nebeneinander
+        // Spalten nebeneinander (auf kleinen Screens untereinander)
         HorizontalLayout contentRow = new HorizontalLayout(contactColumn, infoColumn);
         contentRow.addClassName("kontakt-content-row");
         contentRow.setWidthFull();
         contentRow.setSpacing(true);
 
-        add(contentRow);
+        card.add(contentRow);
+        add(card);
 
         // Button zurück zur Startseite
         Button back = new Button("Zur Startseite", new Icon(VaadinIcon.ARROW_LEFT));
         back.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate("")));
         back.addClassName("kontakt-back-button");
+
         add(back);
     }
 }
