@@ -3,6 +3,7 @@ package kino.application;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.html.*;
@@ -16,9 +17,12 @@ import kino.application.data.*;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+
+import org.springframework.beans.factory.annotation.Autowired;
 
 @Route(value = "sitzplatzwahl/:auffuehrungId", layout = MainViewLayout.class)
 @PageTitle("Sitzplatzwahl")
@@ -27,8 +31,19 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
 
     private final AuffuehrungRepository auffuehrungRepository;
     private Auffuehrung aktuelleAuffuehrung;
+    private List<Sitzplatz> ausgewähltePlaetze = new ArrayList<>();
+
 
     private final VerticalLayout content = new VerticalLayout();
+
+    @Autowired
+    private KundeRepository kundeRepository;
+
+    @Autowired
+    private ReservierungRepository reservierungRepository;
+
+    @Autowired
+    private ReservierungSitzplatzRepository reservierungSitzplatzRepository;
 
     public SitzplatzWahlView(AuffuehrungRepository auffuehrungRepository) {
         this.auffuehrungRepository = auffuehrungRepository;
@@ -48,9 +63,6 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
         add(content);
     }
 
-    // ------------------------------------------------------
-    // INFO-LEISTE OBEN
-    // ------------------------------------------------------
     private HorizontalLayout createInfoLeiste(Auffuehrung auff) {
         HorizontalLayout bar = new HorizontalLayout();
         bar.setWidthFull();
@@ -102,18 +114,13 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
         return bar;
     }
 
-    // ------------------------------------------------------
-    // SITZPLATZ-DARSTELLUNG
-    // ------------------------------------------------------
     private void buildSitzplatzLayout(Kinosaal saal) {
-
         content.add(new Hr());
 
         VerticalLayout sitzLayout = new VerticalLayout();
         sitzLayout.setWidthFull();
         sitzLayout.setSpacing(true);
 
-        // Duplikate löschen
         List<Sitzreihe> reihen = saal.getReihen()
                 .stream()
                 .distinct()
@@ -144,16 +151,20 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
         }
 
         content.add(sitzLayout);
-        //Hinzufügen des Reservieren Buttons
-        Button reservierungsButton= new Button("Reservieren");
-        reservierungsButton.addClickListener(event -> reservieren());
-        content.add(reservierungsButton);
-        
-        // Hinzufügen des Bestätigungs-Buttons
+
+        // Reservierungs- und Warenkorb-Buttons
+        HorizontalLayout buttonLayout = new HorizontalLayout();
+        buttonLayout.setSpacing(true);
+        Button reservierungsButton = new Button("Reservieren");
+        reservierungsButton.getStyle().set("background", "white").set("color", "black");
+        reservierungsButton.addClickListener(event -> openCustomerDialog());
+
         Button bestatigenButton = new Button("Zum Warenkorb");
+        bestatigenButton.getStyle().set("background", "#f5f5dc").set("color", "black");
         bestatigenButton.addClickListener(event -> openConfirmationDialog());
-        content.add(bestatigenButton);
-        
+
+        buttonLayout.add(reservierungsButton, bestatigenButton);
+        content.add(buttonLayout);
     }
 
     private Button createSitzButton(Sitzplatz platz, SitzreihenKategorie kategorie) {
@@ -199,12 +210,68 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
 
         return btn;
     }
-    //reservieren Logik
-    private void reservieren() {
-    	
+
+    private void openCustomerDialog() {
+        Dialog dialog = new Dialog();
+
+        // Kunden-Formular
+        VerticalLayout layout = new VerticalLayout();
+        layout.setSpacing(true);
+
+        TextField nameField = new TextField("Name");
+        TextField emailField = new TextField("E-Mail");
+        Button newCustomerButton = new Button("Neuen Kunden anlegen");
+        Button existingCustomerButton = new Button("Bereits vorhandenen Kunden wählen");
+
+        newCustomerButton.addClickListener(e -> {
+            Kunde newKunde = new Kunde();
+            newKunde.setName(nameField.getValue());
+            newKunde.setEmail(emailField.getValue());
+            kundeRepository.save(newKunde);
+            saveReservierung(newKunde);
+            dialog.close();
+        });
+
+        existingCustomerButton.addClickListener(e -> {
+            Kunde existingKunde = kundeRepository.findByEmail(emailField.getValue());
+            if (existingKunde != null) {
+                saveReservierung(existingKunde);
+                dialog.close();
+            } else {
+                Notification.show("Kunde nicht gefunden. Bitte einen neuen Kunden anlegen.");
+            }
+        });
+
+        layout.add(nameField, emailField, newCustomerButton, existingCustomerButton);
+        dialog.add(layout);
+        dialog.open();
     }
-    
-    // Dialog öffnen
+
+    private void saveReservierung(Kunde kunde) {
+        // Reservierung erstellen
+        Reservierung reservierung = new Reservierung();
+        reservierung.setKunde(kunde);
+        reservierung.setAuffuehrung(aktuelleAuffuehrung);
+        reservierung.setStartZeitstempel(new java.util.Date());
+        reservierung.setReservierungsnummer(generateReservierungsnummer());
+
+        reservierungRepository.save(reservierung);
+
+        // Sitzplätze reservieren
+        for (Sitzplatz platz : ausgewähltePlaetze) {
+            ReservierungSitzplatz reservierungSitzplatz = new ReservierungSitzplatz();
+            reservierungSitzplatz.setReservierung(reservierung);
+            reservierungSitzplatz.setSitzplatz(platz);
+            reservierungSitzplatzRepository.save(reservierungSitzplatz);
+        }
+
+        Notification.show("Reservierung erfolgreich!");
+    }
+
+    private int generateReservierungsnummer() {
+        return (int) (Math.random() * 10000); // Zufällige Reservierungsnummer
+    }
+
     private void openConfirmationDialog() {
         Dialog dialog = new Dialog();
 
@@ -217,21 +284,16 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
         content.add(closeButton);
 
         dialog.add(content);
-        dialog.setWidth("90%"); // Breite des Dialogs
-        dialog.setHeight("300px"); // Höhe des Dialogs, damit es in den sichtbaren Bereich passt
+        dialog.setWidth("90%");
+        dialog.setHeight("300px");
 
-        // Dialog soll unter den Sitzreihen hochfahren
         dialog.getElement().getStyle().set("transition", "transform 0.5s ease-out");
         dialog.getElement().getStyle().set("transform", "translateY(100%)");
         dialog.open();
 
-        // Animation, um das Popup hochzufahren
         dialog.getElement().getStyle().set("transform", "translateY(0%)");
     }
 
-    // ------------------------------------------------------
-    // beforeEnter: Daten laden
-    // ------------------------------------------------------
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
         Long auffId = event.getRouteParameters()
@@ -250,9 +312,7 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
             auff -> {
                 this.aktuelleAuffuehrung = auff;
 
-                // Hier wird die Methode für die Info-Leiste aufgerufen
                 content.add(createInfoLeiste(auff));
-
                 buildSitzplatzLayout(auff.getSaal());
             },
             () -> content.add(new H2("Aufführung nicht gefunden"))

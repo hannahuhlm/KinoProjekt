@@ -1,6 +1,7 @@
 package kino.application.data;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -60,7 +61,7 @@ public class Kunde {
      * - Die Fremdschlüssel-Spalte (KUNDE_ID) liegt in der Tabelle
      *   RESERVIERUNG.
      */
-    @OneToMany(mappedBy = "kunde")
+    @OneToMany(mappedBy = "kunde", fetch = FetchType.EAGER)
     private List<Reservierung> reservierungen;
 
     /**
