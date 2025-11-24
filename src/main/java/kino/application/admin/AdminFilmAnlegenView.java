@@ -287,7 +287,11 @@ public class AdminFilmAnlegenView extends VerticalLayout {
         TextField startzeitField = new TextField("Startzeit (HH:mm)");
 
         ComboBox<Kinosaal> saalCombo = new ComboBox<>("Kinosaal wählen");
-        saalCombo.setItems(kinosaalRepository.findAll());
+        //nur freigegbeene Säle anzeigen 
+        saalCombo.setItems(kinosaalRepository.findAll().stream()
+                .filter(Kinosaal::isFreigegeben)
+                .toList());
+
         saalCombo.setItemLabelGenerator(Kinosaal::getName);
 
         layout.add(datumPicker, startzeitField, saalCombo);

@@ -189,7 +189,6 @@ public class ReservierungenView extends VerticalLayout {
         	reservierungCard.add(reservierungContent, deleteButton);  // Button hier mit hinzuzufügen
 
         	reservierungenLayout.add(reservierungCard);
-
         }
     }
     
@@ -227,8 +226,8 @@ public class ReservierungenView extends VerticalLayout {
                 .filter(r -> r.getSitzplatz().getReihe().getKategorie() == SitzreihenKategorie.LOGE_MIT_SERVICE).count();
 
         if (logeCount > 0) platzInfo.append(logeCount).append("x Loge");
-        if (parkettCount > 0) platzInfo.append(" und ").append(parkettCount).append("x Parkett");
-        if (logeMitServiceCount > 0) platzInfo.append(" und ").append(logeMitServiceCount).append("x Loge mit Service");
+        if (parkettCount > 0) platzInfo.append(parkettCount).append("x Parkett");
+        if (logeMitServiceCount > 0) platzInfo.append(logeMitServiceCount).append("x Loge mit Service");
 
         return platzInfo.toString();
     }

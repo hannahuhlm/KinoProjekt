@@ -1,5 +1,6 @@
 package kino.application;
 
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -10,8 +11,10 @@ import com.vaadin.flow.component.html.*;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.router.*;
-import jakarta.annotation.security.PermitAll;
+import com.vaadin.flow.server.VaadinSession;
 
+import jakarta.annotation.security.PermitAll;
+import kino.application.buchung.BuchungContext;
 import kino.application.data.*;
 
 import java.time.ZoneId;
@@ -32,7 +35,7 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
     private final AuffuehrungRepository auffuehrungRepository;
     private Auffuehrung aktuelleAuffuehrung;
     private List<Sitzplatz> ausgewähltePlaetze = new ArrayList<>();
-
+    private Kunde currentKunde;
 
     private final VerticalLayout content = new VerticalLayout();
 
@@ -155,16 +158,50 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
         // Reservierungs- und Warenkorb-Buttons
         HorizontalLayout buttonLayout = new HorizontalLayout();
         buttonLayout.setSpacing(true);
+        
+        //reservierungsbuttons
+     // Reservierungs-Button
         Button reservierungsButton = new Button("Reservieren");
         reservierungsButton.getStyle().set("background", "white").set("color", "black");
-        reservierungsButton.addClickListener(event -> openCustomerDialog());
+        reservierungsButton.addClickListener(event -> openCustomerDialog(false)); // <-- Reservierung
 
-        Button bestatigenButton = new Button("Zum Warenkorb");
-        bestatigenButton.getStyle().set("background", "#f5f5dc").set("color", "black");
-        bestatigenButton.addClickListener(event -> openConfirmationDialog());
+        // Direktbuchungs-Button
+        Button buchungsButton = new Button("Direktbuchung");
+        buchungsButton.getStyle().set("background", "#f5f5dc").set("color", "black");
 
-        buttonLayout.add(reservierungsButton, bestatigenButton);
+        buchungsButton.addClickListener(e -> {
+            if (aktuelleAuffuehrung == null || ausgewähltePlaetze.isEmpty()) {
+                Notification.show("Bitte Aufführung und Sitzplätze auswählen!");
+                return;
+            }
+
+            if (currentKunde == null) {
+                // Popup im Direktbuchungs-Modus
+                openCustomerDialog(true);
+            } else {
+                // Kunde schon gewählt → direkt los
+                startDirektbuchung();
+            }
+        });
+
+
+        buttonLayout.add(reservierungsButton, buchungsButton);
         content.add(buttonLayout);
+    }
+
+    private void startDirektbuchung() {
+        if (aktuelleAuffuehrung == null || currentKunde == null || ausgewähltePlaetze.isEmpty()) {
+            Notification.show("Bitte Kunde, Aufführung und Sitzplätze auswählen!");
+            return;
+        }
+
+        BuchungContext ctx = new BuchungContext();
+        ctx.setAuffuehrungId(this.aktuelleAuffuehrung.getId());
+        ctx.setKundeId(currentKunde.getId());
+        ctx.setSitzplatzIds(ausgewähltePlaetze.stream().map(Sitzplatz::getId).toList());
+
+        VaadinSession.getCurrent().setAttribute(BuchungContext.class, ctx);
+        UI.getCurrent().navigate(BuchungsView.class);
     }
 
     private Button createSitzButton(Sitzplatz platz, SitzreihenKategorie kategorie) {
@@ -224,10 +261,9 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
         return btn;
     }
 
-    private void openCustomerDialog() {
-        Dialog dialog = new Dialog();
+    private void openCustomerDialog(Boolean isDirektBuchung) {
+    	Dialog dialog = new Dialog();
 
-        // Kunden-Formular
         VerticalLayout layout = new VerticalLayout();
         layout.setSpacing(true);
 
@@ -237,19 +273,47 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
         Button existingCustomerButton = new Button("Bereits vorhandenen Kunden wählen");
 
         newCustomerButton.addClickListener(e -> {
+            String name = nameField.getValue();
+            String email = emailField.getValue();
+
+            if (name == null || name.isBlank() || email == null || email.isBlank()) {
+                Notification.show("Bitte Name und E-Mail angeben.");
+                return;
+            }
+
             Kunde newKunde = new Kunde();
-            newKunde.setName(nameField.getValue());
-            newKunde.setEmail(emailField.getValue());
+            newKunde.setName(name);
+            newKunde.setEmail(email);
             kundeRepository.save(newKunde);
-            saveReservierung(newKunde);
-            dialog.close();
+            this.currentKunde = newKunde;
+
+            if (isDirektBuchung) {
+                dialog.close();
+                startDirektbuchung();
+            } else {
+                saveReservierung(newKunde);
+                dialog.close();
+            }
         });
 
         existingCustomerButton.addClickListener(e -> {
-            Kunde existingKunde = kundeRepository.findByEmail(emailField.getValue());
+            String email = emailField.getValue();
+            if (email == null || email.isBlank()) {
+                Notification.show("Bitte E-Mail angeben.");
+                return;
+            }
+
+            Kunde existingKunde = kundeRepository.findByEmail(email);
             if (existingKunde != null) {
-                saveReservierung(existingKunde);
-                dialog.close();
+                this.currentKunde = existingKunde;
+
+                if (isDirektBuchung) {
+                    dialog.close();
+                    startDirektbuchung();
+                } else {
+                    saveReservierung(existingKunde);
+                    dialog.close();
+                }
             } else {
                 Notification.show("Kunde nicht gefunden. Bitte einen neuen Kunden anlegen.");
             }
@@ -285,28 +349,7 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
         return (int) (Math.random() * 10000); // Zufällige Reservierungsnummer
     }
 
-    private void openConfirmationDialog() {
-        Dialog dialog = new Dialog();
-
-        // Dialog-Inhalt
-        Div content = new Div();
-        content.add(new H3("Bestätigung"));
-        content.add(new Paragraph("Sind Sie sicher, dass Sie diese Auswahl bestätigen möchten?"));
-
-        Button closeButton = new Button("Schließen", e -> dialog.close());
-        content.add(closeButton);
-
-        dialog.add(content);
-        dialog.setWidth("90%");
-        dialog.setHeight("300px");
-
-        dialog.getElement().getStyle().set("transition", "transform 0.5s ease-out");
-        dialog.getElement().getStyle().set("transform", "translateY(100%)");
-        dialog.open();
-
-        dialog.getElement().getStyle().set("transform", "translateY(0%)");
-    }
-
+    
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
         Long auffId = event.getRouteParameters()
