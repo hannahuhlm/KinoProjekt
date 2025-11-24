@@ -64,15 +64,13 @@ public class FilmListeView extends VerticalLayout {
         poster.setWidth("180px");
         poster.setHeight("260px");
 
-        // -----------------------------
         // INFOSPALTE
-        // -----------------------------
         VerticalLayout info = new VerticalLayout();
         info.addClassName("film-info");
         info.setPadding(false);
         info.setSpacing(true);
         info.setWidthFull();
-
+        
         H3 title = new H3(film.getTitel());
         title.addClassName("film-title");
 
@@ -84,11 +82,21 @@ public class FilmListeView extends VerticalLayout {
 
         Paragraph description = new Paragraph(film.getBeschreibung());
         description.addClassName("film-description");
+        
+        //Platz begrenzen
+        info.getStyle().set("max-width", "calc(100%)"); // oder 100% für flexible Breite
+        description.getStyle()
+                .set("overflow-wrap", "break-word")
+                .set("word-break", "break-word")
+                .set("white-space", "normal");
+
 
         Button more = new Button("Mehr lesen");
         more.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
-        // TODO: navigation zu Detailansicht:
-        // more.addClickListener(...)
+        more.addClickListener(e -> {
+            getUI().ifPresent(ui -> ui.navigate("film/" + film.getId()));
+        });
+
 
         HorizontalLayout bottom = new HorizontalLayout(more);
         bottom.setWidthFull();

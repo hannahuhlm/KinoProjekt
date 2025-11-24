@@ -23,7 +23,6 @@ public class MainView extends AppLayout {
 	//Reiter die sichtbar und unsichtbar werden können
 	private Paragraph saalAnlegen = new Paragraph("Saal anlegen");
 	private Paragraph filmVerwalten = new Paragraph("Film einpflegen");
-	private Paragraph auffuehrungenPlanen = new Paragraph("Aufführungen planen");
 	private Paragraph einnahmenKalkulieren = new Paragraph("Einnahmen Kalkulieren");
 
 
@@ -158,15 +157,7 @@ public class MainView extends AppLayout {
                     .set("margin-left", "10px");
             filmVerwalten.addClickListener(e ->
                     getUI().ifPresent(ui -> ui.navigate("film-verwalten"))
-            );
-            auffuehrungenPlanen.getStyle()
-            .set("font-size", "1.2em")
-            .set("cursor", "pointer")
-            .set("margin-left", "10px");
-            auffuehrungenPlanen.addClickListener(e ->
-		            getUI().ifPresent(ui -> ui.navigate("auffuehrungen-planen"))
-		    );
-		
+            );		
 		    einnahmenKalkulieren.getStyle()
 		            .set("font-size", "1.2em")
 		            .set("cursor", "pointer")
@@ -177,14 +168,13 @@ public class MainView extends AppLayout {
 
 
             // Hinzufügen zum Menü
-            menuLayout.add(saalAnlegen, filmVerwalten, auffuehrungenPlanen, einnahmenKalkulieren);
+            menuLayout.add(saalAnlegen, filmVerwalten, einnahmenKalkulieren);
             
             adminItemsVisible = true;
     	}else {
     		//alle vier entfernen
     		menuLayout.remove(saalAnlegen);
             menuLayout.remove(filmVerwalten);
-            menuLayout.remove(auffuehrungenPlanen);
             menuLayout.remove(einnahmenKalkulieren);
 
             adminItemsVisible = false;

@@ -52,6 +52,7 @@ public class Film {
      * Freitext-Beschreibung oder Zusammenfassung des Films.
      * Entspricht dem EMF-Attribut "beschreibung : String".
      */
+    
     private String beschreibung;
 
     /**
