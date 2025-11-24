@@ -169,22 +169,43 @@ public class FilmDetailView extends VerticalLayout implements BeforeEnterObserve
             HorizontalLayout kachelReihe = new HorizontalLayout();
             kachelReihe.setSpacing(true);
             for (Auffuehrung auff : gefiltert) {
-                Div kachel = new Div();
-                kachel.getStyle()
-                        .set("background-color", "#2e2e2e")
-                        .set("padding", "16px")
-                        .set("border-radius", "12px")
-                        .set("width", "100px")
-                        .set("height", "100px")
-                        .set("text-align", "center")
-                        .set("color", "white")
-                        .set("box-shadow", "0 4px 10px rgba(0,0,0,0.4)");
+            	Div kachel = new Div();
+            	kachel.getStyle()
+            	        .set("background-color", "#a18f66") // gleiche Farbe wie Datumsleiste
+            	        .set("border-radius", "16px")
+            	        .set("width", "100px")
+            	        .set("height", "120px")
+            	        .set("box-shadow", "0 4px 10px rgba(0,0,0,0.3)")
+            	        .set("display", "flex")
+            	        .set("flex-direction", "column")
+            	        .set("justify-content", "space-between")
+            	        .set("align-items", "center")
+            	        .set("padding", "0")
+            	        .set("overflow", "hidden");
 
-                String uhrzeit = auff.getStartzeitpunkt().toInstant().atZone(ZoneId.systemDefault())
-                        .toLocalTime().format(zeitFormatter);
+            	// Saal-Banner oben
+            	Div saalBanner = new Div();
+            	saalBanner.setText(auff.getSaal().getName());
+            	saalBanner.getStyle()
+            	        .set("background-color", "white")
+            	        .set("color", "black")
+            	        .set("font-weight", "bold")
+            	        .set("width", "100%")
+            	        .set("text-align", "center")
+            	        .set("padding", "4px 0");
 
-                kachel.add(new Div(new Text(auff.getSaal().getName())));
-                kachel.add(new H4(uhrzeit));
+            	// Uhrzeit unten
+            	String uhrzeit = auff.getStartzeitpunkt().toInstant().atZone(ZoneId.systemDefault())
+            	        .toLocalTime().format(zeitFormatter);
+            	Span zeitText = new Span(uhrzeit);
+            	zeitText.getStyle()
+            	        .set("color", "white")
+            	        .set("font-size", "20px")
+            	        .set("margin-bottom", "12px")
+            	        .set("font-weight", "bold");
+
+            	kachel.add(saalBanner, zeitText);
+
 
                 kachelReihe.add(kachel);
             }
