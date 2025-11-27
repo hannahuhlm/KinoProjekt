@@ -83,15 +83,19 @@ public class EinnahmenView extends VerticalLayout {
                 .setAutoWidth(true)
                 .setFlexGrow(1);
 
-        // Spalte mit Buttons
-        grid.addColumn(new ComponentRenderer<>(film -> {
-            Button einnahmenBtn = new Button("Gesamteinnahmen");
-            einnahmenBtn.addClickListener(e -> showGesamteinnahmen(film));
+        // Neue Spalte: Gesamteinnahmen (über alle Aufführungen und deren Buchungen)
+        grid.addColumn(film ->
+                        String.format(Locale.GERMANY, "%.2f €", berechneGesamteinnahmen(film)))
+                .setHeader("Gesamteinnahmen")
+                .setAutoWidth(true)
+                .setFlexGrow(0);
 
+        // Spalte mit Aktionen (nur noch: Aufführungen ansehen)
+        grid.addColumn(new ComponentRenderer<>(film -> {
             Button auffuehrungenBtn = new Button("Aufführungen ansehen");
             auffuehrungenBtn.addClickListener(e -> showAuffuehrungenDialog(film));
 
-            HorizontalLayout layout = new HorizontalLayout(einnahmenBtn, auffuehrungenBtn);
+            HorizontalLayout layout = new HorizontalLayout(auffuehrungenBtn);
             layout.setSpacing(true);
             return layout;
         })).setHeader("Aktionen")
@@ -101,6 +105,29 @@ public class EinnahmenView extends VerticalLayout {
 
     private void updateGrid() {
         grid.setItems(filmRepository.findAll());
+    }
+
+    /**
+     * Berechnet die Gesamteinnahmen für einen Film:
+     * Summe über alle Aufführungen dieses Films und deren Buchungen (gesamtpreis).
+     */
+    private double berechneGesamteinnahmen(Film film) {
+        double sum = 0.0;
+
+        // Aufführungen explizit über das Repository laden (wie in der Admin-View)
+        List<Auffuehrung> auffuehrungen =
+                auffuehrungRepository.findByFilmOrderByStartzeitpunktAsc(film);
+
+        for (Auffuehrung a : auffuehrungen) {
+            List<Buchung> buchungen = a.getBuchungen();
+            if (buchungen != null) {
+                for (Buchung b : buchungen) {
+                    sum += b.getGesamtpreis();
+                }
+            }
+        }
+
+        return sum;
     }
 
     private void showGesamteinnahmen(Film film) {
@@ -157,7 +184,7 @@ public class EinnahmenView extends VerticalLayout {
                     .setHeader("Saal")
                     .setAutoWidth(true);
 
-            // Neue Spalte: Einnahmen (Summe der gesamtpreis aller Buchungen dieser Aufführung)
+            // Spalte: Einnahmen pro Aufführung (Summe der gesamtpreis aller Buchungen dieser Aufführung)
             auffGrid.addColumn(a -> {
                         List<Buchung> buchungen = a.getBuchungen();
                         double sum = 0.0;
@@ -166,7 +193,6 @@ public class EinnahmenView extends VerticalLayout {
                                 sum += b.getGesamtpreis();
                             }
                         }
-                        // Darstellung z.B. 12,50 €
                         return String.format(Locale.GERMANY, "%.2f €", sum);
                     })
                     .setHeader("Einnahmen")
