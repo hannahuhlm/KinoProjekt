@@ -54,6 +54,8 @@ public class EinnahmenView extends VerticalLayout {
         // „Karte“ wie bei anderen Views (weißer Block in der Mitte)
         VerticalLayout card = new VerticalLayout();
         card.setWidth("90%");
+        card.setHeight("90%");
+
         card.getStyle()
                 .set("margin", "20px auto")
                 .set("padding", "20px")
@@ -75,7 +77,7 @@ public class EinnahmenView extends VerticalLayout {
         grid.setSizeFull();
         grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
 
-        // Nur eine Spalte: Titel
+        // Spalte Titel
         grid.addColumn(Film::getTitel)
                 .setHeader("Titel")
                 .setAutoWidth(true)
@@ -104,21 +106,30 @@ public class EinnahmenView extends VerticalLayout {
     private void showGesamteinnahmen(Film film) {
         List<Auffuehrung> auff = film.getAuffuehrungen();
 //        double sum = auff.stream()
-           //TODO einnahemn holen
+        //TODO einnahemn holen
 
     }
 
+    /**
+     * Öffnet ein Popup, das alle Aufführungen des übergebenen Films anzeigt.
+     * Die Aufführungen werden explizit über das Repository geladen.
+     * Für jede Aufführung werden außerdem die Einnahmen aus allen zugehörigen
+     * Buchungen (Summe von gesamtpreis) berechnet und angezeigt.
+     */
     private void showAuffuehrungenDialog(Film film) {
         Dialog dialog = new Dialog();
-        dialog.setWidth("600px");
+        dialog.setWidth("800px");
+        dialog.setHeight("500px");
 
         VerticalLayout layout = new VerticalLayout();
+        layout.setSizeFull();
         layout.setPadding(true);
         layout.setSpacing(true);
 
         H3 title = new H3("Aufführungen für: " + film.getTitel());
         layout.add(title);
 
+        // Aufführungen explizit über das Repository laden
         List<Auffuehrung> auffuehrungen =
                 auffuehrungRepository.findByFilmOrderByStartzeitpunktAsc(film);
 
@@ -128,17 +139,44 @@ public class EinnahmenView extends VerticalLayout {
             DateTimeFormatter formatter =
                     DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
 
-            for (Auffuehrung a : auffuehrungen) {
-                String zeit = a.getStartzeitpunkt()
-                        .toInstant()
-                        .atZone(ZoneId.systemDefault())
-                        .toLocalDateTime()
-                        .format(formatter);
+            // Grid für eine übersichtliche Darstellung
+            Grid<Auffuehrung> auffGrid = new Grid<>(Auffuehrung.class, false);
+            auffGrid.setWidthFull();
+            auffGrid.setHeight("320px");
 
-                String saalName = a.getSaal() != null ? a.getSaal().getName() : "-";
+            auffGrid.addColumn(a -> a.getStartzeitpunkt()
+                            .toInstant()
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalDateTime()
+                            .format(formatter))
+                    .setHeader("Startzeitpunkt")
+                    .setAutoWidth(true);
 
-                layout.add(new Paragraph(zeit + " • Saal " + saalName));
-            }
+            auffGrid.addColumn(a ->
+                            a.getSaal() != null ? a.getSaal().getName() : "-")
+                    .setHeader("Saal")
+                    .setAutoWidth(true);
+
+            // Neue Spalte: Einnahmen (Summe der gesamtpreis aller Buchungen dieser Aufführung)
+            auffGrid.addColumn(a -> {
+                        List<Buchung> buchungen = a.getBuchungen();
+                        double sum = 0.0;
+                        if (buchungen != null) {
+                            for (Buchung b : buchungen) {
+                                sum += b.getGesamtpreis();
+                            }
+                        }
+                        // Darstellung z.B. 12,50 €
+                        return String.format(Locale.GERMANY, "%.2f €", sum);
+                    })
+                    .setHeader("Einnahmen")
+                    .setAutoWidth(true);
+
+            auffGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
+
+            auffGrid.setItems(auffuehrungen);
+
+            layout.add(auffGrid);
         }
 
         Button close = new Button("Schließen", e -> dialog.close());
