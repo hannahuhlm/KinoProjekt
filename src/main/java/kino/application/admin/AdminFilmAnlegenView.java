@@ -67,13 +67,16 @@ public class AdminFilmAnlegenView extends VerticalLayout {
     public AdminFilmAnlegenView(FilmRepository filmRepository, KinosaalRepository kinosaalRepository, AuffuehrungRepository auffuehrungRepository) {
         this.filmRepository = filmRepository;
         this.auffuehrungRepository = auffuehrungRepository;
-		this.kinosaalRepository = kinosaalRepository;
+        this.kinosaalRepository = kinosaalRepository;
 
         setSizeFull();
         setPadding(true);
         setSpacing(true);
 
-        add(new H2("Admin: Filme verwalten"));
+        //weiße Überschrift
+        H2 h2= new H2("Admin: Filme verwalten");
+        h2.getStyle().set("color", "white");
+        add(h2);
 
         configureGrid();
         configureForm();
@@ -87,6 +90,13 @@ public class AdminFilmAnlegenView extends VerticalLayout {
                 new HorizontalLayout(neuButton, speichernButton, loeschenButton)
         );
         formLayout.setWidth("420px");
+
+        // >>> Formular wie eine weiße Karte gestalten, die sich vom dunklen Hintergrund abhebt
+        formLayout.getStyle()
+                .set("background", "white")
+                .set("border-radius", "12px")
+                .set("box-shadow", "0 4px 10px rgba(0,0,0,0.1)")
+                .set("padding", "20px");
 
         HorizontalLayout content = new HorizontalLayout(grid, formLayout);
         content.setSizeFull();
@@ -108,6 +118,10 @@ public class AdminFilmAnlegenView extends VerticalLayout {
 
         grid.addColumn(new ComponentRenderer<>(film -> {
             Button auffuehrungenButton = new Button("Aufführungen planen");
+            // >>> Button in der Tabelle blau wie die anderen
+            auffuehrungenButton.getStyle().set("background-color", "#1976d2");
+            auffuehrungenButton.getStyle().set("color", "white");
+
             auffuehrungenButton.addClickListener(ev -> openAuffuehrungenDialog(film));
             return auffuehrungenButton;
         })).setHeader("Aktionen").setAutoWidth(true);
@@ -131,6 +145,11 @@ public class AdminFilmAnlegenView extends VerticalLayout {
         binder.forField(filmstart).bind(Film::getFilmstart, Film::setFilmstart);
         binder.forField(posterUrl).bind(Film::getPosterUrl, Film::setPosterUrl);
         binder.forField(beschreibung).bind(Film::getBeschreibung, Film::setBeschreibung);
+
+        // >>> Formular-Buttons ebenfalls blau und einheitlich
+        neuButton.getStyle().set("background-color", "#1976d2").set("color", "white");
+        speichernButton.getStyle().set("background-color", "#1976d2").set("color", "white");
+        loeschenButton.getStyle().set("background-color", "#1976d2").set("color", "white");
 
         neuButton.addClickListener(e -> clearForm());
         speichernButton.addClickListener(e -> saveFilm());
@@ -322,9 +341,27 @@ public class AdminFilmAnlegenView extends VerticalLayout {
                 SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm");
                 Date startzeit = format.parse(datum.toString() + " " + zeitText);
 
-                // *** WICHTIG: Film als managed Entity neu laden ***
+                //Film als managed Entity neu laden
                 Film managedFilm = filmRepository.findById(film.getId())
                         .orElseThrow(() -> new IllegalStateException("Film nicht mehr vorhanden"));
+
+                // Saalbelegungs Check
+                Date neueStartzeit = startzeit;
+                Date neueEndzeit = new Date(startzeit.getTime() + managedFilm.getDauer() * 60L * 1000L);
+                //alle Aufführungen dieses Saals
+                List<Auffuehrung> vorhandeneAuffuehrungen = ausgewaehlterSaal.getAuffuehrungen();
+                //gucken ob sich zeiten überschneiden
+                boolean konflikt = vorhandeneAuffuehrungen.stream().anyMatch(a -> {
+                    Date existingStart = a.getStartzeitpunkt();
+                    Date existingEnd = new Date(existingStart.getTime() + a.getFilm().getDauer() * 60L * 1000L);
+                    return existingStart.before(neueEndzeit) && existingEnd.after(neueStartzeit);
+                });
+
+                if (konflikt) {
+                    Notification.show("In diesem Saal findet zu dieser Zeit bereits eine Aufführung statt.",
+                            4000, Notification.Position.MIDDLE);
+                    return;
+                }
 
                 Auffuehrung neue = new Auffuehrung();
                 neue.setStartzeitpunkt(startzeit);

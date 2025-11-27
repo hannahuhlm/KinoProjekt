@@ -25,7 +25,7 @@ public class Kinosaal {
     @OneToMany(mappedBy = "saal", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<Sitzreihe> reihen = new ArrayList<>();
 
-    @OneToMany(mappedBy = "saal")
+    @OneToMany(mappedBy = "saal", fetch = FetchType.EAGER)
     private List<Auffuehrung> auffuehrungen = new ArrayList<>();
 
     public Kinosaal() {
