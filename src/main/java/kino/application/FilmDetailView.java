@@ -68,7 +68,7 @@ public class FilmDetailView extends VerticalLayout implements BeforeEnterObserve
     private void buildLayout(Film film) {
         inhaltLayout.removeAll();
 
-        // === Hero-Banner ===
+        //Hero-Banner
         Div hero = new Div();
         hero.getStyle()
                 .set("background-image", "url('" + film.getPosterUrl() + "')")
@@ -87,7 +87,7 @@ public class FilmDetailView extends VerticalLayout implements BeforeEnterObserve
                 .set("font-weight", "bold");
         inhaltLayout.add(sectionTitle);
 
-        // === Details mit Poster ===
+        //Details mit Poster
         HorizontalLayout details = new HorizontalLayout();
         details.setWidthFull();
         details.setPadding(true);
@@ -108,7 +108,7 @@ public class FilmDetailView extends VerticalLayout implements BeforeEnterObserve
                 .set("color", "#f5f1e6")
                 .set("text-shadow", "0 2px 6px rgba(0,0,0,0.7)");
 
-        // === Info-Kacheln ===
+        //Info-Kacheln
         HorizontalLayout metaRow = new HorizontalLayout();
         metaRow.setSpacing(true);
 
@@ -126,7 +126,7 @@ public class FilmDetailView extends VerticalLayout implements BeforeEnterObserve
         details.add(poster, info);
         inhaltLayout.add(details);
 
-        // === Vorstellungstage & Auswahlleiste ===
+        //Vorstellungstage & Auswahlleiste
         H3 vorstellungenUeberschrift = new H3("Vorhandene Vorstellungen");
         vorstellungenUeberschrift.getStyle()
                 .set("margin-top", "40px")
