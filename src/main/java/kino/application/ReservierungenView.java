@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Date;
 
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.orm.jpa.JpaObjectRetrievalFailureException;
 
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dialog.Dialog;
@@ -30,6 +31,12 @@ import kino.application.data.ReservierungSitzplatzRepository;
 import kino.application.data.Sitzplatz;
 import kino.application.data.SitzplatzRepository;
 import kino.application.data.SitzreihenKategorie;
+import java.util.ArrayList;
+import java.util.List;
+
+import jakarta.persistence.EntityNotFoundException;
+import org.springframework.orm.jpa.JpaObjectRetrievalFailureException;
+
 
 @Route(value = "reservierungen", layout = MainViewLayout.class)
 @PageTitle("Reservierungen")
@@ -278,48 +285,56 @@ public class ReservierungenView extends VerticalLayout {
         // reservierungRepository.save(reservierung); // nur nötig, wenn setKunde(null) genutzt wird
     }
 
-    private void deleteReservierung(Reservierung reservierung) {
-        // Kunde vorher merken, bevor wir irgendetwas löschen
-        Kunde kunde = reservierung.getKunde();
-
-        // 1) Reservierung aus der Kunden-Liste entfernen (Beziehung lösen)
-        if (kunde != null && kunde.getReservierungen() != null) {
-            kunde.getReservierungen().remove(reservierung);
-        }
-
-        // Falls deine Reservierung eine setKunde-Methode hat, hier auch noch entkoppeln:
-        // reservierung.setKunde(null);
-
-        // 2) Sitzplätze freigeben und ReservierungSitzplatz-Relationen löschen
-        List<ReservierungSitzplatz> sitzplaetze = reservierung.getReservierungSitzplaetze();
-        if (sitzplaetze != null) {
-            // über Kopie iterieren, um ConcurrentModification zu vermeiden
-            for (ReservierungSitzplatz rsp : new java.util.ArrayList<>(sitzplaetze)) {
-                Sitzplatz sitzplatz = rsp.getSitzplatz();
-                if (sitzplatz != null) {
-                    sitzplatz.setFrei(true);          // Platz wieder freigeben
-                    sitzplatzRepository.save(sitzplatz);
-                }
-                // Verknüpfung löschen
-                reservierungSitzplatzRepository.delete(rsp);
-            }
-        }
-
-        // 3) Reservierung selbst löschen
-        reservierungRepository.delete(reservierung);
-
-        // 4) Kunde speichern (wegen geänderter Liste)
-        if (kunde != null) {
-            kundeRepository.save(kunde);
-        }
-
-        // 5) UI aktualisieren – Reservierungen neu anzeigen
-        if (kunde != null) {
-            showReservierungen(kunde);
-        }
-
-        Notification.show("Reservierung gelöscht und Plätze freigegeben.");
+   private void deleteReservierung(Reservierung reservierung) {
+    // 1) Reservierung zur Sicherheit frisch aus der DB holen
+    Reservierung res = reservierungRepository.findById(reservierung.getId()).orElse(null);
+    if (res == null) {
+        Notification.show("Reservierung existiert bereits nicht mehr.");
+        return;
     }
+
+    // 2) Zugehörigen Kunden merken
+    Kunde kunde = res.getKunde();
+
+    // 3) Alle ReservierungSitzplatz-Einträge zu dieser Reservierung frisch aus der DB holen
+    List<ReservierungSitzplatz> rspList = reservierungSitzplatzRepository.findByReservierung(res);
+
+    // 4) Sitzplätze freigeben
+    for (ReservierungSitzplatz rsp : rspList) {
+        Sitzplatz sitzplatz = rsp.getSitzplatz();
+        if (sitzplatz != null) {
+            sitzplatz.setFrei(true);          // Platz wieder freigeben
+            sitzplatzRepository.save(sitzplatz);
+        }
+    }
+
+    // 5) Alle ReservierungSitzplatz-Einträge auf einmal löschen
+    reservierungSitzplatzRepository.deleteAll(rspList);
+
+    // 6) Reservierung aus der Kundenliste entfernen
+    if (kunde != null && kunde.getReservierungen() != null) {
+        kunde.getReservierungen()
+                .removeIf(r -> r.getId() != null && r.getId().equals(res.getId()));
+        kundeRepository.save(kunde);
+    }
+
+    // 7) Reservierung selbst löschen
+    reservierungRepository.delete(res);
+
+    // 8) Hinweis anzeigen
+    Notification.show("Reservierung gelöscht und Plätze freigegeben.");
+
+    // 9) UI aktualisieren – Kunde frisch laden und Reservierungen neu anzeigen
+    if (kunde != null && kunde.getId() != null) {
+        Kunde refreshed = kundeRepository.findById(kunde.getId()).orElse(kunde);
+        showReservierungen(refreshed);
+    } else {
+        reservierungenLayout.removeAll();
+    }
+}
+
+
+
 
 
     private String formatPlatzInformationen(Reservierung reservierung) {
