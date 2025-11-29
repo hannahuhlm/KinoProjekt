@@ -1,385 +1,314 @@
 package kino.application;
 
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Date;
-
-import org.springframework.data.repository.CrudRepository;
-import org.springframework.orm.jpa.JpaObjectRetrievalFailureException;
-
+import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.dialog.Dialog;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Image;
-import com.vaadin.flow.component.html.Paragraph;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.EmailField;
+import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.PermitAll;
+import jakarta.transaction.Transactional;
+import kino.application.data.Auffuehrung;
+import kino.application.data.Film;
 import kino.application.data.Kunde;
-import kino.application.data.KundeRepository;
 import kino.application.data.Reservierung;
+import kino.application.data.KundeRepository;
 import kino.application.data.ReservierungRepository;
-import kino.application.data.ReservierungSitzplatz;
-import kino.application.data.ReservierungSitzplatzRepository;
-import kino.application.data.Sitzplatz;
-import kino.application.data.SitzplatzRepository;
-import kino.application.data.SitzreihenKategorie;
-import java.util.ArrayList;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import java.text.SimpleDateFormat;
+import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
-import jakarta.persistence.EntityNotFoundException;
-import org.springframework.orm.jpa.JpaObjectRetrievalFailureException;
 
-
-@Route(value = "reservierungen", layout = MainViewLayout.class)
+/**
+ * Seite "Reservierungen" – zeigt die Reservierungen eines Kunden an
+ * und erlaubt das Löschen einer Reservierung und die Buchung.
+ */
 @PageTitle("Reservierungen")
+@Route(value = "reservierungen", layout = MainViewLayout.class)
 @PermitAll
 public class ReservierungenView extends VerticalLayout {
 
     private final KundeRepository kundeRepository;
     private final ReservierungRepository reservierungRepository;
-	private final SitzplatzRepository sitzplatzRepository;
-	private final ReservierungSitzplatzRepository reservierungSitzplatzRepository;
 
     private TextField nameField;
-    private TextField emailField;
-    private Button suchenButton;
-    private HorizontalLayout headerLayout;
-    private VerticalLayout reservierungenLayout;
-    private Div centralText; // Text für Anmeldung
+    private EmailField emailField;
+    private Button searchButton;
 
+    private H2 reservierungenTitel;
+    private VerticalLayout reservierungenContainer;
+
+    private Kunde aktuellerKunde;
+
+    @Autowired
     public ReservierungenView(KundeRepository kundeRepository,
-                              ReservierungRepository reservierungRepository,
-                              SitzplatzRepository sitzplatzRepository,
-                              ReservierungSitzplatzRepository reservierungSitzplatzRepository) {
+                              ReservierungRepository reservierungRepository) {
         this.kundeRepository = kundeRepository;
         this.reservierungRepository = reservierungRepository;
-		this.sitzplatzRepository = sitzplatzRepository;
-		this.reservierungSitzplatzRepository = reservierungSitzplatzRepository;
 
-        setWidth("100%");
+        setSizeFull();
+        setPadding(false);
+        setSpacing(false);
+        getStyle().set("background-color", "#241f20");
 
-        // Anmeldebereich (Name + E-Mail + Button)
-        headerLayout = new HorizontalLayout();
-        headerLayout.setWidthFull();
-        headerLayout.getStyle()
-                .set("background-color", "#d8c49c")
-                .set("border-radius", "10px")
-                .set("padding-left", "20px");
+        createSearchBar();
+        createContentArea();
+    }
+
+    private void createSearchBar() {
+        // Obere beige Zeile
+        HorizontalLayout searchBar = new HorizontalLayout();
+        searchBar.setWidthFull();
+        searchBar.setPadding(true);
+        searchBar.setSpacing(true);
+        searchBar.setAlignItems(FlexComponent.Alignment.CENTER);
+        searchBar.getStyle().set("background-color", "#d9bf8a"); // Beige wie im Screenshot
 
         nameField = new TextField("Name");
+        nameField.setPlaceholder("Name");
         nameField.setWidth("300px");
-        nameField.getStyle().set("border-radius", "5px").set("border", "1px solid #ccc");
 
-        emailField = new TextField("E-Mail");
-        emailField.setWidth("300px");
-        emailField.getStyle().set("border-radius", "5px").set("border", "1px solid #ccc");
+        emailField = new EmailField("E-Mail");
+        emailField.setPlaceholder("E-Mail");
+        emailField.setWidth("400px");
 
-        suchenButton = new Button("Suchen");
-        suchenButton.addClickListener(e -> login());
+        searchButton = new Button("OK");
+        searchButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        searchButton.addClickListener(e -> ladeKundeUndReservierungen());
 
-        headerLayout.add(nameField, emailField, suchenButton);
-        headerLayout.setAlignItems(Alignment.CENTER);
-        add(headerLayout);
-
-        // Trendlinie unter der Leiste
-        HorizontalLayout trendline = new HorizontalLayout();
-        trendline.setWidthFull();
-        trendline.getStyle()
-                .set("border-top", "1px solid #b2b2b2")
-                .set("margin", "20px 0");
-        add(trendline);
-
-        // Reservierungen Layout
-        reservierungenLayout = new VerticalLayout();
-        reservierungenLayout.setSpacing(true);
-        reservierungenLayout.setWidthFull();
-        add(reservierungenLayout);
-
-        // Zentraler Text für Anmeldung
-        centralText = new Div();
-        centralText.setText("Bitte melden Sie sich an, um Ihre Reservierungen sehen zu können.");
-        centralText.getStyle()
-                .set("color", "#f5e1a4")
-                .set("text-align", "center")
-                .set("font-size", "1.2em");
-        add(centralText);
+        searchBar.add(nameField, emailField, searchButton);
+        add(searchBar);
     }
 
-    private void login() {
+    private void createContentArea() {
+        // Überschrift
+        reservierungenTitel = new H2();
+        reservierungenTitel.getStyle().set("color", "#e0c184");
+        reservierungenTitel.getStyle().set("margin-left", "300px");
+        reservierungenTitel.setVisible(false);
+
+        // Container für die Kacheln
+        reservierungenContainer = new VerticalLayout();
+        reservierungenContainer.setWidthFull();
+        reservierungenContainer.setPadding(false);
+        reservierungenContainer.setSpacing(true);
+        reservierungenContainer.getStyle().set("max-width", "1200px");
+        reservierungenContainer.getStyle().set("margin", "0 auto 0 auto");
+
+        add(reservierungenTitel, reservierungenContainer);
+    }
+
+
+
+    private void ladeKundeUndReservierungen() {
         String email = emailField.getValue();
-        String name = nameField.getValue(); // aktuell noch nicht genutzt
+
+        if (email == null || email.isBlank()) {
+            Notification.show("Bitte E-Mail-Adresse eingeben.");
+            return;
+        }
 
         Kunde kunde = kundeRepository.findByEmail(email);
-
-        if (kunde != null) {
-            // Kunde gefunden, Reservierungen anzeigen
-            showReservierungen(kunde);
-            centralText.setVisible(false); // Text ausblenden nach Anmeldung
-        } else {
-            // Kein Kunde gefunden, Pop-Up für Kundenanmeldung
-            showCustomerNotFoundPopup();
+        if (kunde == null) {
+            aktuellerKunde = null;
+            reservierungenTitel.setVisible(false);
+            reservierungenContainer.removeAll();
+            Notification.show("Kein Kunde mit dieser E-Mail gefunden.");
+            return;
         }
+
+        aktuellerKunde = kunde;
+        aktualisiereReservierungsAnzeige();
     }
 
-    private void showReservierungen(Kunde kunde) {
-        reservierungenLayout.removeAll();
+    private void aktualisiereReservierungsAnzeige() {
+        reservierungenContainer.removeAll();
 
-        //Abgelaufene Reservierungen aufräumen und nur aktive zurückbekommen
-        List<Reservierung> reservierungen = filterUndBereinigeReservierungen(kunde);
-
-        // Überschrift für die Reservierungen
-        H3 reservierungenHeader = new H3("Reservierungen von " + kunde.getName());
-        reservierungenHeader.getStyle().set("color", "#d1b58d");  // Beige Farbe für Überschrift
-        reservierungenLayout.add(reservierungenHeader);
-
-        // Nur noch aktive Reservierungen in Kacheln anzeigen
-        for (Reservierung reservierung : reservierungen) {
-        	// Reservierungskarte erstellen
-        	Div reservierungCard = new Div();
-        	reservierungCard.addClassName("reservation-card");
-        	reservierungCard.getStyle()
-        	    .set("padding", "20px")
-        	    .set("background-color", "#e0e0e0") // Helles Grau
-        	    .set("border-radius", "8px")
-        	    .set("margin-bottom", "15px")
-        	    .set("display", "flex")
-        	    .set("align-items", "center")
-        	    .set("position", "relative"); // für den Delete-Button oben rechts
-
-        	// Cover-Bild der Aufführung
-        	Image coverImage = new Image(
-        	        reservierung.getAuffuehrung().getFilm().getPosterUrl(), "Film Cover");
-        	coverImage.setWidth("100px");
-        	coverImage.setHeight("150px");
-
-        	// Text-Bereich für Titel, Datum, Startzeit und Reservierungsnummer
-        	VerticalLayout textLayout = new VerticalLayout();
-        	textLayout.setSpacing(false);
-        	textLayout.getStyle().set("margin-left", "15px");
-
-        	// Film Titel
-        	Paragraph filmTitle = new Paragraph(reservierung.getAuffuehrung().getFilm().getTitel());
-        	filmTitle.getStyle()
-        	        .set("font-weight", "bold")
-        	        .set("font-size", "1.1em")
-        	        .set("color", "black");
-
-        	// Datum / Startzeit der Aufführung (aktuell einfach das Date-Objekt)
-        	Paragraph reservierungsDatum =
-        	        new Paragraph("Datum: " + reservierung.getAuffuehrung().getStartzeitpunkt());
-        	reservierungsDatum.getStyle().set("color", "black");
-
-        	// Reservierungsnummer
-        	Paragraph startzeitReservierung =
-        	        new Paragraph("Reservierung #" + reservierung.getReservierungsnummer());
-        	startzeitReservierung.getStyle().set("color", "black");
-
-        	textLayout.add(filmTitle, reservierungsDatum, startzeitReservierung);
-
-        	// Vertikale Trennlinie
-        	Div verticalLine = new Div();
-        	verticalLine.getStyle()
-        	        .set("width", "1px")
-        	        .set("background-color", "#b2b2b2")
-        	        .set("height", "100px");
-
-        	// Platzinformationen und Preis
-        	VerticalLayout platzLayout = new VerticalLayout();
-        	platzLayout.getStyle().set("margin-left", "15px");
-
-        	// Plätze formatieren
-        	String platzInfo = formatPlatzInformationen(reservierung);
-        	Paragraph platzParagraph = new Paragraph("Plätze: " + platzInfo);
-        	platzParagraph.getStyle().set("color", "black");
-
-        	// Preis berechnen
-        	double preis = berechnePreis(reservierung);
-        	Paragraph preisParagraph =
-        	        new Paragraph("Preis: " + String.format("%.2f", preis) + " €");
-        	preisParagraph.getStyle().set("color", "black");
-
-        	platzLayout.add(platzParagraph, preisParagraph);
-
-        	// --- NEU: Buchen-Button in jeder Bubble ---
-        	Button buchenButton = new Button("Buchen");
-        	// optionales Styling
-        	buchenButton.getStyle()
-        	        .set("margin-top", "10px")
-        	        .set("border-radius", "20px");
-        	// Noch keine Logik ("mehr noch nicht") – Klick-Listener kommt später
-        	platzLayout.add(buchenButton);
-
-        	// Löschen-Button hinzufügen (oben rechts)
-        	Button deleteButton = new Button();
-        	deleteButton.setIcon(new Icon(VaadinIcon.TRASH));
-        	deleteButton.getStyle()
-        	    .set("position", "absolute")
-        	    .set("top", "10px")
-        	    .set("right", "10px");
-
-        	deleteButton.addClickListener(e -> deleteReservierung(reservierung)); // Klick-Listener für Löschen
-
-        	// Kombiniere Cover, Text und Platzinformationen
-        	HorizontalLayout reservierungContent =
-        	        new HorizontalLayout(coverImage, textLayout, verticalLine, platzLayout);
-        	reservierungCard.add(reservierungContent, deleteButton);
-
-        	reservierungenLayout.add(reservierungCard);
+        if (aktuellerKunde == null) {
+            reservierungenTitel.setVisible(false);
+            return;
         }
-    }
 
-    /**
-     * Filtert Reservierungen eines Kunden:
-     * - Reservierungen, deren Aufführung schon begonnen hat, werden:
-     *   - NICHT zurückgegeben
-     *   - aus dem Kunden-Objekt entfernt (Beziehung wird gelöst)
-     */
-    private List<Reservierung> filterUndBereinigeReservierungen(Kunde kunde) {
-        List<Reservierung> aktiveReservierungen = new ArrayList<>();
+        reservierungenTitel.setText("Reservierungen von " + aktuellerKunde.getName());
+        reservierungenTitel.setVisible(true);
+
         Date jetzt = new Date();
 
-        List<Reservierung> alle = kunde.getReservierungen();
-        if (alle == null) {
-            return aktiveReservierungen;
+        List<Reservierung> zukunftsReservierungen = aktuellerKunde.getReservierungen().stream()
+                .filter(r -> r.getAuffuehrung() != null
+                        && r.getAuffuehrung().getStartzeitpunkt() != null
+                        && r.getAuffuehrung().getStartzeitpunkt().after(jetzt))
+                .sorted(Comparator.comparing(
+                        r -> r.getAuffuehrung().getStartzeitpunkt()))
+                .collect(Collectors.toList());
+
+        if (zukunftsReservierungen.isEmpty()) {
+            reservierungenContainer.add(erzeugeKeineReservierungenHinweis());
+            return;
         }
 
-        // Über eine Kopie iterieren, um ConcurrentModification zu vermeiden
-        for (Reservierung reservierung : new ArrayList<>(alle)) {
-            Date start = reservierung.getAuffuehrung() != null
-                    ? reservierung.getAuffuehrung().getStartzeitpunkt()
-                    : null;
+        zukunftsReservierungen.forEach(r ->
+                reservierungenContainer.add(erzeugeReservierungsKachel(r)));
+    }
 
-            if (start != null && start.before(jetzt)) {
-                // Aufführung hat schon begonnen -> Reservierung aus dem Kunden lösen
-                entferneReservierungAusKunde(kunde, reservierung);
-            } else {
-                aktiveReservierungen.add(reservierung);
-            }
+    private Div erzeugeKeineReservierungenHinweis() {
+        Div div = new Div(new Text("Es liegen keine zukünftigen Reservierungen vor."));
+        div.getStyle().set("color", "#ffffff");
+        div.getStyle().set("margin-left", "300px");
+        return div;
+    }
+
+    private Div erzeugeReservierungsKachel(Reservierung reservierung) {
+        Auffuehrung auffuehrung = reservierung.getAuffuehrung();
+        Film film = auffuehrung.getFilm();
+
+        Div card = new Div();
+        card.addClassName("reservierungs-card");
+        card.getStyle().set("background-color", "#f3e0b5");
+        card.getStyle().set("border-radius", "8px");
+        card.getStyle().set("padding", "20px");
+        card.getStyle().set("display", "flex");
+        card.getStyle().set("gap", "20px");
+        card.getStyle().set("align-items", "stretch");
+        card.getStyle().set("max-width", "900px");
+        card.getStyle().set("margin-left", "300px");
+
+        // Poster links
+        Image poster = new Image();
+        poster.setAlt(film.getTitel());
+        poster.setWidth("120px");
+        poster.setHeight("160px");
+        poster.getStyle().set("object-fit", "cover");
+
+        if (film.getPosterUrl() != null && !film.getPosterUrl().isBlank()) {
+            poster.setSrc(film.getPosterUrl());
+        } else {
+            // Fallback-Bild (muss in /frontend/images liegen)
+            poster.setSrc("images/placeholder-poster.png");
         }
-        return aktiveReservierungen;
+
+        // mittlere Spalte: Filminfo
+        VerticalLayout mitte = new VerticalLayout();
+        mitte.setPadding(false);
+        mitte.setSpacing(false);
+
+        Span titelSpan = new Span(film.getTitel());
+        titelSpan.getStyle().set("font-weight", "600");
+        titelSpan.getStyle().set("font-size", "18px");
+        titelSpan.getStyle().set("margin-bottom", "10px");
+
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        String datumText = auffuehrung.getStartzeitpunkt() != null
+                ? sdf.format(auffuehrung.getStartzeitpunkt())
+                : "";
+
+        Span datumSpan = new Span("Datum: " + datumText);
+        Span reservierungsNrSpan =
+                new Span("Reservierung #" + reservierung.getReservierungsnummer());
+
+        mitte.add(titelSpan, datumSpan, reservierungsNrSpan);
+
+        // rechte Spalte: Plätze, Preis, Buttons
+        VerticalLayout rechts = new VerticalLayout();
+        rechts.setPadding(false);
+        rechts.setSpacing(false);
+        rechts.setAlignItems(FlexComponent.Alignment.START);
+
+        Span plaetzeSpan = new Span("Plätze: " + bauePlaetzeText(reservierung));
+        Span preisSpan = new Span("Preis: " + formatierePreis(berechnePreis(reservierung)));
+
+        // Buttons
+        HorizontalLayout buttonRow = new HorizontalLayout();
+        buttonRow.setSpacing(true);
+
+        Button buchenButton = new Button("Buchen");
+        buchenButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+
+        Button loeschenButton = new Button(new Icon(VaadinIcon.TRASH));
+        loeschenButton.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_TERTIARY);
+        loeschenButton.getElement().setProperty("title", "Reservierung löschen");
+        loeschenButton.addClickListener(e -> loescheReservierung(reservierung));
+
+        buttonRow.add(buchenButton, loeschenButton);
+
+        rechts.add(plaetzeSpan, preisSpan, buttonRow);
+
+        card.add(poster, mitte, rechts);
+        return card;
     }
 
     /**
-     * Entfernt eine Reservierung aus dem Kunden-Objekt (Beziehung lösen).
-     * Die Reservierung bleibt in der DB bestehen, ist aber dem Kunden nicht mehr zugeordnet.
-     * (Falls dein Mapping anders ist, kannst du hier auch komplett löschen.)
+     * Baut einen kurzen Text zu den reservierten Plätzen.
+     * Hier verwende ich erstmal nur die Anzahl, weil die Sitzplatz-Entitäten
+     * noch nicht geschickt wurden. Du kannst das später leicht anpassen.
      */
-    private void entferneReservierungAusKunde(Kunde kunde, Reservierung reservierung) {
-        // Beziehung in beide Richtungen lösen, falls bidirektional
-        if (kunde.getReservierungen() != null) {
-            kunde.getReservierungen().remove(reservierung);
+    private String bauePlaetzeText(Reservierung reservierung) {
+        if (reservierung.getReservierungSitzplaetze() == null) {
+            return "-";
         }
-        // Wenn Reservierung eine setKunde-Methode hat, hier auf null setzen:
-        // reservierung.setKunde(null);
-
-        // Änderungen speichern
-        kundeRepository.save(kunde);
-        // reservierungRepository.save(reservierung); // nur nötig, wenn setKunde(null) genutzt wird
+        int anzahl = reservierung.getReservierungSitzplaetze().size();
+        return anzahl + "x Platz";
     }
 
-   private void deleteReservierung(Reservierung reservierung) {
-    // 1) Reservierung zur Sicherheit frisch aus der DB holen
-    Reservierung res = reservierungRepository.findById(reservierung.getId()).orElse(null);
-    if (res == null) {
-        Notification.show("Reservierung existiert bereits nicht mehr.");
-        return;
-    }
-
-    // 2) Zugehörigen Kunden merken
-    Kunde kunde = res.getKunde();
-
-    // 3) Alle ReservierungSitzplatz-Einträge zu dieser Reservierung frisch aus der DB holen
-    List<ReservierungSitzplatz> rspList = reservierungSitzplatzRepository.findByReservierung(res);
-
-    // 4) Sitzplätze freigeben
-    for (ReservierungSitzplatz rsp : rspList) {
-        Sitzplatz sitzplatz = rsp.getSitzplatz();
-        if (sitzplatz != null) {
-            sitzplatz.setFrei(true);          // Platz wieder freigeben
-            sitzplatzRepository.save(sitzplatz);
-        }
-    }
-
-    // 5) Alle ReservierungSitzplatz-Einträge auf einmal löschen
-    reservierungSitzplatzRepository.deleteAll(rspList);
-
-    // 6) Reservierung aus der Kundenliste entfernen
-    if (kunde != null && kunde.getReservierungen() != null) {
-        kunde.getReservierungen()
-                .removeIf(r -> r.getId() != null && r.getId().equals(res.getId()));
-        kundeRepository.save(kunde);
-    }
-
-    // 7) Reservierung selbst löschen
-    reservierungRepository.delete(res);
-
-    // 8) Hinweis anzeigen
-    Notification.show("Reservierung gelöscht und Plätze freigegeben.");
-
-    // 9) UI aktualisieren – Kunde frisch laden und Reservierungen neu anzeigen
-    if (kunde != null && kunde.getId() != null) {
-        Kunde refreshed = kundeRepository.findById(kunde.getId()).orElse(kunde);
-        showReservierungen(refreshed);
-    } else {
-        reservierungenLayout.removeAll();
-    }
-}
-
-
-
-
-
-    private String formatPlatzInformationen(Reservierung reservierung) {
-        StringBuilder platzInfo = new StringBuilder();
-
-        long logeCount = reservierung.getReservierungSitzplaetze().stream()
-                .filter(r -> r.getSitzplatz().getReihe().getKategorie() == SitzreihenKategorie.LOGE)
-                .count();
-        long parkettCount = reservierung.getReservierungSitzplaetze().stream()
-                .filter(r -> r.getSitzplatz().getReihe().getKategorie() == SitzreihenKategorie.PARKETT)
-                .count();
-        long logeMitServiceCount = reservierung.getReservierungSitzplaetze().stream()
-                .filter(r -> r.getSitzplatz().getReihe().getKategorie() == SitzreihenKategorie.LOGE_MIT_SERVICE)
-                .count();
-
-        if (logeCount > 0) platzInfo.append(logeCount).append("x Loge ");
-        if (parkettCount > 0) platzInfo.append(parkettCount).append("x Parkett ");
-        if (logeMitServiceCount > 0) platzInfo.append(logeMitServiceCount).append("x Loge mit Service");
-
-        return platzInfo.toString().trim();
-    }
-
+    /**
+     * Preisberechnung – vorerst Dummy (z.B. 9.50 € pro Platz),
+     * damit die Oberfläche funktioniert. Kannst du später
+     * an dein Preissystem anpassen.
+     */
     private double berechnePreis(Reservierung reservierung) {
-        double preis = 0.0;
-        for (ReservierungSitzplatz rsp : reservierung.getReservierungSitzplaetze()) {
-            SitzreihenKategorie platzTyp = rsp.getSitzplatz().getReihe().getKategorie();
-            if (SitzreihenKategorie.LOGE.equals(platzTyp)) {
-                preis += 10.50;
-            } else if (SitzreihenKategorie.PARKETT.equals(platzTyp)) {
-                preis += 9.50;
-            } else if (SitzreihenKategorie.LOGE_MIT_SERVICE.equals(platzTyp)) {
-                preis += 12.00;
-            }
+        int anzahlPlaetze = reservierung.getReservierungSitzplaetze() == null
+                ? 0
+                : reservierung.getReservierungSitzplaetze().size();
+        double preisProPlatz = 9.50;
+        return anzahlPlaetze * preisProPlatz;
+    }
+
+    private String formatierePreis(double wert) {
+        return String.format("%.2f €", wert);
+    }
+
+    /**
+     * Löscht die Reservierung:
+     * - aus der Datenbank,
+     * - aktualisiert danach den Kunden aus der DB,
+     * - aktualisiert die Oberfläche.
+     */
+
+    @Transactional
+    private void loescheReservierung(Reservierung reservierung) {
+        if (reservierung == null || reservierung.getId() == null) {
+            return;
         }
-        return preis;
+
+        // Direkt aus der DB löschen
+        reservierungRepository.deleteById(reservierung.getId());
+
+        // Kunde nach dem Löschen frisch einlesen,
+        // damit die Reservierungsliste aktuell ist
+        if (aktuellerKunde != null) {
+            aktuellerKunde = kundeRepository
+                    .findById(aktuellerKunde.getId())
+                    .orElse(null);
+        }
+
+        // UI aktualisieren
+        aktualisiereReservierungsAnzeige();
     }
 
-    private void showCustomerNotFoundPopup() {
-        Dialog dialog = new Dialog();
-        dialog.add(new H3("Kein Konto gefunden"));
-        dialog.add(new Paragraph("Es existiert kein Kundenkonto mit dieser E-Mail-Adresse."));
-
-        Button closeButton = new Button("Schließen", e -> dialog.close());
-        dialog.add(closeButton);
-
-        dialog.open();
-    }
 }
