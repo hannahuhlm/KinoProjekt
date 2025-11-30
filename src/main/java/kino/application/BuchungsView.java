@@ -31,128 +31,105 @@ import kino.application.data.Film;
 public class BuchungsView extends VerticalLayout implements BeforeEnterObserver {
 
     private final BuchungRepository buchungRepository;
-    private final BuchungSitzplatzRepository buchungSitzplatzRepository;
+    private Buchung buchung;
 
-    private BuchungContext ctx;
-    private Auffuehrung auffuehrung;
-    private Kunde kunde;
-    private List<Sitzplatz> sitzplaetze;
-    
-    private final ReservierungRepository reservierungRepository;
-    private final ReservierungSitzplatzRepository reservierungSitzplatzRepository;
-    private final DateTimeFormatter filmStartFormatter =
-            DateTimeFormatter.ofPattern("dd.MM.yyyy");
     private final DateTimeFormatter auffuehrungsFormatter =
             DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
 
     @Autowired
-    public BuchungsView(
-            AuffuehrungRepository auffuehrungRepository,
-            KundeRepository kundeRepository,
-            SitzplatzRepository sitzplatzRepository,
-            BuchungRepository buchungRepository,
-            BuchungSitzplatzRepository buchungSitzplatzRepository,
-            ReservierungRepository reservierungRepository,
-            ReservierungSitzplatzRepository reservierungSitzplatzRepository
-    ) {
-        this.auffuehrungRepository = auffuehrungRepository;
-        this.kundeRepository = kundeRepository;
-        this.sitzplatzRepository = sitzplatzRepository;
+    public BuchungsView(BuchungRepository buchungRepository) {
         this.buchungRepository = buchungRepository;
-        this.buchungSitzplatzRepository = buchungSitzplatzRepository;
-        this.reservierungRepository= reservierungRepository;
-		this.reservierungSitzplatzRepository = reservierungSitzplatzRepository;
-
-        setWidthFull();
+        setSizeFull();
         setPadding(true);
         setSpacing(true);
+        getStyle().set("background-color", "#201c19");
     }
 
-        @Override
-        public void beforeEnter(BeforeEnterEvent event) {
-                String idStr = event.getRouteParameters().get("buchungId").orElse(null);
-                if (idStr == null) {
-                        showNotFound();
-                        return;
-                }
-                try {
-                        Long id = Long.valueOf(idStr);
-                        this.buchung = buchungRepository.findById(id).orElse(null);
-                } catch (NumberFormatException ex) {
-                        this.buchung = null;
-                }
-                if (this.buchung == null) {
-                        showNotFound();
-                } else {
-                        buildUI();
-                }
+    @Override
+    public void beforeEnter(BeforeEnterEvent event) {
+        String idStr = event.getRouteParameters().get("buchungId").orElse(null);
+        if (idStr == null) {
+            showNotFound();
+            return;
         }
-
-        private void showNotFound() {
-                removeAll();
-                add(new H2("Buchung nicht gefunden"));
-                add(new Paragraph("Die angegebene Buchung konnte nicht geladen werden."));
-                add(new Button("Zur Startseite", e -> UI.getCurrent().navigate("")));
+        try {
+            Long id = Long.valueOf(idStr);
+            this.buchung = buchungRepository.findById(id).orElse(null);
+        } catch (NumberFormatException ex) {
+            this.buchung = null;
         }
-
-        private void buildUI() {
-                removeAll();
-
-                H2 heading = new H2("Vielen Dank für Ihre Buchung!");
-                heading.getStyle().set("color", "#f5f1e6").set("margin-top", "0");
-                add(heading);
-
-                Film film = buchung.getAuffuehrung() != null ? buchung.getAuffuehrung().getFilm() : null;
-
-                HorizontalLayout details = new HorizontalLayout();
-                details.setWidthFull();
-                details.setPadding(true);
-                details.setSpacing(true);
-                details.setAlignItems(FlexComponent.Alignment.START);
-                details.getStyle().set("background-color", "#2c2723").set("border-radius", "10px");
-
-                Image poster = new Image(film != null ? film.getPosterUrl() : "", "Poster");
-                poster.setWidth("160px");
-                poster.setHeight("240px");
-                poster.getStyle().set("box-shadow", "0 4px 12px rgba(0,0,0,0.4)").set("border-radius", "8px");
-
-                VerticalLayout info = new VerticalLayout();
-                info.setPadding(false);
-                info.setSpacing(true);
-
-                H2 title = new H2(film != null ? film.getTitel() : "Buchung");
-                title.getStyle().set("color", "#f5f1e6").set("margin-top", "0").set("text-shadow", "0 2px 6px rgba(0,0,0,0.7)");
-
-                HorizontalLayout metaRow = new HorizontalLayout();
-                metaRow.setSpacing(true);
-                Div dauerBox = createInfoBox(film != null ? (film.getDauer() + " Minuten") : "-");
-                String auffText = buchung.getAuffuehrung().getStartzeitpunkt().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime().format(auffuehrungsFormatter);
-                Div auffBox = createInfoBox("Vorstellung: " + auffText);
-                metaRow.add(dauerBox, auffBox);
-                info.add(title, metaRow);
-
-                details.add(poster, info);
-                details.expand(info);
-                add(details);
-
-                add(new Hr());
-
-                Paragraph nrInfo = new Paragraph("Ihre Buchungsnummer: " + (buchung.getBuchungsnummer() != null ? buchung.getBuchungsnummer() : "-"));
-                Paragraph kundeInfo = new Paragraph("Kunde: " + (buchung.getKunde() != null ? buchung.getKunde().getName() : "-") + " (" + (buchung.getKunde() != null ? buchung.getKunde().getEmail() : "-") + ")");
-
-                String plaetze = buchung.getBuchungSitzplaetze() != null ?
-                                buchung.getBuchungSitzplaetze().stream()
-                                                .map(bs -> bs.getSitzplatz() != null ? ("Reihe " + bs.getSitzplatz().getReihe().getReihennummer() + ", Platz " + bs.getSitzplatz().getPlatznummer()) : "?")
-                                                .reduce((a, b) -> a + " | " + b)
-                                                .orElse("-") : "-";
-                Paragraph platzInfo = new Paragraph("Ausgewählte Plätze: " + plaetze);
-                Paragraph preisInfo = new Paragraph("Gesamtpreis: " + String.format("%.2f", buchung.getGesamtpreis()) + " €");
-
-                Button close = new Button("Zur Startseite", e -> UI.getCurrent().navigate(""));
-                close.getStyle().set("background-color", "#f5e1a4").set("color", "black").set("font-weight", "bold");
-
-                add(nrInfo, kundeInfo, platzInfo, preisInfo, close);
+        if (this.buchung == null) {
+            showNotFound();
+        } else {
+            buildUI();
         }
+    }
+
+    private void showNotFound() {
+        removeAll();
+        add(new H2("Buchung nicht gefunden"));
+        add(new Paragraph("Die angegebene Buchung konnte nicht geladen werden."));
+        add(new Button("Zur Startseite", e -> UI.getCurrent().navigate("")));
+    }
+
+    private void buildUI() {
+        removeAll();
+
+        H2 heading = new H2("Vielen Dank für Ihre Buchung!");
+        heading.getStyle().set("color", "#f5f1e6").set("margin-top", "0");
+        add(heading);
+
+        Film film = buchung.getAuffuehrung() != null ? buchung.getAuffuehrung().getFilm() : null;
+
+        HorizontalLayout details = new HorizontalLayout();
+        details.setWidthFull();
+        details.setPadding(true);
+        details.setSpacing(true);
+        details.setAlignItems(FlexComponent.Alignment.START);
+        details.getStyle().set("background-color", "#2c2723").set("border-radius", "10px");
+
+        Image poster = new Image(film != null ? film.getPosterUrl() : "", "Poster");
+        poster.setWidth("160px");
+        poster.setHeight("240px");
+        poster.getStyle().set("box-shadow", "0 4px 12px rgba(0,0,0,0.4)").set("border-radius", "8px");
+
+        VerticalLayout info = new VerticalLayout();
+        info.setPadding(false);
+        info.setSpacing(true);
+
+        H2 title = new H2(film != null ? film.getTitel() : "Buchung");
+        title.getStyle().set("color", "#f5f1e6").set("margin-top", "0").set("text-shadow", "0 2px 6px rgba(0,0,0,0.7)");
+
+        HorizontalLayout metaRow = new HorizontalLayout();
+        metaRow.setSpacing(true);
+        Div dauerBox = createInfoBox(film != null ? (film.getDauer() + " Minuten") : "-");
+        String auffText = buchung.getAuffuehrung().getStartzeitpunkt().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime().format(auffuehrungsFormatter);
+        Div auffBox = createInfoBox("Vorstellung: " + auffText);
+        metaRow.add(dauerBox, auffBox);
+        info.add(title, metaRow);
+
+        details.add(poster, info);
+        details.expand(info);
+        add(details);
+
+        add(new Hr());
+
+        Paragraph nrInfo = new Paragraph("Ihre Buchungsnummer: " + (buchung.getBuchungsnummer() != null ? buchung.getBuchungsnummer() : "-"));
+        Paragraph kundeInfo = new Paragraph("Kunde: " + (buchung.getKunde() != null ? buchung.getKunde().getName() : "-") + " (" + (buchung.getKunde() != null ? buchung.getKunde().getEmail() : "-") + ")");
+
+        String plaetze = buchung.getBuchungSitzplaetze() != null ?
+                buchung.getBuchungSitzplaetze().stream()
+                        .map(bs -> bs.getSitzplatz() != null ? ("Reihe " + bs.getSitzplatz().getReihe().getReihennummer() + ", Platz " + bs.getSitzplatz().getPlatznummer()) : "?")
+                        .reduce((a, b) -> a + " | " + b)
+                        .orElse("-") : "-";
+        Paragraph platzInfo = new Paragraph("Ausgewählte Plätze: " + plaetze);
+        Paragraph preisInfo = new Paragraph("Gesamtpreis: " + String.format("%.2f", buchung.getGesamtpreis()) + " €");
+
+        Button close = new Button("Zur Startseite", e -> UI.getCurrent().navigate(""));
+        close.getStyle().set("background-color", "#f5e1a4").set("color", "black").set("font-weight", "bold");
+
+        add(nrInfo, kundeInfo, platzInfo, preisInfo, close);
+    }
 
     private Div createInfoBox(String text) {
         Div box = new Div();
@@ -164,101 +141,5 @@ public class BuchungsView extends VerticalLayout implements BeforeEnterObserver 
                 .set("border-radius", "6px")
                 .set("font-size", "13px");
         return box;
-    }
-
-    private double berechnePreis(List<Sitzplatz> plaetze) {
-        double preis = 0.0;
-        for (Sitzplatz s : plaetze) {
-            SitzreihenKategorie kat = s.getReihe().getKategorie();
-            if (SitzreihenKategorie.LOGE.equals(kat)) {
-                preis += 10.50;
-            } else if (SitzreihenKategorie.PARKETT.equals(kat)) {
-                preis += 9.50;
-            } else if (SitzreihenKategorie.LOGE_MIT_SERVICE.equals(kat)) {
-                preis += 12.00;
-            }
-        }
-        return preis;
-    }
-
-    private String generateBuchungsnummer() {
-        // z.B. einfache 8-stellige Nummer
-        int num = (int) (Math.random() * 1_0000_0000);
-        return String.format("%08d", num);
-    }
-
-    private void finalizeBooking() {
-        //Preis berechnen
-        double gesamtPreis = berechnePreis(sitzplaetze);
-
-        // Buchung anlegen
-        Buchung buchung = new Buchung();
-        buchung.setKunde(kunde);
-        buchung.setAuffuehrung(auffuehrung);
-        buchung.setGesamtpreis(gesamtPreis);
-        buchung.setBezahlt(false);
-        buchung.setBuchungsZeitstempel(new Date());
-        buchung.setBuchungsnummer(generateBuchungsnummer());
-
-        buchungRepository.save(buchung);
-        
-        //Einnahmen der Aufführung hochzählen
-        double neueEinnahmen = auffuehrung.getAktuelleEinnahmen() + gesamtPreis;
-        auffuehrung.setAktuelleEinnahmen(neueEinnahmen);
-        auffuehrungRepository.save(auffuehrung);
-
-        // Sitzplätze auf belegt setzen + BuchungSitzplatz anlegen
-        for (Sitzplatz s : sitzplaetze) {
-            if (s.isFrei()) {
-                s.setFrei(false);
-                sitzplatzRepository.save(s);
-            }
-
-            BuchungSitzplatz bs = new BuchungSitzplatz();
-            bs.setBuchung(buchung);
-            bs.setSitzplatz(s);
-            buchungSitzplatzRepository.save(bs);
-        }
-        
-     //Wenn diese Buchung aus einer Reservierung kommt - Reservierung löschen
-        if (ctx != null && ctx.getReservierungsId() != null) {
-            reservierungRepository.findById(ctx.getReservierungsId()).ifPresent(res -> {
-
-                // Reservierung Sitzplatz Verknüpfungen löschen
-                if (res.getReservierungSitzplaetze() != null) {
-                    for (ReservierungSitzplatz rsp : res.getReservierungSitzplaetze()) {
-                        reservierungSitzplatzRepository.delete(rsp);
-                    }
-                }
-
-                reservierungRepository.delete(res);
-            });
-        }
-
-        //BuchungContext leeren
-        VaadinSession.getCurrent().setAttribute(BuchungContext.class, null);
-
-        // Danke-Dialog anzeigen
-        Dialog dialog = new Dialog();
-        dialog.setCloseOnEsc(false);
-        dialog.setCloseOnOutsideClick(false);
-
-        H2 title = new H2("Vielen Dank für Ihre Buchung!");
-        Paragraph info = new Paragraph("Ihre Buchungsnummer: " + buchung.getBuchungsnummer());
-        Paragraph hint = new Paragraph("Bitte notieren Sie sich diese Nummer für Rückfragen.");
-
-        Button close = new Button("Schließen", e -> {
-            dialog.close();
-            // zurück auf Startseite oder Reservierungsübersicht
-            UI.getCurrent().navigate("");
-        });
-
-        VerticalLayout layout = new VerticalLayout(title, info, hint, close);
-        layout.setSpacing(true);
-        layout.setPadding(true);
-        layout.setAlignItems(Alignment.START);
-
-        dialog.add(layout);
-        dialog.open();
     }
 }

@@ -175,8 +175,11 @@ public class FilmDetailView extends VerticalLayout implements BeforeEnterObserve
             return;
         }
 
+        Date jetzt = new Date();
+
         List<Auffuehrung> gefiltert = auffuehrungen.stream()
                 .filter(a -> tag.equals(a.getStartzeitpunkt().toInstant().atZone(ZoneId.systemDefault()).toLocalDate()))
+                .filter(a -> a.getStartzeitpunkt().after(jetzt)) // Nur zukünftige Aufführungen
                 .sorted(Comparator.comparing(Auffuehrung::getStartzeitpunkt))
                 .collect(Collectors.toList());
 

@@ -280,30 +280,26 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
     }
 
     private void openCustomerDialog(Boolean isDirektBuchung) {
-    Dialog dialog = new Dialog();
+        Dialog dialog = new Dialog();
 
-    VerticalLayout layout = new VerticalLayout();
-    layout.setSpacing(true);
+        VerticalLayout layout = new VerticalLayout();
+        layout.setSpacing(true);
 
-    TextField nameField = new TextField("Name");
-    TextField emailField = new TextField("E-Mail");
+        TextField nameField = new TextField("Name");
+        TextField emailField = new TextField("E-Mail");
 
-    Button weiterButton = new Button("Weiter");
+        Button newCustomerButton = new Button("Neuer Kunde");
+        Button existingCustomerButton = new Button("Bestehender Kunde");
 
-    weiterButton.addClickListener(e -> {
-        String name = nameField.getValue();
-        String email = emailField.getValue();
+        newCustomerButton.addClickListener(e -> {
+            String name = nameField.getValue();
+            String email = emailField.getValue();
 
-        if (email == null || email.isBlank()) {
-            Notification.show("Bitte E-Mail angeben.");
-            return;
-        }
+            if (email == null || email.isBlank()) {
+                Notification.show("Bitte E-Mail angeben.");
+                return;
+            }
 
-        // 1. Versuchen, bestehenden Kunden zu finden
-        Kunde kunde = kundeRepository.findByEmail(email);
-
-        // 2. Wenn kein Kunde existiert -> neuen anlegen
-        if (kunde == null) {
             if (name == null || name.isBlank()) {
                 Notification.show("Bitte Name angeben, um einen neuen Kunden anzulegen.");
                 return;
@@ -365,10 +361,11 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
             }
         });
 
-    layout.add(nameField, emailField, weiterButton);
-    dialog.add(layout);
-    dialog.open();
-}
+        HorizontalLayout buttonLayout = new HorizontalLayout(newCustomerButton, existingCustomerButton);
+        layout.add(nameField, emailField, buttonLayout);
+        dialog.add(layout);
+        dialog.open();
+    }
 
 
     private void saveReservierung(Kunde kunde) {
@@ -389,16 +386,27 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
                 sitzplatzIds
         );
 
-        Notification.show("Reservierung an Kafka gesendet!");
+        Notification.show("Reservierung wird verarbeitet...");
 
-     // Auswahl leeren
+        // Auswahl leeren
         ausgewähltePlaetze.clear();
 
         // E-Mail in der Session merken, damit die ReservierungenView sie nutzen kann
         VaadinSession.getCurrent().setAttribute("kundenEmail", kunde.getEmail());
 
-        // Zur Reservierungsseite navigieren
-        UI.getCurrent().navigate(ReservierungenView.class);
+        // Kurze Verzögerung, damit Kafka die Reservierung verarbeiten kann
+        // dann zur Reservierungsseite navigieren
+        UI ui = UI.getCurrent();
+        new Thread(() -> {
+            try {
+                Thread.sleep(800); // 0.8 Sekunden warten
+                ui.access(() -> {
+                    ui.navigate(ReservierungenView.class);
+                });
+            } catch (InterruptedException ex) {
+                ex.printStackTrace();
+            }
+        }).start();
 
     }
 

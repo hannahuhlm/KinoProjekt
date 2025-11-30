@@ -89,7 +89,19 @@ public class ReservierungenView extends VerticalLayout {
 
 	    if (emailFromSession != null && !emailFromSession.isBlank()) {
 	        emailField.setValue(emailFromSession);
-	        ladeKundeUndReservierungen();
+	        
+	        // Kurze Verzögerung, damit neue Reservierung sicher in DB ist
+	        UI ui = UI.getCurrent();
+	        new Thread(() -> {
+	            try {
+	                Thread.sleep(200); // 0.2 Sekunden zusätzliche Sicherheit
+	                ui.access(() -> {
+	                    ladeKundeUndReservierungen();
+	                });
+	            } catch (InterruptedException ex) {
+	                ex.printStackTrace();
+	            }
+	        }).start();
 
 	        // optional: wieder löschen, damit es nur einmal automatisch passiert
 	        VaadinSession.getCurrent().setAttribute("kundenEmail", null);
@@ -180,6 +192,15 @@ public class ReservierungenView extends VerticalLayout {
 
         Date jetzt = new Date();
 
+        // Debug: Alle Reservierungen ausgeben
+        System.out.println(">>> Alle Reservierungen für " + aktuellerKunde.getName() + ": " + aktuellerKunde.getReservierungen().size());
+        aktuellerKunde.getReservierungen().forEach(r -> {
+            System.out.println("  - Reservierung #" + r.getReservierungsnummer() 
+                + ", Aufführung: " + (r.getAuffuehrung() != null ? r.getAuffuehrung().getId() : "null")
+                + ", Startzeit: " + (r.getAuffuehrung() != null && r.getAuffuehrung().getStartzeitpunkt() != null 
+                    ? r.getAuffuehrung().getStartzeitpunkt() : "null"));
+        });
+
         List<Reservierung> zukunftsReservierungen = aktuellerKunde.getReservierungen().stream()
                 .filter(r -> r.getAuffuehrung() != null
                         && r.getAuffuehrung().getStartzeitpunkt() != null
@@ -187,6 +208,8 @@ public class ReservierungenView extends VerticalLayout {
                 .sorted(Comparator.comparing(
                         r -> r.getAuffuehrung().getStartzeitpunkt()))
                 .collect(Collectors.toList());
+
+        System.out.println(">>> Zukünftige Reservierungen: " + zukunftsReservierungen.size());
 
         if (zukunftsReservierungen.isEmpty()) {
             reservierungenContainer.add(erzeugeKeineReservierungenHinweis());
