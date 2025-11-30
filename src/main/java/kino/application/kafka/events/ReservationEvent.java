@@ -1,6 +1,7 @@
 package kino.application.kafka.events;
 
 import java.util.Date;
+import java.util.List;
 
 /**
  * Event für erfolgreiche Reservierungen.
@@ -15,7 +16,9 @@ public class ReservationEvent {
     private Long auffuehrungId;
     private Long kundeId;
     private Date timestamp;
-    private String status; // z.B. "CREATED", "CANCELLED"
+    private String status; // z.B. "CREATED", "CANCELLED", "OK", "NOT_FOUND"
+    private String correlationId; // Für QUERY responses
+    private List<kino.application.kafka.dto.ReservierungDTO> reservierungen; // Für QUERY results
     
     public ReservationEvent() {
         // Für JSON-Deserialisierung
@@ -79,6 +82,22 @@ public class ReservationEvent {
     
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getCorrelationId() {
+        return correlationId;
+    }
+
+    public void setCorrelationId(String correlationId) {
+        this.correlationId = correlationId;
+    }
+
+    public List<kino.application.kafka.dto.ReservierungDTO> getReservierungen() {
+        return reservierungen;
+    }
+
+    public void setReservierungen(List<kino.application.kafka.dto.ReservierungDTO> reservierungen) {
+        this.reservierungen = reservierungen;
     }
     
     @Override

@@ -4,12 +4,16 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.html.*;
 import com.vaadin.flow.component.orderedlayout.*;
+import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.router.*;
 import jakarta.annotation.security.PermitAll;
 import kino.application.data.Auffuehrung;
-import kino.application.data.AuffuehrungRepository;
 import kino.application.data.Film;
 import kino.application.data.FilmRepository;
+import kino.application.kafka.events.AdminCommand;
+import kino.application.kafka.events.AdminEvent;
+import kino.application.kafka.producer.AdminCommandProducer;
+import kino.application.admin.AdminUIEventBus;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -22,17 +26,20 @@ import java.util.stream.Collectors;
 @PermitAll
 public class FilmDetailView extends VerticalLayout implements BeforeEnterObserver {
 
+    private final AdminCommandProducer adminCommandProducer;
     private final FilmRepository filmRepository;
-    private final AuffuehrungRepository auffuehrungRepository;
+    private AdminUIEventBus.Registration adminReg;
+    private String correlationId;
+    private Long requestedFilmId;
     private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     private final DateTimeFormatter zeitFormatter = DateTimeFormatter.ofPattern("HH:mm");
 
     private final VerticalLayout inhaltLayout = new VerticalLayout();
     private final VerticalLayout auffuehrungContainer = new VerticalLayout();
 
-    public FilmDetailView(FilmRepository filmRepository, AuffuehrungRepository auffuehrungRepository) {
+    public FilmDetailView(AdminCommandProducer adminCommandProducer, FilmRepository filmRepository) {
+        this.adminCommandProducer = adminCommandProducer;
         this.filmRepository = filmRepository;
-        this.auffuehrungRepository = auffuehrungRepository;
         setPadding(false);
         setSpacing(false);
         setWidthFull();
@@ -48,20 +55,46 @@ public class FilmDetailView extends VerticalLayout implements BeforeEnterObserve
 
         add(inhaltLayout);
 
+        // Subscribe to admin events for query results
+        adminReg = AdminUIEventBus.register(ev -> {
+            if (ev == null || ev.getCorrelationId() == null) return;
+            if (!ev.getCorrelationId().equals(correlationId)) return;
+            if (ev.getEntity() != AdminEvent.Entity.FILM || ev.getAction() != AdminEvent.Action.QUERY) return;
+            getUI().ifPresent(ui -> ui.access(() -> {
+                if (ev.getStatus() == AdminEvent.Status.OK && ev.getFilm() != null) {
+                    // Load full entity with aufführungen for detail view
+                    Film fullFilm = filmRepository.findById(ev.getFilm().getId()).orElse(null);
+                    if (fullFilm != null) {
+                        buildLayout(fullFilm);
+                    } else {
+                        inhaltLayout.add(new H2("Film nicht gefunden"));
+                    }
+                } else {
+                    inhaltLayout.add(new H2("Film nicht gefunden"));
+                }
+            }));
+        });
     }
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
-        Long filmId = event.getRouteParameters()
+        requestedFilmId = event.getRouteParameters()
                 .get("filmId")
                 .map(Long::parseLong)
                 .orElse(null);
 
-        if (filmId != null) {
-            filmRepository.findById(filmId).ifPresentOrElse(
-                    this::buildLayout,
-                    () -> inhaltLayout.add(new H2("Film nicht gefunden"))
-            );
+        if (requestedFilmId != null) {
+            // Send Admin QUERY for film by ID
+            correlationId = java.util.UUID.randomUUID().toString();
+            AdminCommand cmd = new AdminCommand(AdminCommand.Entity.FILM, AdminCommand.Action.QUERY);
+            AdminCommand.QueryPayload q = new AdminCommand.QueryPayload();
+            q.setType(AdminCommand.QueryPayload.Type.GET_BY_ID);
+            q.setId(requestedFilmId);
+            q.setCorrelationId(correlationId);
+            cmd.setQuery(q);
+            this.adminCommandProducer.send(cmd);
+        } else {
+            inhaltLayout.add(new H2("Ungültige Film-ID"));
         }
     }
 
@@ -254,5 +287,17 @@ public class FilmDetailView extends VerticalLayout implements BeforeEnterObserve
                 .set("font-weight", "500")
                 .set("font-weight", "600");
         return box;
+    }
+
+    @Override
+    protected void onDetach(DetachEvent detachEvent) {
+        try {
+            if (adminReg != null) {
+                adminReg.remove();
+                adminReg = null;
+            }
+        } finally {
+            super.onDetach(detachEvent);
+        }
     }
 }

@@ -29,11 +29,17 @@ import kino.application.data.Film;
 import kino.application.data.Kunde;
 import kino.application.data.Reservierung;
 import kino.application.data.KundeRepository;
+import kino.application.data.ReservierungRepository;
 // Entfernt: nicht mehr benötigt in dieser View
 import kino.application.data.ReservierungSitzplatz;
 import kino.application.data.Sitzplatz;
 import kino.application.data.SitzreihenKategorie;
 import kino.application.service.BuchungsService;
+import kino.application.kafka.producer.CustomerCommandProducer;
+import kino.application.customer.CustomerUIEventBus;
+import kino.application.kafka.producer.ReservationCommandProducer;
+import kino.application.reservation.ReservationUIEventBus;
+import kino.application.kafka.events.ReservationCommand;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.slf4j.Logger;
@@ -61,9 +67,12 @@ public class ReservierungenView extends VerticalLayout {
     private static final Logger LOGGER = LoggerFactory.getLogger(ReservierungenView.class);
 
     private final KundeRepository kundeRepository;
+    private final ReservierungRepository reservierungRepository;
     // Entfernt ungenutzte Repositories (Delete via Kafka, kein Direktzugriff nötig)
     private final kino.application.service.ReservierungsService reservierungsService;
     private final BuchungsService buchungsService;
+    private final CustomerCommandProducer customerCommandProducer;
+    private final ReservationCommandProducer reservationCommandProducer;
 
     private TextField nameField;
     private EmailField emailField;
@@ -76,11 +85,17 @@ public class ReservierungenView extends VerticalLayout {
 
     @Autowired
         public ReservierungenView(KundeRepository kundeRepository,
+            ReservierungRepository reservierungRepository,
             kino.application.service.ReservierungsService reservierungsService,
-            BuchungsService buchungsService) {
+            BuchungsService buchungsService,
+            CustomerCommandProducer customerCommandProducer,
+            ReservationCommandProducer reservationCommandProducer) {
 		this.kundeRepository = kundeRepository;
+		this.reservierungRepository = reservierungRepository;
 		this.reservierungsService = reservierungsService;
         this.buchungsService = buchungsService;
+        this.customerCommandProducer = customerCommandProducer;
+        this.reservationCommandProducer = reservationCommandProducer;
 		
 		setWidthFull();
 		setMinHeight("100vh");           
@@ -177,19 +192,43 @@ public class ReservierungenView extends VerticalLayout {
             return;
         }
 
-        Kunde kunde = kundeRepository.findByEmail(email);
-        if (kunde == null) {
-            LOGGER.warn("Kein Kunde mit email='{}' gefunden", email);
-            aktuellerKunde = null;
-            reservierungenTitel.setVisible(false);
-            reservierungenContainer.removeAll();
-            Notification.show("Kein Kunde mit dieser E-Mail gefunden.");
-            return;
-        }
+        // Query customer via Kafka
+        String corr = java.util.UUID.randomUUID().toString();
+        final CustomerUIEventBus.Registration[] tmpRegHolder = new CustomerUIEventBus.Registration[1];
+        tmpRegHolder[0] = CustomerUIEventBus.register(ev -> {
+            if (ev == null || ev.getCorrelationId() == null || !ev.getCorrelationId().equals(corr)) return;
+            getUI().ifPresent(ui -> ui.access(() -> {
+                if (ev.getStatus() == kino.application.kafka.events.CustomerEvent.Status.SUCCESS && ev.getKundeId() != null) {
+                    kundeRepository.findById(ev.getKundeId()).ifPresentOrElse(k -> {
+                        LOGGER.debug("Kunde gefunden: id={}, name={} -> Reservierungen werden geladen", k.getId(), k.getName());
+                        aktuellerKunde = k;
+                        aktualisiereReservierungsAnzeige();
+                    }, () -> {
+                        LOGGER.warn("Kunde entity nicht gefunden für id={}", ev.getKundeId());
+                        aktuellerKunde = null;
+                        reservierungenTitel.setVisible(false);
+                        reservierungenContainer.removeAll();
+                        Notification.show("Kunde nicht gefunden.");
+                    });
+                } else {
+                    LOGGER.warn("Kein Kunde mit email='{}' gefunden", email);
+                    aktuellerKunde = null;
+                    reservierungenTitel.setVisible(false);
+                    reservierungenContainer.removeAll();
+                    Notification.show("Kein Kunde mit dieser E-Mail gefunden.");
+                }
+                if (tmpRegHolder[0] != null) {
+                    tmpRegHolder[0].remove();
+                    tmpRegHolder[0] = null;
+                }
+            }));
+        });
 
-        LOGGER.debug("Kunde gefunden: id={}, name={} -> Reservierungen werden geladen", kunde.getId(), kunde.getName());
-        aktuellerKunde = kunde;
-        aktualisiereReservierungsAnzeige();
+        kino.application.kafka.events.CustomerCommand cmd = new kino.application.kafka.events.CustomerCommand();
+        cmd.setAction(kino.application.kafka.events.CustomerCommand.Action.QUERY);
+        cmd.setEmail(email);
+        cmd.setCorrelationId(corr);
+        customerCommandProducer.send(cmd);
     }
 
     private void aktualisiereReservierungsAnzeige() {
@@ -203,25 +242,42 @@ public class ReservierungenView extends VerticalLayout {
         reservierungenTitel.setText("Reservierungen von " + aktuellerKunde.getName());
         reservierungenTitel.setVisible(true);
 
-        Date jetzt = new Date();
+        // Query reservations via Kafka
+        String corr = java.util.UUID.randomUUID().toString();
+        final ReservationUIEventBus.Registration[] tmpRegHolder = new ReservationUIEventBus.Registration[1];
+        tmpRegHolder[0] = ReservationUIEventBus.register(ev -> {
+            if (ev == null || ev.getCorrelationId() == null || !ev.getCorrelationId().equals(corr)) return;
+            getUI().ifPresent(ui -> ui.access(() -> {
+                if ("OK".equals(ev.getStatus()) && ev.getReservierungen() != null) {
+                    Date jetzt = new Date();
+                    List<kino.application.kafka.dto.ReservierungDTO> zukunftsReservierungen = ev.getReservierungen().stream()
+                            .filter(r -> r.getStartzeitpunkt() != null && r.getStartzeitpunkt().after(jetzt))
+                            .sorted(Comparator.comparing(kino.application.kafka.dto.ReservierungDTO::getStartzeitpunkt))
+                            .collect(Collectors.toList());
 
-        List<Reservierung> zukunftsReservierungen = aktuellerKunde.getReservierungen().stream()
-                .filter(r -> r.getAuffuehrung() != null
-                        && r.getAuffuehrung().getStartzeitpunkt() != null
-                        && r.getAuffuehrung().getStartzeitpunkt().after(jetzt))
-                .sorted(Comparator.comparing(
-                        r -> r.getAuffuehrung().getStartzeitpunkt()))
-                .collect(Collectors.toList());
+                    LOGGER.info("Anzahl zukünftiger Reservierungen für kundeId={}: {}", aktuellerKunde.getId(), zukunftsReservierungen.size());
 
-        LOGGER.info("Anzahl zukünftiger Reservierungen für kundeId={}: {}", aktuellerKunde.getId(), zukunftsReservierungen.size());
+                    if (zukunftsReservierungen.isEmpty()) {
+                        reservierungenContainer.add(erzeugeKeineReservierungenHinweis());
+                    } else {
+                        zukunftsReservierungen.forEach(r ->
+                                reservierungenContainer.add(erzeugeReservierungsKachelDTO(r)));
+                    }
+                } else {
+                    reservierungenContainer.add(erzeugeKeineReservierungenHinweis());
+                }
+                if (tmpRegHolder[0] != null) {
+                    tmpRegHolder[0].remove();
+                    tmpRegHolder[0] = null;
+                }
+            }));
+        });
 
-        if (zukunftsReservierungen.isEmpty()) {
-            reservierungenContainer.add(erzeugeKeineReservierungenHinweis());
-            return;
-        }
-
-        zukunftsReservierungen.forEach(r ->
-                reservierungenContainer.add(erzeugeReservierungsKachel(r)));
+        ReservationCommand cmd = new ReservationCommand();
+        cmd.setAction("QUERY");
+        cmd.setKundeId(aktuellerKunde.getId());
+        cmd.setCorrelationId(corr);
+        reservationCommandProducer.sendReservation(cmd);
     }
 
     private Div erzeugeKeineReservierungenHinweis() {
@@ -229,6 +285,13 @@ public class ReservierungenView extends VerticalLayout {
         div.getStyle().set("color", "#ffffff");
         div.getStyle().set("margin-left", "300px");
         return div;
+    }
+
+    private Div erzeugeReservierungsKachelDTO(kino.application.kafka.dto.ReservierungDTO dto) {
+        // Load full entity to reuse existing card creation
+        Reservierung reservierung = reservierungRepository.findById(dto.getId())
+                .orElseThrow(() -> new RuntimeException("Reservierung nicht gefunden: " + dto.getId()));
+        return erzeugeReservierungsKachel(reservierung);
     }
 
     private Div erzeugeReservierungsKachel(Reservierung reservierung) {

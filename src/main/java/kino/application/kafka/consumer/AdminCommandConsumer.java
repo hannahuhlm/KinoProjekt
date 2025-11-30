@@ -35,6 +35,11 @@ public class AdminCommandConsumer {
     @Transactional
     public void onMessage(AdminCommand cmd) {
         try {
+            // Handle queries separately (no transaction needed)
+            if (cmd.getAction() == AdminCommand.Action.QUERY) {
+                handleQuery(cmd);
+                return;
+            }
             switch (cmd.getEntity()) {
                 case FILM -> handleFilm(cmd);
                 case SAAL -> handleSaal(cmd);
@@ -51,6 +56,128 @@ public class AdminCommandConsumer {
             AdminUIEventBus.broadcast(ev);
             throw e;
         }
+    }
+
+    private void handleQuery(AdminCommand cmd) {
+        var q = cmd.getQuery();
+        System.out.println(">>> handleQuery called - Entity: " + cmd.getEntity() + ", Query: " + q);
+        if (q == null) {
+            System.out.println(">>> Query ignored - q is null or not FILM entity");
+            return;
+        }
+        
+        AdminEvent ev = new AdminEvent(AdminEvent.Entity.valueOf(cmd.getEntity().name()), AdminEvent.Action.QUERY, AdminEvent.Status.OK);
+        ev.setCorrelationId(q.getCorrelationId());
+        System.out.println(">>> Query type: " + q.getType() + ", CorrelationId: " + q.getCorrelationId());
+        
+        try {
+            if (cmd.getEntity() == AdminCommand.Entity.FILM) {
+                switch (q.getType()) {
+                    case LIST_ALL -> {
+                        List<Film> films = filmRepository.findAll();
+                        System.out.println(">>> Found " + films.size() + " films (no pagination)");
+                        // Convert to DTOs to avoid serialization issues
+                        List<kino.application.kafka.dto.FilmDTO> filmDTOs = films.stream()
+                                .map(kino.application.kafka.dto.FilmDTO::new)
+                                .toList();
+                        ev.setFilms(filmDTOs);
+                    }
+                    case GET_BY_ID -> {
+                        if (q.getId() != null) {
+                            Film f = filmRepository.findById(q.getId()).orElse(null);
+                            if (f == null) {
+                                ev.setStatus(AdminEvent.Status.NOT_FOUND);
+                                System.out.println(">>> Film not found for ID: " + q.getId());
+                            } else {
+                                // Convert to DTO to avoid serialization issues
+                                ev.setFilm(new kino.application.kafka.dto.FilmDTO(f));
+                                System.out.println(">>> Found film: " + f.getTitel());
+                            }
+                        } else {
+                            ev.setStatus(AdminEvent.Status.NOT_FOUND);
+                        }
+                    }
+                    case LIST_BY_FILM -> {
+                        // Not applicable for FILM entity; mark as NOT_FOUND
+                        ev.setStatus(AdminEvent.Status.NOT_FOUND);
+                    }
+                }
+            } else if (cmd.getEntity() == AdminCommand.Entity.SAAL) {
+                switch (q.getType()) {
+                    case LIST_ALL -> {
+                        List<Kinosaal> saele = kinosaalRepository.findAll();
+                        System.out.println(">>> Found " + saele.size() + " saals");
+                        List<kino.application.kafka.dto.SaalDTO> saalDTOs = saele.stream()
+                                .map(kino.application.kafka.dto.SaalDTO::new)
+                                .toList();
+                        ev.setSaals(saalDTOs);
+                    }
+                    case GET_BY_ID -> {
+                        if (q.getId() != null) {
+                            Kinosaal s = kinosaalRepository.findById(q.getId()).orElse(null);
+                            if (s == null) {
+                                ev.setStatus(AdminEvent.Status.NOT_FOUND);
+                            } else {
+                                ev.setSaals(java.util.List.of(new kino.application.kafka.dto.SaalDTO(s)));
+                            }
+                        } else {
+                            ev.setStatus(AdminEvent.Status.NOT_FOUND);
+                        }
+                    }
+                    case LIST_BY_FILM -> {
+                        // Not applicable for SAAL entity; mark as NOT_FOUND
+                        ev.setStatus(AdminEvent.Status.NOT_FOUND);
+                    }
+                }
+            } else if (cmd.getEntity() == AdminCommand.Entity.AUFFUEHRUNG) {
+                switch (q.getType()) {
+                    case LIST_BY_FILM -> {
+                        if (q.getFilmId() != null) {
+                            List<Auffuehrung> list = auffuehrungRepository.findByFilmOrderByStartzeitpunktAsc(
+                                    filmRepository.findById(q.getFilmId()).orElseThrow()
+                            );
+                            List<kino.application.kafka.dto.AuffuehrungDTO> dto = list.stream()
+                                    .map(kino.application.kafka.dto.AuffuehrungDTO::new)
+                                    .toList();
+                            ev.setAuffuehrungen(dto);
+                        } else {
+                            ev.setStatus(AdminEvent.Status.NOT_FOUND);
+                        }
+                    }
+                    case LIST_ALL -> {
+                        List<Auffuehrung> list = auffuehrungRepository.findAll();
+                        List<kino.application.kafka.dto.AuffuehrungDTO> dto = list.stream()
+                                .map(kino.application.kafka.dto.AuffuehrungDTO::new)
+                                .toList();
+                        ev.setAuffuehrungen(dto);
+                    }
+                    case GET_BY_ID -> {
+                        if (q.getId() != null) {
+                            Auffuehrung a = auffuehrungRepository.findById(q.getId()).orElse(null);
+                            if (a == null) {
+                                ev.setStatus(AdminEvent.Status.NOT_FOUND);
+                            } else {
+                                ev.setAuffuehrungen(java.util.List.of(new kino.application.kafka.dto.AuffuehrungDTO(a)));
+                            }
+                        } else {
+                            ev.setStatus(AdminEvent.Status.NOT_FOUND);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.out.println(">>> Query error: " + e.getMessage());
+            e.printStackTrace();
+            ev.setStatus(AdminEvent.Status.ERROR);
+            ev.setMessage(e.getMessage());
+        }
+        System.out.println(">>> Sending AdminEvent - Status: " + ev.getStatus() + 
+                ", Films: " + (ev.getFilms() != null ? ev.getFilms().size() : "null") +
+                ", Saals: " + (ev.getSaals() != null ? ev.getSaals().size() : "null") +
+                ", Auffuehrungen: " + (ev.getAuffuehrungen() != null ? ev.getAuffuehrungen().size() : "null"));
+        adminEventProducer.send(ev);
+        System.out.println(">>> Broadcasting to AdminUIEventBus with correlationId=" + ev.getCorrelationId());
+        AdminUIEventBus.broadcast(ev);
     }
 
     private void handleFilm(AdminCommand cmd) {

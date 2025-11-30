@@ -9,13 +9,14 @@ import java.util.List;
  */
 public class ReservationCommand {
 
-    private String action; // "CREATE" oder "DELETE"
+    private String action; // "CREATE", "DELETE", oder "QUERY"
     private Long reservierungId; // Für DELETE
     private Long auffuehrungId;
     private Long kundeId;
     private String kundeName;
     private String kundeEmail;
     private List<SitzplatzInfo> sitzplaetze;
+    private String correlationId; // Für QUERY
 
     public ReservationCommand() {
         // für JSON-Deserialization durch Kafka
@@ -93,6 +94,14 @@ public class ReservationCommand {
 
     public void setSitzplaetze(List<SitzplatzInfo> sitzplaetze) {
         this.sitzplaetze = sitzplaetze;
+    }
+
+    public String getCorrelationId() {
+        return correlationId;
+    }
+
+    public void setCorrelationId(String correlationId) {
+        this.correlationId = correlationId;
     }
 
     @Override

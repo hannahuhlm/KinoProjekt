@@ -53,9 +53,13 @@ public class ReservationCommandConsumer {
     public void handleReservationCommand(ReservationCommand command) {
         System.out.println(">>> [ReservationConsumer] Command erhalten: " + command);
 
-        // Prüfen ob CREATE oder DELETE
+        // Prüfen ob CREATE, DELETE oder QUERY
         if ("DELETE".equals(command.getAction())) {
             handleDeleteReservation(command);
+            return;
+        }
+        if ("QUERY".equals(command.getAction())) {
+            handleQueryReservations(command);
             return;
         }
 
@@ -197,5 +201,35 @@ public class ReservationCommandConsumer {
             System.err.println(">>> [ReservationConsumer] Fehler beim Löschen: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    private void handleQueryReservations(ReservationCommand command) {
+        ReservationEvent event = new ReservationEvent();
+        event.setCorrelationId(command.getCorrelationId());
+        event.setStatus("OK");
+
+        try {
+            if (command.getKundeId() != null) {
+                // Query reservations by kunde ID
+                java.util.List<kino.application.data.Reservierung> reservierungen = 
+                    kundeRepository.findById(command.getKundeId())
+                        .map(k -> k.getReservierungen().stream().toList())
+                        .orElse(java.util.Collections.emptyList());
+                
+                java.util.List<kino.application.kafka.dto.ReservierungDTO> dtos = reservierungen.stream()
+                    .map(kino.application.kafka.dto.ReservierungDTO::new)
+                    .collect(java.util.stream.Collectors.toList());
+                event.setReservierungen(dtos);
+            } else {
+                event.setStatus("NOT_FOUND");
+            }
+        } catch (Exception e) {
+            System.err.println(">>> Fehler bei Reservierungsabfrage: " + e.getMessage());
+            e.printStackTrace();
+            event.setStatus("ERROR");
+        }
+
+        eventProducer.sendReservationEvent(event);
+        kino.application.reservation.ReservationUIEventBus.broadcast(event);
     }
 }

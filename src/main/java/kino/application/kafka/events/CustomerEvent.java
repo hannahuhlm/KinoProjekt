@@ -1,14 +1,15 @@
 package kino.application.kafka.events;
 
 public class CustomerEvent {
-    public enum Action { CREATE }
-    public enum Status { SUCCESS, FAILURE }
+    public enum Action { CREATE, QUERY }
+    public enum Status { SUCCESS, FAILURE, NOT_FOUND }
 
     private Action action;
     private Status status;
     private Long kundeId;
     private String email;
     private String message;
+    private String correlationId;
 
     public CustomerEvent() {}
 
@@ -31,4 +32,7 @@ public class CustomerEvent {
 
     public String getMessage() { return message; }
     public void setMessage(String message) { this.message = message; }
+
+    public String getCorrelationId() { return correlationId; }
+    public void setCorrelationId(String correlationId) { this.correlationId = correlationId; }
 }

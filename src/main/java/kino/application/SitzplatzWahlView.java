@@ -29,6 +29,11 @@ import java.util.Locale;
 import org.springframework.beans.factory.annotation.Autowired;
 import kino.application.service.ReservierungsService;
 import kino.application.service.BuchungsService;
+import kino.application.admin.AdminUIEventBus;
+import kino.application.kafka.events.AdminCommand;
+import kino.application.kafka.events.AdminEvent;
+import kino.application.kafka.producer.AdminCommandProducer;
+import kino.application.kafka.producer.CustomerCommandProducer;
 
 @Route(value = "sitzplatzwahl/:auffuehrungId", layout = MainViewLayout.class)
 @PageTitle("Sitzplatzwahl")
@@ -36,6 +41,8 @@ import kino.application.service.BuchungsService;
 public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObserver {
 
     private final AuffuehrungRepository auffuehrungRepository;
+    private final AdminCommandProducer adminCommandProducer;
+    private final CustomerCommandProducer customerCommandProducer;
     private final ReservierungsService reservierungsService;
     private final BuchungsService buchungsService;
     private final kino.application.service.CustomerService customerService;
@@ -53,11 +60,15 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
             AuffuehrungRepository auffuehrungRepository,
             ReservierungsService reservierungsService,
             BuchungsService buchungsService,
-            kino.application.service.CustomerService customerService) {
+            kino.application.service.CustomerService customerService,
+            AdminCommandProducer adminCommandProducer,
+            CustomerCommandProducer customerCommandProducer) {
         this.auffuehrungRepository = auffuehrungRepository;
         this.reservierungsService = reservierungsService;
         this.buchungsService = buchungsService;
         this.customerService = customerService;
+        this.adminCommandProducer = adminCommandProducer;
+        this.customerCommandProducer = customerCommandProducer;
 
         setSizeFull();
         setPadding(false);
@@ -86,6 +97,10 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
                         case FAILURE -> com.vaadin.flow.component.notification.Notification.show(
                                 "Kunden-Anlage fehlgeschlagen: " + (ev.getMessage() != null ? ev.getMessage() : "Unbekannter Fehler"),
                                 3000, com.vaadin.flow.component.notification.Notification.Position.MIDDLE);
+                        case NOT_FOUND -> com.vaadin.flow.component.notification.Notification.show(
+                                "Kunde nicht gefunden: " + email,
+                                2000,
+                                com.vaadin.flow.component.notification.Notification.Position.MIDDLE);
                     }
                 }
             }));
@@ -93,6 +108,7 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
     }
 
     private kino.application.customer.CustomerUIEventBus.Registration customerReg;
+    private AdminUIEventBus.Registration adminReg;
 
     private HorizontalLayout createInfoLeiste(Auffuehrung auff) {
         HorizontalLayout bar = new HorizontalLayout();
@@ -356,31 +372,57 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
                 return;
             }
 
-            // 1. Versuchen, bestehenden Kunden zu finden
-            Kunde foundKunde = kundeRepository.findByEmail(email);
             lastCustomerEmail = email;
 
-            // 2. Wenn kein Kunde existiert
-            Kunde resolvedKunde = foundKunde;
-            if (resolvedKunde == null) {
-                if (name == null || name.isBlank()) {
-                    Notification.show("Bitte Name angeben, um einen neuen Kunden anzulegen.");
-                    return;
-                }
-                // Für beide Flows sicherstellen, dass der Kunde via Kafka existiert, um konsistente IDs zu haben
-                resolvedKunde = customerService.ensureCustomer(name, email);
-            }
+            // Query customer via Kafka by email
+            String corr = java.util.UUID.randomUUID().toString();
+            final kino.application.customer.CustomerUIEventBus.Registration[] tmpRegHolder = new kino.application.customer.CustomerUIEventBus.Registration[1];
+            tmpRegHolder[0] = kino.application.customer.CustomerUIEventBus.register(ev -> {
+                if (ev == null || ev.getCorrelationId() == null || !ev.getCorrelationId().equals(corr)) return;
+                getUI().ifPresent(ui2 -> ui2.access(() -> {
+                    if (ev.getStatus() == kino.application.kafka.events.CustomerEvent.Status.SUCCESS && ev.getKundeId() != null) {
+                        // Load Kunde entity by id to reuse existing flows
+                        kundeRepository.findById(ev.getKundeId()).ifPresentOrElse(k -> {
+                            this.currentKunde = k;
+                            dialog.close();
+                            if (isDirektBuchung) {
+                                startDirektbuchung();
+                            } else {
+                                saveReservierung(k.getId(), k.getName(), k.getEmail());
+                            }
+                        }, () -> Notification.show("Kunde nicht gefunden"));
+                    } else if (ev.getStatus() == kino.application.kafka.events.CustomerEvent.Status.NOT_FOUND) {
+                        // Create via Kafka ensureCustomer
+                        if (name == null || name.isBlank()) {
+                            Notification.show("Bitte Name angeben, um einen neuen Kunden anzulegen.");
+                            return;
+                        }
+                        Kunde k = customerService.ensureCustomer(name, email);
+                        this.currentKunde = k;
+                        dialog.close();
+                        if (isDirektBuchung) {
+                            startDirektbuchung();
+                        } else {
+                            saveReservierung(k.getId(), k.getName(), k.getEmail());
+                        }
+                    } else {
+                        Notification.show("Kundenabfrage fehlgeschlagen");
+                    }
+                    if (tmpRegHolder[0] != null) {
+                        tmpRegHolder[0].remove();
+                        tmpRegHolder[0] = null;
+                    }
+                }));
+            });
 
-            // 3. Kunde speichern und weiter
-            this.currentKunde = resolvedKunde; // kann bei Reservierung null sein; nicht benötigt
-            dialog.close();
-
-            if (isDirektBuchung) {
-                startDirektbuchung();
-            } else {
-                Long rid = resolvedKunde.getId();
-                saveReservierung(rid, resolvedKunde.getName(), resolvedKunde.getEmail());
-            }
+            kino.application.kafka.events.CustomerCommand cmd = new kino.application.kafka.events.CustomerCommand();
+            cmd.setAction(kino.application.kafka.events.CustomerCommand.Action.QUERY);
+            cmd.setEmail(email);
+            cmd.setCorrelationId(corr);
+            // Reuse existing producer via CustomerService or inject a dedicated one; using service for consistency
+            // If CustomerService has only ensureCustomer, we can directly use producer
+            // Here, we send via a helper: customerService will not handle QUERY, so use producer bean
+            customerCommandProducer.send(cmd);
         });
 
         layout.add(nameField, emailField, weiterButton);
@@ -394,6 +436,10 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
         if (customerReg != null) {
             customerReg.remove();
             customerReg = null;
+        }
+        if (adminReg != null) {
+            adminReg.remove();
+            adminReg = null;
         }
     }
 
@@ -495,14 +541,36 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
             return;
         }
 
-        auffuehrungRepository.findById(auffId).ifPresentOrElse(
-                auff -> {
-                    this.aktuelleAuffuehrung = auff;
+        // Query Aufführung via Kafka and render when received
+        String correlationId = java.util.UUID.randomUUID().toString();
 
-                    content.add(createInfoLeiste(auff));
-                    buildSitzplatzLayout(auff.getSaal());
-                },
-                () -> content.add(new H2("Aufführung nicht gefunden"))
-        );
+        // Listen for the matching response on Admin UI event bus
+        adminReg = AdminUIEventBus.register(ev -> {
+            if (ev == null) return;
+            if (ev.getAction() != AdminEvent.Action.QUERY) return;
+            if (ev.getEntity() != AdminEvent.Entity.AUFFUEHRUNG) return;
+            if (ev.getCorrelationId() == null || !ev.getCorrelationId().equals(correlationId)) return;
+
+            getUI().ifPresent(ui -> ui.access(() -> {
+                if (ev.getStatus() == AdminEvent.Status.OK && ev.getAuffuehrungen() != null && !ev.getAuffuehrungen().isEmpty()) {
+                    Long receivedId = ev.getAuffuehrungen().get(0).getId();
+                    auffuehrungRepository.findById(receivedId).ifPresentOrElse(auff -> {
+                        this.aktuelleAuffuehrung = auff;
+                        content.add(createInfoLeiste(auff));
+                        buildSitzplatzLayout(auff.getSaal());
+                    }, () -> content.add(new H2("Aufführung nicht gefunden")));
+                } else {
+                    content.add(new H2("Aufführung nicht gefunden"));
+                }
+            }));
+        });
+
+        AdminCommand cmd = new AdminCommand(AdminCommand.Entity.AUFFUEHRUNG, AdminCommand.Action.QUERY);
+        AdminCommand.QueryPayload qp = new AdminCommand.QueryPayload();
+        qp.setType(AdminCommand.QueryPayload.Type.GET_BY_ID);
+        qp.setId(auffId);
+        qp.setCorrelationId(correlationId);
+        cmd.setQuery(qp);
+        adminCommandProducer.send(cmd);
     }
 }

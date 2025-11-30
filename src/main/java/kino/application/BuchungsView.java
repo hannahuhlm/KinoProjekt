@@ -36,6 +36,9 @@ import kino.application.data.Sitzplatz;
 import kino.application.data.SitzplatzRepository;
 import kino.application.service.ReservierungsService;
 import kino.application.service.BuchungsService;
+import kino.application.kafka.producer.AdminCommandProducer;
+import kino.application.admin.AdminUIEventBus;
+import kino.application.kafka.events.AdminCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,6 +54,7 @@ public class BuchungsView extends VerticalLayout implements BeforeEnterObserver 
     private final AuffuehrungRepository auffuehrungRepository;
     private final KundeRepository kundeRepository;
     private final SitzplatzRepository sitzplatzRepository;
+    private final AdminCommandProducer adminCommandProducer;
     private final ReservierungsService reservierungsService;
     private final BuchungsService buchungsService;
 
@@ -69,9 +73,9 @@ public class BuchungsView extends VerticalLayout implements BeforeEnterObserver 
             KundeRepository kundeRepository,
             SitzplatzRepository sitzplatzRepository,
             BuchungRepository buchungRepository,
-            
-                ReservierungsService reservierungsService,
-                BuchungsService buchungsService
+            ReservierungsService reservierungsService,
+            BuchungsService buchungsService,
+            AdminCommandProducer adminCommandProducer
     ) {
         this.auffuehrungRepository = auffuehrungRepository;
         this.kundeRepository = kundeRepository;
@@ -79,6 +83,7 @@ public class BuchungsView extends VerticalLayout implements BeforeEnterObserver 
         this.buchungRepository = buchungRepository;
         this.reservierungsService = reservierungsService;
         this.buchungsService = buchungsService;
+        this.adminCommandProducer = adminCommandProducer;
 
         setWidthFull();
         setPadding(true);
@@ -99,29 +104,13 @@ public class BuchungsView extends VerticalLayout implements BeforeEnterObserver 
                 return;
             }
             try {
-                // Entitäten laden
+                // Entitäten via Kafka laden
                 LOGGER.info("Erzeuge Buchung aus Context: auffId={}, kundeId={}, sitze={}, resId={}",
                         ctx.getAuffuehrungId(), ctx.getKundeId(),
                         ctx.getSitzplatzIds() != null ? ctx.getSitzplatzIds().size() : 0,
                         ctx.getReservierungsId());
-                this.auffuehrung = auffuehrungRepository.findById(ctx.getAuffuehrungId()).orElse(null);
-                this.kunde = kundeRepository.findById(ctx.getKundeId()).orElse(null);
-                this.sitzplaetze = ctx.getSitzplatzIds().stream()
-                        .map(id -> sitzplatzRepository.findById(id).orElse(null))
-                        .filter(sp -> sp != null)
-                        .toList();
-
-                if (auffuehrung == null || kunde == null || sitzplaetze.isEmpty()) {
-                    LOGGER.error("Buchung aus Context fehlgeschlagen: auff={} kunde={} sitze={}",
-                            auffuehrung != null, kunde != null, sitzplaetze != null ? sitzplaetze.size() : 0);
-                    showNotFound();
-                    return;
-                }
-
-                // Buchung erzeugen und anzeigen
-                LOGGER.debug("Starte finalizeBooking für kundeId={}, auffId={}, plaetze={}",
-                        kunde.getId(), auffuehrung.getId(), sitzplaetze.size());
-                finalizeBooking();
+                
+                ladeEntitaetenViaKafkaUndStarteBuchung();
             } catch (Exception ex) {
                 ex.printStackTrace();
                 LOGGER.error("Exception in beforeEnter (Context-Buchung): {}", ex.getMessage(), ex);
@@ -131,6 +120,7 @@ public class BuchungsView extends VerticalLayout implements BeforeEnterObserver 
         }
         try {
             Long id = Long.valueOf(idStr);
+            // Buchung-Read bleibt direkt (kein Kafka-Query für Buchungen)
             this.buchung = buchungRepository.findById(id).orElse(null);
             LOGGER.info("Lade Buchung per ID: {} -> vorhanden={}", id, this.buchung != null);
         } catch (NumberFormatException ex) {
@@ -223,6 +213,75 @@ public class BuchungsView extends VerticalLayout implements BeforeEnterObserver 
     }
 
     // Preis- und Nummern-Generierung wird im Service/Consumer gehandhabt
+
+    private void ladeEntitaetenViaKafkaUndStarteBuchung() {
+        LOGGER.info(">>> ladeEntitaetenViaKafkaUndStarteBuchung gestartet für auffId={}, kundeId={}", 
+                ctx.getAuffuehrungId(), ctx.getKundeId());
+        
+        // 1) Query Aufführung via Kafka
+        String corrAuff = java.util.UUID.randomUUID().toString();
+        LOGGER.info(">>> Sende AdminCommand QUERY für Aufführung mit correlationId={}", corrAuff);
+        
+        final AdminUIEventBus.Registration[] tmpAuffReg = new AdminUIEventBus.Registration[1];
+        tmpAuffReg[0] = AdminUIEventBus.register(ev -> {
+            if (ev == null || ev.getCorrelationId() == null || !ev.getCorrelationId().equals(corrAuff)) return;
+            LOGGER.info(">>> AdminEvent empfangen mit correlationId={}, status={}", ev.getCorrelationId(), ev.getStatus());
+            getUI().ifPresent(ui -> ui.access(() -> {
+                 if ("OK".equals(ev.getStatus().toString()) && ev.getAuffuehrungen() != null && !ev.getAuffuehrungen().isEmpty()) {
+                    Long auffId = ev.getAuffuehrungen().get(0).getId();
+                    LOGGER.info(">>> Aufführung via Kafka erhalten: auffId={}", auffId);
+                    this.auffuehrung = auffuehrungRepository.findById(auffId).orElse(null);
+                    LOGGER.info(">>> Aufführung Entity geladen: {}", auffuehrung != null);
+                    
+                    // 2) Query Kunde via Kafka (by ID - load entity to get email first)
+                    this.kunde = kundeRepository.findById(ctx.getKundeId()).orElse(null);
+                    LOGGER.info(">>> Kunde Entity geladen: {}", kunde != null);
+                    
+                    if (kunde != null) {
+                        // 3) Load Sitzplätze via repository (no Kafka query available for seats)
+                        this.sitzplaetze = ctx.getSitzplatzIds().stream()
+                                .map(id -> sitzplatzRepository.findById(id).orElse(null))
+                                .filter(sp -> sp != null)
+                                .toList();
+                        LOGGER.info(">>> Sitzplätze geladen: {}", sitzplaetze.size());
+                        
+                        if (auffuehrung == null || sitzplaetze.isEmpty()) {
+                            LOGGER.error(">>> Buchung aus Context fehlgeschlagen: auff={} sitze={}",
+                                    auffuehrung != null, sitzplaetze != null ? sitzplaetze.size() : 0);
+                            showNotFound();
+                        } else {
+                            LOGGER.info(">>> Starte finalizeBooking für kundeId={}, auffId={}, plaetze={}",
+                                    kunde.getId(), auffuehrung.getId(), sitzplaetze.size());
+                            finalizeBooking();
+                        }
+                    } else {
+                        LOGGER.error("Kunde nicht gefunden");
+                        showNotFound();
+                    }
+                } else {
+                    LOGGER.error("Aufführung nicht gefunden via Kafka");
+                    showNotFound();
+                }
+                if (tmpAuffReg[0] != null) {
+                    tmpAuffReg[0].remove();
+                    tmpAuffReg[0] = null;
+                }
+            }));
+        });
+        
+        AdminCommand cmdA = new AdminCommand();
+        cmdA.setEntity(AdminCommand.Entity.AUFFUEHRUNG);
+        cmdA.setAction(AdminCommand.Action.QUERY);
+        AdminCommand.QueryPayload qp = new AdminCommand.QueryPayload();
+        qp.setType(AdminCommand.QueryPayload.Type.GET_BY_ID);
+        qp.setId(ctx.getAuffuehrungId());
+        qp.setCorrelationId(corrAuff);
+        cmdA.setQuery(qp);
+        LOGGER.info(">>> Sende AdminCommand: entity={}, action={}, queryType={}, id={}, corr={}", 
+                cmdA.getEntity(), cmdA.getAction(), qp.getType(), qp.getId(), qp.getCorrelationId());
+        adminCommandProducer.send(cmdA);
+        LOGGER.info(">>> AdminCommand gesendet");
+    }
 
     private void finalizeBooking() {
         // 1) Command über Service senden

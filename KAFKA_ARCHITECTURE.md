@@ -1,105 +1,79 @@
-# Kafka Integration - Architektur-Diagramm
+# Kafka Integration – Architektur (Aktuelle Gesamtsicht)
 
-## Gesamtarchitektur
+## Gesamtarchitektur (vereinfacht)
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                          VAADIN UI LAYER                                 │
-│                                                                           │
-│  ┌──────────────────┐        ┌──────────────────┐                       │
-│  │  KafkaTestView   │        │ SitzplatzWahlView│                       │
-│  │                  │        │   (zukünftig)    │                       │
-│  └────────┬─────────┘        └────────┬─────────┘                       │
-└───────────┼──────────────────────────┼─────────────────────────────────┘
-            │                          │
-            │ HTTP/Vaadin              │
-            ▼                          ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                      SPRING BOOT BACKEND                                 │
-│                                                                           │
-│  ┌──────────────────────────────────────────────────────────────────┐   │
-│  │                       SERVICE LAYER                              │   │
-│  │                                                                  │   │
-│  │  ┌──────────────────────┐      ┌──────────────────────┐        │   │
-│  │  │ ReservierungsService │      │   BuchungsService    │        │   │
-│  │  │                      │      │                      │        │   │
-│  │  │ - reservierePlaetze()│      │ - buchePlaetze()    │        │   │
-│  │  │ - Preis berechnen    │      │ - Preis berechnen   │        │   │
-│  │  └──────────┬───────────┘      └──────────┬──────────┘        │   │
-│  └─────────────┼──────────────────────────────┼───────────────────┘   │
-│                │                              │                         │
-│                │                              │                         │
-│  ┌─────────────▼──────────────────────────────▼───────────────────┐   │
-│  │                    KAFKA PRODUCER LAYER                         │   │
-│  │                                                                  │   │
-│  │  ┌─────────────────────┐  ┌─────────────────────┐             │   │
-│  │  │  ReservationCommand │  │   BookingCommand    │             │   │
-│  │  │     Producer        │  │      Producer       │             │   │
-│  │  └──────────┬──────────┘  └──────────┬─────────┘              │   │
-│  └─────────────┼────────────────────────┼────────────────────────┘   │
-│                │                        │                             │
-└────────────────┼────────────────────────┼─────────────────────────────┘
-                 │                        │
-                 │ send()                 │ send()
-                 ▼                        ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                          APACHE KAFKA                                    │
-│                                                                           │
-│  ┌───────────────────┐  ┌───────────────────┐  ┌──────────────────┐   │
-│  │ reservation-      │  │ booking-          │  │ reservation-     │   │
-│  │ commands          │  │ commands          │  │ events           │   │
-│  │ (Topic)           │  │ (Topic)           │  │ (Topic)          │   │
-│  └─────────┬─────────┘  └─────────┬─────────┘  └─────────▲────────┘   │
-│            │                      │                       │             │
-│            │                      │            ┌──────────┴────────┐   │
-│            │                      │            │ booking-          │   │
-│            │                      │            │ events            │   │
-│            │                      │            │ (Topic)           │   │
-│            │                      │            └──────────▲────────┘   │
-└────────────┼──────────────────────┼────────────────────────┼───────────┘
-             │                      │                        │
-             │ consume              │ consume                │ produce
-             ▼                      ▼                        │
-┌─────────────────────────────────────────────────────────────────────────┐
-│                      KAFKA CONSUMER LAYER                                │
-│                                                                           │
-│  ┌─────────────────────┐        ┌─────────────────────┐                │
-│  │  ReservationCommand │        │   BookingCommand    │                │
-│  │      Consumer       │        │      Consumer       │                │
-│  │                     │        │                     │                │
-│  │ @KafkaListener      │        │ @KafkaListener      │                │
-│  │ @Transactional      │        │ @Transactional      │                │
-│  └──────────┬──────────┘        └──────────┬─────────┘                 │
-│             │                              │                            │
-│             │                              │                            │
-│             │                              │                            │
-│  ┌──────────▼──────────────────────────────▼────────────────┐          │
-│  │              EVENT PRODUCER                               │          │
-│  │                                                            │          │
-│  │  Sendet Events zurück an Kafka nach erfolgreicher         │          │
-│  │  Speicherung (ReservationEvent, BookingEvent)            │          │
-│  └──────────────────────────────┬─────────────────────────────┘         │
-└─────────────────────────────────┼───────────────────────────────────────┘
-                                  │
-                                  │ save()
-                                  ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                          POSTGRESQL                                      │
-│                                                                           │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐                  │
-│  │ reservierung │  │   buchung    │  │    kunde     │                  │
-│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘                  │
-│         │                 │                  │                           │
-│  ┌──────▼──────────┐  ┌───▼──────────────┐  │                          │
-│  │ reservierung_   │  │ buchung_         │  │                          │
-│  │ sitzplatz       │  │ sitzplatz        │  │                          │
-│  └─────────────────┘  └──────────────────┘  │                          │
-│                                              │                           │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────▼───────┐                  │
-│  │  sitzplatz   │  │  sitzreihe   │  │ auffuehrung  │                  │
-│  └──────────────┘  └──────────────┘  └──────────────┘                  │
-│                                                                           │
-└─────────────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                SPRING BOOT ENTRYPOINT                                          │
+│  Application.java ( @SpringBootApplication )                                                   │
+│        │ startet Kontext, registriert Vaadin Routes                                            │
+└────────┴───────────────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                       VAADIN UI LAYER                                            │
+│                                                                                                  │
+│  ┌───────────────────────────┬───────────────────────────┬──────────────────────────┬───────────┐│
+│  │ FilmListeView             │ SitzplatzWahlView         │ ReservierungenView       │           ││
+│  │ (FILM QUERY LIST_ALL)     │ (Aufführung/Kunde über    │ (Kunde & Reservierungen  │           ││
+│  │                           │ Admin/Customer QUERY)     │ via QUERY)               │           ││
+│  ├───────────────────────────┼───────────────────────────┼──────────────────────────┤ Buchungs  ││
+│  │ AdminFilmAnlegenView      │ AdminSaalAnlegenView      │ Aufführungs-Dialog       │ View      ││
+│  │ (Film CRUD via Commands)  │ (Saal CRUD via Commands)  │ (LIST_BY_FILM)           │ (Auff.    ││
+│  │                           │                           │                          │ GET_BY_ID)││
+│  └───────────────────────────┴───────────────────────────┴──────────────────────────┴───────────┘│
+│           ▲                    ▲                     ▲                        ▲                  │
+│           │ AdminEvents        │ Admin/Customer/      │ ReservationEvents      │ AdminEvents     │
+│           │                    │ ReservationEvents    │                        │                 │
+└───────────┼────────────────────┼──────────────────────┼────────────────────────┼─────────────────┘
+            │                    │                      │                        │
+            ▼                    ▼                      ▼                        ▼
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                        UI EVENT BUSSES                                           │
+│  AdminUIEventBus  | CustomerUIEventBus | ReservationUIEventBus                                   │
+│  (filter by correlationId, remove temporary listeners)                                           │
+└───────────┬──────────────────────────────────────────────────────────────────────────────────────┘
+            │
+            ▼ send()/publish (Commands)
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                 PRODUCER / SERVICE FACADE                                        │
+│  AdminService  → AdminCommandProducer (Film/Saal/Aufführung CRUD & Queries)                      │
+│  ReservierungsService → ReservationCommandProducer (CREATE/DELETE/QUERY)                         │
+│  BuchungsService → BookingCommandProducer (CREATE Booking)                                       │
+│  (CustomerCommandProducer direkt in Views für Email→Kunde)                                       │
+└───────────┬──────────────────────────────────────────────────────────────────────────────────────┘
+            │ Kafka send() (JSON DTO Payloads)
+            ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                           APACHE KAFKA                                          │
+│  Topics:                                                                                        │
+│    admin-commands        → AdminCommandConsumer                                                 │
+│    admin-events          ← AdminEventProducer                                                   │
+│    customer-commands     → CustomerCommandConsumer                                              │
+│    customer-events       ← CustomerEventProducer                                                │
+│    reservation-commands  → ReservationCommandConsumer                                           │
+│    reservation-events    ← ReservationEventProducer                                             │
+│    booking-commands      → BookingCommandConsumer                                               │
+│    booking-events        ← BookingEventProducer                                                 │
+└───────────┬─────────────────────────────────────────────────────────────────────────────────────┘
+            │ consume (@KafkaListener) + map Entities → DTOs / execute writes
+            ▼
+┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                      CONSUMER LAYER                                            │
+│  AdminCommandConsumer        (FILM / SAAL / AUFFÜHRUNG: CREATE, DELETE, QUERY)                 │
+│  CustomerCommandConsumer     (Kunde CREATE / QUERY by Email)                                   │
+│  ReservationCommandConsumer  (Reservierung CREATE / DELETE / QUERY by kundeId)                 │
+│  BookingCommandConsumer      (Buchung CREATE)                                                  │
+│  → Build AdminEvent / CustomerEvent / ReservationEvent / BookingEvent                          │
+│  → Send event to Kafka & broadcast to matching UI EventBus                                     │
+└───────────┬────────────────────────────────────────────────────────────────────────────────────┘
+            │ JPA/Hibernate transactional writes & reads
+            ▼
+┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                         POSTGRESQL                                             │
+│  Entities: Film, Kinosaal, Sitzreihe, Sitzplatz, Auffuehrung, Reservierung, Buchung, Kunde     │
+│  Join Tables: reservierung_sitzplatz, buchung_sitzplatz                                        │
+└────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Datenfluss: Reservierung erstellen
@@ -387,48 +361,72 @@ booking-events Topic
 └────────────────────────────────────────────┘
 ```
 
-## Administration: Filme, Säle, Aufführungen
+## Administration: Filme, Säle, Aufführungen (nach Migration über Kafka)
 
-Aktuell erfolgt die Administration direkt über Vaadin-Views im selben Spring Boot Backend. Die Datenpersistenz läuft über JPA/Hibernate nach PostgreSQL. Kafka wird in diesen Admin-Flows nicht verwendet (synchrone DB-Schreibvorgänge).
+Die komplette Admin-Verwaltung (Filme, Säle, Aufführungen) arbeitet jetzt event‑getrieben über Kafka Commands & Events:
 
-- Filme einpflegen: `AdminFilmAnlegenView`
-  - Ansicht mit Grid der vorhandenen Filme und Formular zum Anlegen/Bearbeiten/Löschen.
-  - Felder: Titel, Dauer, Filmstart (DatePicker), Poster-URL, Beschreibung.
-  - Speichern/Löschen über `FilmRepository` (JPA), sofortige Aktualisierung des Grids.
-  - Aufführungen planen pro Film: Dialog „Aufführungen planen“ mit Wochen-Übersicht (`TreeGrid`).
-    - Lädt Aufführungen via `AuffuehrungRepository.findByFilmOrderByStartzeitpunktAsc(film)`.
-    - Neue Aufführung: Datum (DatePicker), Uhrzeit (TextField HH:mm), Saal (ComboBox, nur freigegebene Säle).
-    - Saalbelegungsprüfung: Zeitüberschneidung mit vorhandenen Aufführungen im Saal wird verhindert.
-    - Speichern über `AuffuehrungRepository.save(...)` und anschließendes Reload des Dialogs.
-    - Löschen: Entfernt Aufführung aus der Film-Liste; per `orphanRemoval` wird DB-Eintrag gelöscht.
+| Bereich | Command | Consumer Aktion | Event (AdminEvent) | UI-Reaktion |
+|---------|---------|-----------------|--------------------|-------------|
+| Film CREATE/UPDATE | `AdminCommand(FILM, CREATE)` | Persistiert Film (JPA) | Status `SUCCESS`, `filmId` | Grid reload via QUERY Command |
+| Film DELETE | `AdminCommand(FILM, DELETE)` | Löscht Film | Status `SUCCESS`, `filmId` | Entfernt selektierten Film, lädt Liste neu |
+| Film LIST_ALL | `AdminCommand(FILM, QUERY)` `QueryPayload.type=LIST_ALL` | Lädt alle Filme, mappt zu DTO | Status `OK`, `films[]` | Grid befüllt |
+| Film GET_BY_ID | `QUERY` `GET_BY_ID` | Einzelner Film→DTO | Status `OK/NOT_FOUND` | Detail / Auswahl |
+| Saal CREATE | `AdminCommand(SAAL, CREATE)` | Persistiert Saal + Reihen + Sitzplätze | Status `SUCCESS`, `saalId` | Optionales Refresh |
+| Saal LIST_ALL | `QUERY` `LIST_ALL` | Alle Säle→DTO | Status `OK` | Dropdown/Planung |
+| Aufführung CREATE | `AdminCommand(AUFFUEHRUNG, CREATE)` | Persistiert Aufführung | Status `SUCCESS`, `auffuehrungId` | Dialog schließt, Requery |
+| Aufführung DELETE | `AdminCommand(AUFFUEHRUNG, DELETE)` | Löscht Aufführung | Status `SUCCESS` | Kalender aktualisiert |
+| Aufführung LIST_BY_FILM | `QUERY` `LIST_BY_FILM` | Alle Aufführungen eines Films → DTOs | Status `OK` | Wochen-/Kalenderansicht |
+| Aufführung GET_BY_ID | `QUERY` `GET_BY_ID` | Einzelne Aufführung → DTO | Status `OK/NOT_FOUND` | Buchungs-/Reservierungs-Kontext |
 
-- Saal anlegen/verwalten: `AdminSaalAnlegenView`
-  - Grid mit Sälen (Name, Anzahl Reihen, Freigegeben, Aktionen).
-  - „Neuen Saal anlegen“/„Saal bearbeiten“ öffnet Dialog mit Basisdaten und dynamischer Reihen-Verwaltung.
-  - Reihensteuerung: Anzahl Reihen (IntegerField) passt die Liste `Sitzreihe` an; pro Reihe Kategorie (`SitzreihenKategorie`) und Anzahl Sitze.
-  - Default-Kategorie: Falls nicht gewählt, wird beim Speichern PARKETT gesetzt.
-  - Sitzplätze-Synchronisierung: Erzeugt/entfernt `Sitzplatz`-Entitäten passend zur Anzahl und nummeriert durch.
-  - Speichern über `KinosaalRepository.save(...)` inkl. abhängiger Entitäten.
+### Technische Änderungen gegenüber vorher:
 
-- Aufführungen planen
-  - Aktuell über den Dialog in `AdminFilmAnlegenView` integriert (kein separater Route erforderlich).
-  - Optional könnte ein dedizierter View `AdminAuffuehrungPlanenView` existieren, der Film, Saal und Startzeitpunkt auswählt und `AuffuehrungRepository` speichert. In der aktuellen Codebasis ist die Planung im Film-View gelöst.
+- Alle früheren direkten Repository-Aufrufe in den Admin-Views für Lesen wurden durch Kafka QUERY Commands ersetzt (Grid, Dialoge, Kalender).
+- Write-Operationen (Anlegen/Löschen) gehen ebenfalls über `AdminService`, der `AdminCommandProducer` nutzt (keine direkte Repository-Verwendung mehr im UI Layer).
+- Antwort‑Aggregation erfolgt über `AdminUIEventBus` mit `correlationId`. Temporäre Listener filtern passende Events und entfernen sich anschließend.
+- DTO-Schicht (`FilmDTO`, `SaalDTO`, `AuffuehrungDTO`) verhindert zyklische Serialisierung und reduziert Payload.
+- Status-Codes vereinheitlicht: `SUCCESS` (Write), `OK` (Query erfolgreich), `NOT_FOUND`, `FAILURE`, `ERROR`.
+- Pagination (offset/limit) wieder entfernt: `LIST_ALL` liefert komplette Film-Liste; „Mehr laden“ Button entfällt.
 
-### Admin-Datenfluss (synchron, ohne Kafka)
-
+### Ablauf Film-Liste (neu über Kafka)
 ```
-1. User Interaction (Admin)
-   ├─> Vaadin View (Formulare/Dialogs)
-   │
-2. Validierung + UI-Logik
-   ├─> Pflichtfelder prüfen
-   ├─> Saalbelegungs-Konflikte vermeiden
-   │
-3. Persistenz
-   ├─> JPA Repository (FilmRepository/KinosaalRepository/AuffuehrungRepository)
-   ├─> save()/delete() – sofortige DB-Schreibvorgänge
-   │
-4. Feedback
-   ├─> Grid/TreeGrid aktualisieren
-   ├─> Notifications
+FilmListeView
+   ├─ Erzeugt correlationId
+   ├─ send AdminCommand(FILM, QUERY, LIST_ALL)
+   ├─ wartet auf AdminEvent(Status=OK, films[])
+   ├─ rendert komplette Liste
+   └─ kein Nachladen / Pagination mehr
 ```
+
+### Ablauf Löschung Film
+```
+AdminFilmAnlegenView.deleteFilm()
+   ├─ send AdminCommand(FILM, DELETE)
+   ├─ Consumer löscht Film (JPA) -> AdminEvent SUCCESS
+   ├─ UI Listener erkennt DELETE -> clearForm() + updateGrid()
+   ├─ updateGrid() sendet LIST_ALL QUERY
+   ├─ AdminEvent OK mit neuer films[] Liste
+   └─ Grid aktualisiert ohne gelöschten Film
+```
+
+### Künftige / verbleibende direkte Zugriffe
+
+Aktuell werden Sitzplätze (Detail-Ladung einzelner Plätze für Sitzplan / Buchung) noch direkt über Repositories geladen (kein eigenes Seat-Query-Topic). Dies kann optional durch Einführung eines weiteren `SeatCommand`/`SeatEvent` Musters ersetzt werden, falls:
+
+- Skalierung des Sitzplan-Ladens nötig wird
+- Sitzplatzdaten von anderen Services (Pricing, Availability Analytics) angereichert werden sollen
+
+Bis dahin besteht kein Konsistenzproblem, da Sitzplatz-Lesezugriffe lokal und kurzlebig sind.
+
+### Vorteile der vollständigen Migration (Admin Bereich)
+
+- Einheitlicher Kommunikationskanal (Kafka) für Lesen & Schreiben
+- UI komplett entkoppelt von JPA – leichter Test/Stubbing
+- Erweiterbar für Event-Sourcing / Audit (AdminEvents persistierbar)
+- Reduzierte Komplexität im UI (nur Producer + EventBus statt mehrere Repositories)
+
+### Nächste mögliche Schritte
+
+1. Sitzplatz-/Reihen-Query über Kafka vereinheitlichen (SeatQueryCommand).
+2. Einführung eines `Version` Feldes in Events für evolutionäre Schema-Änderungen.
+3. Optionales Caching vor Consumer für häufige LIST_ALL Abfragen (Filme, Säle).
+4. Metriken für Query Latenz (`correlationId` Zeit messen) senden.

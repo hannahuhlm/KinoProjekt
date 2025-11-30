@@ -8,7 +8,7 @@ import java.util.List;
  */
 public class AdminCommand {
     public enum Entity { FILM, SAAL, AUFFUEHRUNG }
-    public enum Action { SAVE, DELETE, CREATE }
+    public enum Action { SAVE, DELETE, CREATE, QUERY }
 
     private Entity entity;
     private Action action;
@@ -18,6 +18,7 @@ public class AdminCommand {
     private FilmPayload film;
     private SaalPayload saal;
     private AuffuehrungPayload auffuehrung;
+    private QueryPayload query;
 
     public AdminCommand() {}
 
@@ -43,6 +44,9 @@ public class AdminCommand {
 
     public AuffuehrungPayload getAuffuehrung() { return auffuehrung; }
     public void setAuffuehrung(AuffuehrungPayload auffuehrung) { this.auffuehrung = auffuehrung; }
+
+    public QueryPayload getQuery() { return query; }
+    public void setQuery(QueryPayload query) { this.query = query; }
 
     @Override
     public String toString() {
@@ -124,5 +128,23 @@ public class AdminCommand {
         public String getStartzeit() { return startzeit; }
         public void setStartzeit(String startzeit) { this.startzeit = startzeit; }
         @Override public String toString(){return "AuffuehrungPayload{"+"filmId="+filmId+", saalId="+saalId+"}";}
+    }
+
+    public static class QueryPayload {
+        public enum Type { LIST_ALL, GET_BY_ID, LIST_BY_FILM }
+        private Type type;
+        private Long id; // for GET_BY_ID
+        private Long filmId; // for LIST_BY_FILM (auffuehrungen)
+        private String correlationId;
+        public QueryPayload() {}
+        public Type getType() { return type; }
+        public void setType(Type type) { this.type = type; }
+        public Long getId() { return id; }
+        public void setId(Long id) { this.id = id; }
+        public Long getFilmId() { return filmId; }
+        public void setFilmId(Long filmId) { this.filmId = filmId; }
+        public String getCorrelationId() { return correlationId; }
+        public void setCorrelationId(String correlationId) { this.correlationId = correlationId; }
+        @Override public String toString(){return "QueryPayload{"+"type="+type+", id="+id+"}";}
     }
 }

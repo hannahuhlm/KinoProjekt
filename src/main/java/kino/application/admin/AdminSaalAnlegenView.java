@@ -31,6 +31,9 @@ import kino.application.data.SitzreihenKategorie;
 // Import an dein Repo anpassen:
 import kino.application.data.KinosaalRepository;
 import kino.application.service.AdminService;
+import kino.application.kafka.events.AdminCommand;
+import kino.application.kafka.events.AdminEvent;
+import kino.application.kafka.producer.AdminCommandProducer;
 import kino.application.kafka.events.AdminEvent;
 import com.vaadin.flow.component.DetachEvent;
 
@@ -41,6 +44,7 @@ public class AdminSaalAnlegenView extends VerticalLayout {
     // --- Repositories / Datenzugriff ---
     private final KinosaalRepository kinosaalRepository;
     private final AdminService adminService;
+    private final AdminCommandProducer adminCommandProducer;
 
     // --- UI-Komponenten für die Listenansicht ---
     private final Grid<Kinosaal> grid = new Grid<>(Kinosaal.class, false);
@@ -60,9 +64,10 @@ public class AdminSaalAnlegenView extends VerticalLayout {
     // ---------------------------------------------------------
     // Konstruktor
     // ---------------------------------------------------------
-    public AdminSaalAnlegenView(KinosaalRepository kinosaalRepository, AdminService adminService) {
+    public AdminSaalAnlegenView(KinosaalRepository kinosaalRepository, AdminService adminService, AdminCommandProducer adminCommandProducer) {
         this.kinosaalRepository = kinosaalRepository;
         this.adminService = adminService;
+        this.adminCommandProducer = adminCommandProducer;
 
         // Grundlayout-Einstellungen für die View
         setSizeFull();
@@ -86,13 +91,32 @@ public class AdminSaalAnlegenView extends VerticalLayout {
         // Alles in die View legen
         add(heading, toolbar, grid);
 
-        // Daten ins Grid laden
-        updateGrid();
+        // Daten ins Grid laden (Kafka Query)
+        requestSaals();
 
         // Refresh grid on admin events
         adminReg = AdminUIEventBus.register(ev -> {
-            if (ev.getEntity() == AdminEvent.Entity.SAAL) {
-                getUI().ifPresent(ui -> ui.access(this::updateGrid));
+            if (ev.getEntity() == AdminEvent.Entity.SAAL && ev.getAction() == AdminEvent.Action.QUERY) {
+                getUI().ifPresent(ui -> ui.access(() -> {
+                    if (ev.getSaals() != null) {
+                        // Map DTOs back to minimal Kinosaal instances for grid display
+                        java.util.List<Kinosaal> items = ev.getSaals().stream().map(dto -> {
+                            Kinosaal s = new Kinosaal();
+                            s.setId(dto.getId());
+                            s.setName(dto.getName());
+                            s.setFreigegeben(dto.isFreigegeben());
+                            // Rows count used via getReihen().size(); create placeholders
+                            java.util.ArrayList<Sitzreihe> reihen = new java.util.ArrayList<>();
+                            for (int i = 0; i < dto.getReihenCount(); i++) reihen.add(new Sitzreihe());
+                            s.setReihen(reihen);
+                            return s;
+                        }).toList();
+                        grid.setItems(items);
+                    }
+                }));
+            } else if (ev.getEntity() == AdminEvent.Entity.SAAL && ev.getAction() == AdminEvent.Action.CREATE) {
+                // Refresh list after create via Kafka by re-querying
+                requestSaals();
             }
         });
     }
@@ -420,8 +444,14 @@ public class AdminSaalAnlegenView extends VerticalLayout {
         }
     }
 
-    // Grid-Daten neu laden
-    private void updateGrid() {
-        grid.setItems(kinosaalRepository.findAll());
+    private String correlationId;
+    private void requestSaals() {
+        correlationId = java.util.UUID.randomUUID().toString();
+        AdminCommand cmd = new AdminCommand(AdminCommand.Entity.SAAL, AdminCommand.Action.QUERY);
+        AdminCommand.QueryPayload q = new AdminCommand.QueryPayload();
+        q.setType(AdminCommand.QueryPayload.Type.LIST_ALL);
+        q.setCorrelationId(correlationId);
+        cmd.setQuery(q);
+        adminCommandProducer.send(cmd);
     }
 }

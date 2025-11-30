@@ -28,10 +28,12 @@ public class CustomerCommandConsumer {
         try {
             switch (cmd.getAction()) {
                 case CREATE -> handleCreate(cmd);
+                case QUERY -> handleQuery(cmd);
             }
         } catch (Exception e) {
-            CustomerEvent ev = new CustomerEvent(CustomerEvent.Action.CREATE, CustomerEvent.Status.FAILURE);
+            CustomerEvent ev = new CustomerEvent(CustomerEvent.Action.valueOf(cmd.getAction().name()), CustomerEvent.Status.FAILURE);
             ev.setEmail(cmd.getEmail());
+            ev.setCorrelationId(cmd.getCorrelationId());
             ev.setMessage(e.getMessage());
             eventProducer.send(ev);
             CustomerUIEventBus.broadcast(ev);
@@ -58,6 +60,27 @@ public class CustomerCommandConsumer {
         CustomerEvent ev = new CustomerEvent(CustomerEvent.Action.CREATE, CustomerEvent.Status.SUCCESS);
         ev.setKundeId(k.getId());
         ev.setEmail(k.getEmail());
+        eventProducer.send(ev);
+        CustomerUIEventBus.broadcast(ev);
+    }
+
+    private void handleQuery(CustomerCommand cmd) {
+        CustomerEvent ev = new CustomerEvent(CustomerEvent.Action.QUERY, CustomerEvent.Status.SUCCESS);
+        ev.setCorrelationId(cmd.getCorrelationId());
+        ev.setEmail(cmd.getEmail());
+        if (cmd.getEmail() == null || cmd.getEmail().isBlank()) {
+            ev.setStatus(CustomerEvent.Status.NOT_FOUND);
+            eventProducer.send(ev);
+            CustomerUIEventBus.broadcast(ev);
+            return;
+        }
+        Kunde existing = kundeRepository.findByEmail(cmd.getEmail());
+        if (existing == null) {
+            ev.setStatus(CustomerEvent.Status.NOT_FOUND);
+        } else {
+            ev.setKundeId(existing.getId());
+            ev.setStatus(CustomerEvent.Status.SUCCESS);
+        }
         eventProducer.send(ev);
         CustomerUIEventBus.broadcast(ev);
     }

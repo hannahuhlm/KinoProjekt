@@ -28,7 +28,9 @@ import kino.application.data.FilmRepository;
 import kino.application.data.Kinosaal;
 import kino.application.data.KinosaalRepository;
 import kino.application.data.Auffuehrung;
-import kino.application.data.AuffuehrungRepository;
+import kino.application.kafka.events.AdminCommand;
+import kino.application.kafka.events.AdminEvent;
+import kino.application.kafka.producer.AdminCommandProducer;
 
 import java.time.ZoneId;
 import java.time.LocalDate;
@@ -43,8 +45,8 @@ import java.text.SimpleDateFormat;
 public class AdminFilmAnlegenView extends VerticalLayout {
 
     private final FilmRepository filmRepository;
-    private final AuffuehrungRepository auffuehrungRepository;
     private final kino.application.service.AdminService adminService;
+    private final AdminCommandProducer adminCommandProducer;
 
     private Grid<Film> grid = new Grid<>(Film.class, false);
 
@@ -68,11 +70,11 @@ public class AdminFilmAnlegenView extends VerticalLayout {
     private Film dialogFilm;
 
 
-    public AdminFilmAnlegenView(FilmRepository filmRepository, KinosaalRepository kinosaalRepository, AuffuehrungRepository auffuehrungRepository, kino.application.service.AdminService adminService) {
+    public AdminFilmAnlegenView(FilmRepository filmRepository, KinosaalRepository kinosaalRepository, kino.application.service.AdminService adminService, AdminCommandProducer adminCommandProducer) {
         this.filmRepository = filmRepository;
-        this.auffuehrungRepository = auffuehrungRepository;
         this.kinosaalRepository = kinosaalRepository;
         this.adminService = adminService;
+        this.adminCommandProducer = adminCommandProducer;
 
         setSizeFull();
         setPadding(true);
@@ -116,19 +118,36 @@ public class AdminFilmAnlegenView extends VerticalLayout {
         // Register to Admin events to refresh UI without delays
         adminReg = AdminUIEventBus.register(ev -> {
             getUI().ifPresent(ui -> ui.access(() -> {
-                switch (ev.getEntity()) {
-                    case FILM -> {
-                        updateGrid();
+                if (ev.getEntity() == AdminEvent.Entity.FILM && ev.getAction() == AdminEvent.Action.QUERY) {
+                    if (ev.getFilms() != null) {
+                        java.util.List<Film> items = ev.getFilms().stream().map(dto -> {
+                            Film f = new Film();
+                            f.setId(dto.getId());
+                            f.setTitel(dto.getTitel());
+                            f.setDauer(dto.getDauer());
+                            f.setBeschreibung(dto.getBeschreibung());
+                            f.setPosterUrl(dto.getPosterUrl());
+                            f.setFilmstart(dto.getFilmstart());
+                            return f;
+                        }).toList();
+                        grid.setItems(items);
+                    }
+                } else if (ev.getEntity() == AdminEvent.Entity.FILM && ev.getAction() == AdminEvent.Action.CREATE) {
+                    // After create, re-query
+                    updateGrid();
+                } else if (ev.getEntity() == AdminEvent.Entity.FILM && ev.getAction() == AdminEvent.Action.DELETE) {
+                    // After delete, refresh list and clear form if deleted film was selected
+                    if (ev.getFilmId() != null && currentFilm != null && ev.getFilmId().equals(currentFilm.getId())) {
                         clearForm();
                     }
-                    case AUFFUEHRUNG -> {
-                        updateGrid();
-                        if (offeneAuffuehrungenDialog != null && offeneAuffuehrungenDialog.isOpened() && dialogFilm != null) {
-                            offeneAuffuehrungenDialog.close();
-                            filmRepository.findById(dialogFilm.getId()).ifPresent(this::openAuffuehrungenDialog);
-                        }
+                    updateGrid();
+                } else if (ev.getEntity() == AdminEvent.Entity.AUFFUEHRUNG) {
+                    // On showing changes, refresh grid and reopen dialog if needed
+                    updateGrid();
+                    if (offeneAuffuehrungenDialog != null && offeneAuffuehrungenDialog.isOpened() && dialogFilm != null) {
+                        offeneAuffuehrungenDialog.close();
+                        filmRepository.findById(dialogFilm.getId()).ifPresent(this::openAuffuehrungenDialog);
                     }
-                    default -> {}
                 }
             }));
         });
@@ -211,8 +230,15 @@ public class AdminFilmAnlegenView extends VerticalLayout {
         Notification.show("Film wird gelöscht…", 1500, Notification.Position.MIDDLE);
     }
 
+    private String correlationId;
     private void updateGrid() {
-        grid.setItems(filmRepository.findAll());
+        correlationId = java.util.UUID.randomUUID().toString();
+        AdminCommand cmd = new AdminCommand(AdminCommand.Entity.FILM, AdminCommand.Action.QUERY);
+        AdminCommand.QueryPayload q = new AdminCommand.QueryPayload();
+        q.setType(AdminCommand.QueryPayload.Type.LIST_ALL);
+        q.setCorrelationId(correlationId);
+        cmd.setQuery(q);
+        adminCommandProducer.send(cmd);
     }
 
     // ------------------ Aufführungen-Popup -------------------
@@ -228,8 +254,15 @@ public class AdminFilmAnlegenView extends VerticalLayout {
         layout.add(new H2("Aufführungen planen für: " + film.getTitel()));
 
         // *** HIER: Aufführungen explizit laden ***
-        List<Auffuehrung> auffuehrungen =
-                auffuehrungRepository.findByFilmOrderByStartzeitpunktAsc(film);
+        // Query Aufführungen via Kafka
+        String corr = java.util.UUID.randomUUID().toString();
+        AdminCommand cmd = new AdminCommand(AdminCommand.Entity.AUFFUEHRUNG, AdminCommand.Action.QUERY);
+        AdminCommand.QueryPayload q = new AdminCommand.QueryPayload();
+        q.setType(AdminCommand.QueryPayload.Type.LIST_BY_FILM);
+        q.setFilmId(film.getId());
+        q.setCorrelationId(corr);
+        cmd.setQuery(q);
+        adminCommandProducer.send(cmd);
 
         TreeGrid<Object> treeGrid = new TreeGrid<>();
         treeGrid.setWidthFull();
@@ -241,14 +274,15 @@ public class AdminFilmAnlegenView extends VerticalLayout {
             return "";
         }).setHeader("Kalenderwoche / Aufführung");
 
-        // *** Statt film.getAuffuehrungen() → die geladene Liste verwenden ***
+        // Column shows count per calendar week (based on received data)
+        java.util.List<Auffuehrung> loadedAuffuehrungen = new java.util.ArrayList<>();
         treeGrid.addColumn(obj -> {
             if (obj instanceof Integer) {
-                int week = (Integer) obj;
-                long count = auffuehrungen.stream()
-                        .filter(a -> getKalenderwoche(a) == week)
-                        .count();
-                return count;
+            int week = (Integer) obj;
+            long cnt = loadedAuffuehrungen.stream()
+                .filter(a -> getKalenderwoche(a) == week)
+                .count();
+            return cnt;
             }
             return "";
         }).setHeader("Anzahl").setAutoWidth(true);
@@ -274,9 +308,33 @@ public class AdminFilmAnlegenView extends VerticalLayout {
             return null;
         }).setHeader("Aktionen").setAutoWidth(true);
 
-        // *** TreeData mit der Liste aufbauen ***
-        TreeData<Object> treeData = buildTreeData(auffuehrungen);
-        treeGrid.setDataProvider(new TreeDataProvider<>(treeData));
+        // Data will be set when AdminEvent with aufführungen arrives
+        AdminUIEventBus.Registration dialogReg = AdminUIEventBus.register(ev -> {
+            if (ev.getEntity() == AdminEvent.Entity.AUFFUEHRUNG && ev.getAction() == AdminEvent.Action.QUERY && ev.getCorrelationId() != null && ev.getCorrelationId().equals(corr)) {
+                getUI().ifPresent(ui -> ui.access(() -> {
+                    if (ev.getAuffuehrungen() != null) {
+                        // Map DTOs to lightweight Auffuehrung for display
+                        java.util.List<Auffuehrung> auffuehrungen = ev.getAuffuehrungen().stream().map(dto -> {
+                            Auffuehrung a = new Auffuehrung();
+                            a.setId(dto.getId());
+                            a.setStartzeitpunkt(dto.getStartzeitpunkt());
+                            Kinosaal s = new Kinosaal();
+                            s.setId(dto.getSaalId());
+                            s.setName(dto.getSaalName());
+                            a.setSaal(s);
+                            Film f2 = new Film();
+                            f2.setId(dto.getFilmId());
+                            a.setFilm(f2);
+                            return a;
+                        }).toList();
+                        loadedAuffuehrungen.clear();
+                        loadedAuffuehrungen.addAll(auffuehrungen);
+                        TreeData<Object> treeData = buildTreeData(auffuehrungen);
+                        treeGrid.setDataProvider(new TreeDataProvider<>(treeData));
+                    }
+                }));
+            }
+        });
 
         layout.add(treeGrid);
 
@@ -293,7 +351,13 @@ public class AdminFilmAnlegenView extends VerticalLayout {
         layout.add(buttonLayout);
 
         dialog.add(layout);
-        dialog.addOpenedChangeListener(e -> { if (!e.isOpened()) { offeneAuffuehrungenDialog = null; dialogFilm = null; }});
+        dialog.addOpenedChangeListener(e -> {
+            if (!e.isOpened()) {
+                offeneAuffuehrungenDialog = null;
+                dialogFilm = null;
+                if (dialogReg != null) dialogReg.remove();
+            }
+        });
         dialog.open();
     }
 
