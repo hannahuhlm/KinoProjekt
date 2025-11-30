@@ -350,6 +350,10 @@ public class AdminSaalAnlegenView extends VerticalLayout {
             // Für jede Sitzreihe Sitzplätze anpassen (Anzahl Sitzplätze synchronisieren)
             if (aktuellerSaal.getReihen() != null) {
                 for (Sitzreihe reihe : aktuellerSaal.getReihen()) {
+                                        // Falls keine Kategorie gewählt wurde, setze Parkett als Default
+                                        if (reihe.getKategorie() == null) {
+                                            reihe.setKategorie(SitzreihenKategorie.PARKETT);
+                                        }
                     syncSitzplaetze(reihe);
                 }
             }

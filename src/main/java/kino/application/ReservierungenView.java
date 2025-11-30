@@ -21,6 +21,7 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.PermitAll;
+import kino.application.service.BuchungsService;
 import kino.application.data.Kunde;
 import kino.application.data.KundeRepository;
 import kino.application.data.Reservierung;
@@ -40,6 +41,7 @@ public class ReservierungenView extends VerticalLayout {
     private final ReservierungRepository reservierungRepository;
 	private final SitzplatzRepository sitzplatzRepository;
 	private final ReservierungSitzplatzRepository reservierungSitzplatzRepository;
+    private final BuchungsService buchungsService;
 
     private TextField nameField;
     private TextField emailField;
@@ -51,11 +53,13 @@ public class ReservierungenView extends VerticalLayout {
     public ReservierungenView(KundeRepository kundeRepository,
                               ReservierungRepository reservierungRepository,
                               SitzplatzRepository sitzplatzRepository,
-                              ReservierungSitzplatzRepository reservierungSitzplatzRepository) {
+                              ReservierungSitzplatzRepository reservierungSitzplatzRepository,
+                              BuchungsService buchungsService) {
         this.kundeRepository = kundeRepository;
         this.reservierungRepository = reservierungRepository;
 		this.sitzplatzRepository = sitzplatzRepository;
 		this.reservierungSitzplatzRepository = reservierungSitzplatzRepository;
+        this.buchungsService = buchungsService;
 
         setWidth("100%");
 
@@ -108,7 +112,6 @@ public class ReservierungenView extends VerticalLayout {
 
     private void login() {
         String email = emailField.getValue();
-        String name = nameField.getValue(); // aktuell noch nicht genutzt
 
         Kunde kunde = kundeRepository.findByEmail(email);
 
@@ -201,14 +204,48 @@ public class ReservierungenView extends VerticalLayout {
 
         	platzLayout.add(platzParagraph, preisParagraph);
 
-        	// --- NEU: Buchen-Button in jeder Bubble ---
-        	Button buchenButton = new Button("Buchen");
-        	// optionales Styling
-        	buchenButton.getStyle()
-        	        .set("margin-top", "10px")
-        	        .set("border-radius", "20px");
-        	// Noch keine Logik ("mehr noch nicht") – Klick-Listener kommt später
-        	platzLayout.add(buchenButton);
+            // Buchen-Button in jeder Reservierung
+            Button buchenButton = new Button("Jetzt buchen");
+            buchenButton.getStyle()
+                    .set("margin-top", "10px")
+                    .set("border-radius", "20px")
+                    .set("background", "#ff9800")
+                    .set("color", "white");
+            buchenButton.addClickListener(click -> {
+                buchenButton.setEnabled(false); // Doppel-Klick vermeiden
+                try {
+                    Kunde resKunde = reservierung.getKunde();
+                    if (resKunde == null) {
+                        Notification.show("Kein Kunde zugeordnet – Buchung nicht möglich.");
+                        return;
+                    }
+                    Long auffId = reservierung.getAuffuehrung() != null ? reservierung.getAuffuehrung().getId() : null;
+                    if (auffId == null) {
+                        Notification.show("Aufführung fehlt – Buchung abgebrochen.");
+                        return;
+                    }
+                    // Sitzplatz-IDs ermitteln
+                    java.util.List<Long> sitzplatzIds = reservierung.getReservierungSitzplaetze().stream()
+                            .map(rsp -> rsp.getSitzplatz())
+                            .filter(sp -> sp != null && sp.getId() != null)
+                            .map(Sitzplatz::getId)
+                            .toList();
+                    if (sitzplatzIds.isEmpty()) {
+                        Notification.show("Keine Sitzplätze gefunden.");
+                        return;
+                    }
+                    // Buchung via Kafka-Service senden
+                    buchungsService.buchePlaetze(auffId, resKunde.getId(), sitzplatzIds);
+                    Notification.show("Buchung gesendet – wird verarbeitet.");
+                    // Optional: Reservierung aus UI entfernen (optimistisch)
+                    reservierungenLayout.remove(reservierungCard);
+                } catch (Exception ex) {
+                    Notification.show("Fehler beim Buchen: " + ex.getMessage());
+                } finally {
+                    buchenButton.setEnabled(true);
+                }
+            });
+            platzLayout.add(buchenButton);
 
         	// Löschen-Button hinzufügen (oben rechts)
         	Button deleteButton = new Button();

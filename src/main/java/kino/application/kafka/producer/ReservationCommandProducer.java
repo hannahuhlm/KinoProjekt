@@ -1,20 +1,22 @@
-package kino.application.kafka;
+package kino.application.kafka.producer;
 
+import kino.application.kafka.events.ReservationCommand;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
-/** Max S. Jonas C. 21.11.2025 01:20
- * Verschickt Reservierungs-Kommandos an Kafka.
+/**
+ * Producer für Reservierungs-Kommandos.
+ * Verschickt Reservierungsanfragen an Kafka.
  */
 @Service
 public class ReservationCommandProducer {
 
-    private final KafkaTemplate<String, ReservationCommand> kafkaTemplate;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
     private final String topic;
 
     public ReservationCommandProducer(
-            KafkaTemplate<String, ReservationCommand> kafkaTemplate,
+            KafkaTemplate<String, Object> kafkaTemplate,
             @Value("${kino.kafka.topic.reservations}") String topic) {
         this.kafkaTemplate = kafkaTemplate;
         this.topic = topic;
@@ -25,6 +27,7 @@ public class ReservationCommandProducer {
                 ? command.getAuffuehrungId().toString()
                 : "unknown";
 
+        System.out.println(">>> [ReservationProducer] Sende Reservierung an Kafka: " + command);
         kafkaTemplate.send(topic, key, command);
     }
 }

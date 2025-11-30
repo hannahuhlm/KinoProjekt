@@ -41,6 +41,11 @@ public class ReservierungSitzplatz {
     @JoinColumn(name = "sitzplatz_id", nullable = false)
     private Sitzplatz sitzplatz;
 
+    /**
+     * Preis für diesen Sitzplatz bei dieser Reservierung.
+     */
+    private double preis;
+
     public ReservierungSitzplatz() {
     }
 
@@ -68,5 +73,13 @@ public class ReservierungSitzplatz {
 
     public void setSitzplatz(Sitzplatz sitzplatz) {
         this.sitzplatz = sitzplatz;
+    }
+
+    public double getPreis() {
+        return preis;
+    }
+
+    public void setPreis(double preis) {
+        this.preis = preis;
     }
 }

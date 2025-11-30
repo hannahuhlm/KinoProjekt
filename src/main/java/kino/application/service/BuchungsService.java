@@ -1,45 +1,52 @@
 package kino.application.service;
 
 import kino.application.data.*;
-import kino.application.kafka.events.ReservationCommand;
+import kino.application.kafka.events.BookingCommand;
 import kino.application.kafka.events.SitzplatzInfo;
-import kino.application.kafka.producer.ReservationCommandProducer;
+import kino.application.kafka.producer.BookingCommandProducer;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Fachservice für Reservierungen.
+ * Fachservice für Buchungen.
  * Erzeugt Commands und schickt sie über Kafka weg.
  */
 @Service
-public class ReservierungsService {
+public class BuchungsService {
 
-    private final ReservationCommandProducer producer;
+    private final BookingCommandProducer producer;
     private final SitzplatzRepository sitzplatzRepository;
     private final SitzreiheRepository sitzreiheRepository;
+    private final KundeRepository kundeRepository;
 
-    public ReservierungsService(
-            ReservationCommandProducer producer,
+    public BuchungsService(
+            BookingCommandProducer producer,
             SitzplatzRepository sitzplatzRepository,
-            SitzreiheRepository sitzreiheRepository) {
+            SitzreiheRepository sitzreiheRepository,
+            KundeRepository kundeRepository) {
         this.producer = producer;
         this.sitzplatzRepository = sitzplatzRepository;
         this.sitzreiheRepository = sitzreiheRepository;
+        this.kundeRepository = kundeRepository;
     }
 
     /**
-     * Reserviert Plätze für einen Kunden.
+     * Bucht Plätze für einen Kunden.
      * 
      * @param auffuehrungId ID der Aufführung
-     * @param kundeId ID des Kunden (optional, kann null sein für neue Kunden)
-     * @param kundeName Name des Kunden
-     * @param sitzplatzIds Liste der zu reservierenden Sitzplatz-IDs
+     * @param kundeId ID des Kunden
+     * @param sitzplatzIds Liste der zu buchenden Sitzplatz-IDs
      */
-    public void reservierePlaetze(Long auffuehrungId, Long kundeId, String kundeName, List<Long> sitzplatzIds) {
+    public void buchePlaetze(Long auffuehrungId, Long kundeId, List<Long> sitzplatzIds) {
+        // Kunde laden
+        Kunde kunde = kundeRepository.findById(kundeId)
+                .orElseThrow(() -> new RuntimeException("Kunde nicht gefunden: " + kundeId));
+
         // Sitzplätze laden und SitzplatzInfo-Objekte erstellen
         List<SitzplatzInfo> sitzplatzInfos = new ArrayList<>();
+        double gesamtpreis = 0.0;
         
         for (Long sitzplatzId : sitzplatzIds) {
             Sitzplatz sitzplatz = sitzplatzRepository.findById(sitzplatzId)
@@ -47,6 +54,7 @@ public class ReservierungsService {
             
             Sitzreihe reihe = sitzplatz.getReihe();
             double preis = calculatePreis(reihe.getKategorie());
+            gesamtpreis += preis;
             
             SitzplatzInfo info = new SitzplatzInfo(
                     sitzplatz.getId(),
@@ -58,15 +66,17 @@ public class ReservierungsService {
         }
 
         // Command erstellen und senden
-        ReservationCommand command = new ReservationCommand(
+        BookingCommand command = new BookingCommand(
                 auffuehrungId,
                 kundeId,
-                kundeName,
-                sitzplatzInfos
+                kunde.getName(),
+                sitzplatzInfos,
+                gesamtpreis
         );
         
-        producer.sendReservation(command);
-        System.out.println(">>> [ReservierungsService] Reservierung an Kafka gesendet für " + kundeName);
+        producer.sendBooking(command);
+        System.out.println(">>> [BuchungsService] Buchung an Kafka gesendet für " + kunde.getName() + 
+                         " (Gesamtpreis: " + gesamtpreis + " €)");
     }
 
     /**
@@ -85,11 +95,10 @@ public class ReservierungsService {
     }
 
     /**
-     * Kleine Hilfsmethode zum Testen – schickt Dummy-Daten.
+     * Test-Methode zum Senden einer Dummy-Buchung.
      */
-    public void sendeTestReservierung() {
-        List<Long> testSitzplaetze = List.of(1L, 2L);
-        reservierePlaetze(1L, null, "Testkunde Kafka", testSitzplaetze);
+    public void sendeTestBuchung() {
+        List<Long> testSitzplaetze = List.of(3L, 4L);
+        buchePlaetze(1L, 1L, testSitzplaetze);
     }
 }
-

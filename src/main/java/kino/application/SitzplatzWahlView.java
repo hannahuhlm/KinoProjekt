@@ -27,6 +27,8 @@ import java.util.Locale;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.repository.CrudRepository;
+import kino.application.service.ReservierungsService;
+import kino.application.service.BuchungsService;
 
 @Route(value = "sitzplatzwahl/:auffuehrungId", layout = MainViewLayout.class)
 @PageTitle("Sitzplatzwahl")
@@ -34,6 +36,8 @@ import org.springframework.data.repository.CrudRepository;
 public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObserver {
 
     private final AuffuehrungRepository auffuehrungRepository;
+    private final ReservierungsService reservierungsService;
+    private final BuchungsService buchungsService;
     private Auffuehrung aktuelleAuffuehrung;
     private List<Sitzplatz> ausgewähltePlaetze = new ArrayList<>();
     private Kunde currentKunde;
@@ -43,14 +47,15 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
     @Autowired
     private KundeRepository kundeRepository;
     @Autowired
-    private ReservierungRepository reservierungRepository;
-    @Autowired
-    private ReservierungSitzplatzRepository reservierungSitzplatzRepository;
-    @Autowired
     private SitzplatzRepository sitzplatzRepository;
 
-    public SitzplatzWahlView(AuffuehrungRepository auffuehrungRepository) {
+    public SitzplatzWahlView(
+            AuffuehrungRepository auffuehrungRepository,
+            ReservierungsService reservierungsService,
+            BuchungsService buchungsService) {
         this.auffuehrungRepository = auffuehrungRepository;
+        this.reservierungsService = reservierungsService;
+        this.buchungsService = buchungsService;
 
         setSizeFull();
         setPadding(false);
@@ -194,13 +199,22 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
             return;
         }
 
-        BuchungContext ctx = new BuchungContext();
-        ctx.setAuffuehrungId(this.aktuelleAuffuehrung.getId());
-        ctx.setKundeId(currentKunde.getId());
-        ctx.setSitzplatzIds(ausgewähltePlaetze.stream().map(Sitzplatz::getId).toList());
+        // Buchung über Kafka senden
+        List<Long> sitzplatzIds = ausgewähltePlaetze.stream()
+                .map(Sitzplatz::getId)
+                .toList();
 
-        VaadinSession.getCurrent().setAttribute(BuchungContext.class, ctx);
-        UI.getCurrent().navigate(BuchungsView.class);
+        buchungsService.buchePlaetze(
+                aktuelleAuffuehrung.getId(),
+                currentKunde.getId(),
+                sitzplatzIds
+        );
+
+        Notification.show("Buchung an Kafka gesendet!");
+
+        // Auswahl leeren und UI aktualisieren
+        ausgewähltePlaetze.clear();
+        UI.getCurrent().getPage().reload();
     }
 
     private Button createSitzButton(Sitzplatz platz, SitzreihenKategorie kategorie) {
@@ -211,16 +225,21 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
 
         Icon mainIcon;
 
-        switch (kategorie) {
-            case PARKETT -> mainIcon = VaadinIcon.USER.create();
-            case LOGE -> mainIcon = VaadinIcon.GROUP.create();
-            case LOGE_MIT_SERVICE -> {
-                mainIcon = VaadinIcon.GROUP.create();
-                Icon service = VaadinIcon.COFFEE.create();
-                service.setSize("10px");
-                iconLayout.add(service);
+        // Null-Check für kategorie
+        if (kategorie == null) {
+            mainIcon = VaadinIcon.USER.create();
+        } else {
+            switch (kategorie) {
+                case PARKETT -> mainIcon = VaadinIcon.USER.create();
+                case LOGE -> mainIcon = VaadinIcon.GROUP.create();
+                case LOGE_MIT_SERVICE -> {
+                    mainIcon = VaadinIcon.GROUP.create();
+                    Icon service = VaadinIcon.COFFEE.create();
+                    service.setSize("10px");
+                    iconLayout.add(service);
+                }
+                default -> mainIcon = VaadinIcon.USER.create();
             }
-            default -> mainIcon = VaadinIcon.USER.create();
         }
 
         mainIcon.setSize("14px");
@@ -280,18 +299,28 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
                 return;
             }
 
-            Kunde newKunde = new Kunde();
-            newKunde.setName(name);
-            newKunde.setEmail(email);
-            kundeRepository.save(newKunde);
-            this.currentKunde = newKunde;
+            try {
+                newCustomerButton.setEnabled(false);
+                existingCustomerButton.setEnabled(false);
+                Kunde newKunde = new Kunde();
+                newKunde.setName(name);
+                newKunde.setEmail(email);
+                kundeRepository.save(newKunde);
+                this.currentKunde = newKunde;
 
-            if (isDirektBuchung) {
+                if (isDirektBuchung) {
+                    dialog.close();
+                    startDirektbuchung();
+                } else {
+                    saveReservierung(newKunde);
+                    dialog.close();
+                }
+            } catch (Exception ex) {
+                Notification.show("Fehler beim Speichern: " + ex.getMessage());
                 dialog.close();
-                startDirektbuchung();
-            } else {
-                saveReservierung(newKunde);
-                dialog.close();
+            } finally {
+                newCustomerButton.setEnabled(true);
+                existingCustomerButton.setEnabled(true);
             }
         });
 
@@ -301,20 +330,28 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
                 Notification.show("Bitte E-Mail angeben.");
                 return;
             }
-
-            Kunde existingKunde = kundeRepository.findByEmail(email);
-            if (existingKunde != null) {
-                this.currentKunde = existingKunde;
-
-                if (isDirektBuchung) {
-                    dialog.close();
-                    startDirektbuchung();
+            try {
+                newCustomerButton.setEnabled(false);
+                existingCustomerButton.setEnabled(false);
+                Kunde existingKunde = kundeRepository.findByEmail(email);
+                if (existingKunde != null) {
+                    this.currentKunde = existingKunde;
+                    if (isDirektBuchung) {
+                        dialog.close();
+                        startDirektbuchung();
+                    } else {
+                        saveReservierung(existingKunde);
+                        dialog.close();
+                    }
                 } else {
-                    saveReservierung(existingKunde);
-                    dialog.close();
+                    Notification.show("Kunde nicht gefunden. Bitte einen neuen Kunden anlegen.");
                 }
-            } else {
-                Notification.show("Kunde nicht gefunden. Bitte einen neuen Kunden anlegen.");
+            } catch (Exception ex) {
+                Notification.show("Fehler beim Laden/Reservieren: " + ex.getMessage());
+                dialog.close();
+            } finally {
+                newCustomerButton.setEnabled(true);
+                existingCustomerButton.setEnabled(true);
             }
         });
 
@@ -329,24 +366,19 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
             return;
         }
 
-        // Reservierung erstellen
-        Reservierung reservierung = new Reservierung();
-        reservierung.setKunde(kunde);
-        reservierung.setAuffuehrung(aktuelleAuffuehrung);
-        reservierung.setStartZeitstempel(new java.util.Date());
-        reservierung.setReservierungsnummer(generateReservierungsnummer());
+        // Reservierung über Kafka senden
+        List<Long> sitzplatzIds = ausgewähltePlaetze.stream()
+                .map(Sitzplatz::getId)
+                .toList();
 
-        reservierungRepository.save(reservierung);
+        reservierungsService.reservierePlaetze(
+                aktuelleAuffuehrung.getId(),
+                kunde.getId(),
+                kunde.getName(),
+                sitzplatzIds
+        );
 
-        // Sitzplätze reservieren (NICHT mehr global am Sitzplatz blocken)
-        for (Sitzplatz platz : ausgewähltePlaetze) {
-            ReservierungSitzplatz reservierungSitzplatz = new ReservierungSitzplatz();
-            reservierungSitzplatz.setReservierung(reservierung);
-            reservierungSitzplatz.setSitzplatz(platz);
-            reservierungSitzplatzRepository.save(reservierungSitzplatz);
-        }
-
-        Notification.show("Reservierung erfolgreich!");
+        Notification.show("Reservierung an Kafka gesendet!");
 
         // Auswahl leeren und UI aktualisieren
         ausgewähltePlaetze.clear();
