@@ -267,37 +267,83 @@ public class AdminCommandConsumer {
 
     private void handleAuffuehrung(AdminCommand cmd) {
         var p = cmd.getAuffuehrung();
-        if (p == null) return;
+        if (p == null) {
+            return;
+        }
         if (cmd.getAction() == AdminCommand.Action.DELETE) {
             if (p.getId() != null) {
-                auffuehrungRepository.deleteById(p.getId());
+                try {
+                    Optional<Auffuehrung> optAuff = auffuehrungRepository.findById(p.getId());
+                    if (optAuff.isPresent()) {
+                        Auffuehrung auff = optAuff.get();
+                        boolean hasBuchungen = auff.getBuchungen() != null && !auff.getBuchungen().isEmpty();
+                        boolean hasReservierungen = auff.getReservierungen() != null && !auff.getReservierungen().isEmpty();
+                        
+                        if (hasBuchungen || hasReservierungen) {
+                            AdminEvent ev = new AdminEvent(AdminEvent.Entity.AUFFUEHRUNG, AdminEvent.Action.DELETE, AdminEvent.Status.FAILURE);
+                            ev.setMessage("Aufführung kann nicht gelöscht werden: Es existieren bereits Buchungen oder Reservierungen.");
+                            ev.setAuffuehrungId(p.getId());
+                            ev.setCorrelationId(cmd.getCorrelationId());
+                            adminEventProducer.send(ev);
+                            AdminUIEventBus.broadcast(ev);
+                            return;
+                        }
+                        
+                        auffuehrungRepository.deleteAuffuehrungById(p.getId());
+                        
+                        AdminEvent ev = new AdminEvent(AdminEvent.Entity.AUFFUEHRUNG, AdminEvent.Action.DELETE, AdminEvent.Status.SUCCESS);
+                        ev.setAuffuehrungId(p.getId());
+                        ev.setCorrelationId(cmd.getCorrelationId());
+                        adminEventProducer.send(ev);
+                        AdminUIEventBus.broadcast(ev);
+                    } else {
+                        AdminEvent ev = new AdminEvent(AdminEvent.Entity.AUFFUEHRUNG, AdminEvent.Action.DELETE, AdminEvent.Status.NOT_FOUND);
+                        ev.setAuffuehrungId(p.getId());
+                        ev.setCorrelationId(cmd.getCorrelationId());
+                        adminEventProducer.send(ev);
+                        AdminUIEventBus.broadcast(ev);
+                    }
+                } catch (Exception e) {
+                    AdminEvent ev = new AdminEvent(AdminEvent.Entity.AUFFUEHRUNG, AdminEvent.Action.DELETE, AdminEvent.Status.FAILURE);
+                    ev.setMessage("Fehler beim Löschen: " + e.getMessage());
+                    ev.setAuffuehrungId(p.getId());
+                    ev.setCorrelationId(cmd.getCorrelationId());
+                    adminEventProducer.send(ev);
+                    AdminUIEventBus.broadcast(ev);
+                    return;
+                }
             }
-            AdminEvent ev = new AdminEvent(AdminEvent.Entity.AUFFUEHRUNG, AdminEvent.Action.DELETE, AdminEvent.Status.SUCCESS);
-            ev.setAuffuehrungId(p.getId());
-            adminEventProducer.send(ev);
-            AdminUIEventBus.broadcast(ev);
             return;
         }
         if (cmd.getAction() == AdminCommand.Action.CREATE) {
-            Film film = filmRepository.findById(p.getFilmId()).orElseThrow();
-            Kinosaal saal = kinosaalRepository.findById(p.getSaalId()).orElseThrow();
-            Date start;
             try {
-                start = new SimpleDateFormat("yyyy-MM-dd HH:mm").parse(p.getStartzeit());
+                Film film = filmRepository.findById(p.getFilmId()).orElseThrow(() -> new IllegalArgumentException("Film nicht gefunden"));
+                Kinosaal saal = kinosaalRepository.findById(p.getSaalId()).orElseThrow(() -> new IllegalArgumentException("Kinosaal nicht gefunden"));
+                Date start;
+                try {
+                    start = new SimpleDateFormat("yyyy-MM-dd HH:mm").parse(p.getStartzeit());
+                } catch (Exception e) {
+                    throw new IllegalArgumentException("Ungültige Startzeit: " + p.getStartzeit());
+                }
+                Auffuehrung a = new Auffuehrung();
+                a.setFilm(film);
+                a.setSaal(saal);
+                a.setStartzeitpunkt(start);
+                a = auffuehrungRepository.save(a);
+                AdminEvent ev = new AdminEvent(AdminEvent.Entity.AUFFUEHRUNG, AdminEvent.Action.CREATE, AdminEvent.Status.SUCCESS);
+                ev.setAuffuehrungId(a.getId());
+                ev.setFilmId(film.getId());
+                ev.setSaalId(saal.getId());
+                ev.setCorrelationId(cmd.getCorrelationId());
+                adminEventProducer.send(ev);
+                AdminUIEventBus.broadcast(ev);
             } catch (Exception e) {
-                throw new RuntimeException("Ungültige Startzeit: " + p.getStartzeit());
+                AdminEvent ev = new AdminEvent(AdminEvent.Entity.AUFFUEHRUNG, AdminEvent.Action.CREATE, AdminEvent.Status.FAILURE);
+                ev.setMessage("Fehler beim Anlegen der Aufführung: " + e.getMessage());
+                ev.setCorrelationId(cmd.getCorrelationId());
+                adminEventProducer.send(ev);
+                AdminUIEventBus.broadcast(ev);
             }
-            Auffuehrung a = new Auffuehrung();
-            a.setFilm(film);
-            a.setSaal(saal);
-            a.setStartzeitpunkt(start);
-            a = auffuehrungRepository.save(a);
-            AdminEvent ev = new AdminEvent(AdminEvent.Entity.AUFFUEHRUNG, AdminEvent.Action.CREATE, AdminEvent.Status.SUCCESS);
-            ev.setAuffuehrungId(a.getId());
-            ev.setFilmId(film.getId());
-            ev.setSaalId(saal.getId());
-            adminEventProducer.send(ev);
-            AdminUIEventBus.broadcast(ev);
         }
     }
 }

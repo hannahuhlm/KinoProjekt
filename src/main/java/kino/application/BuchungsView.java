@@ -299,7 +299,7 @@ public class BuchungsView extends VerticalLayout implements BeforeEnterObserver 
         // 2) Asynchron warten, bis der Consumer die Buchung persistiert hat, dann UI anzeigen
         UI ui = UI.getCurrent();
         new Thread(() -> {
-            long deadline = System.currentTimeMillis() + 3000; // bis zu 3s warten
+            long deadline = System.currentTimeMillis() + 5000; // bis zu 5s warten (direkte Buchung kann länger dauern)
             Buchung found = null;
             while (System.currentTimeMillis() < deadline) {
                 try {
@@ -314,11 +314,11 @@ public class BuchungsView extends VerticalLayout implements BeforeEnterObserver 
                             .findFirst()
                             .orElse(null);
                     // Warten bis Consumer Plätze UND Gesamtpreis gesetzt hat
-                    if (found != null
-                            && found.getBuchungSitzplaetze() != null
-                            && !found.getBuchungSitzplaetze().isEmpty()
-                            && found.getGesamtpreis() > 0.0) {
-                        break;
+                    if (found != null) {
+                        // Falls Sitzplätze/Gesamtpreis noch nicht gesetzt → kurz weiter warten
+                        if (found.getBuchungSitzplaetze() != null && !found.getBuchungSitzplaetze().isEmpty() && found.getGesamtpreis() > 0.0) {
+                            break;
+                        }
                     }
                     Thread.sleep(150);
                 } catch (InterruptedException e) {
@@ -336,7 +336,15 @@ public class BuchungsView extends VerticalLayout implements BeforeEnterObserver 
                     return;
                 }
 
-                this.buchung = result;
+                // Falls nach Timeout noch keine Sitzplätze geladen: Fetch-Join Nachladen
+                Buchung enriched = result;
+                if ((result.getBuchungSitzplaetze() == null || result.getBuchungSitzplaetze().isEmpty()) || result.getGesamtpreis() <= 0.0) {
+                    buchungRepository.findWithSeatsById(result.getId()).ifPresent(bj -> {
+                        enriched.setBuchungSitzplaetze(bj.getBuchungSitzplaetze());
+                        enriched.setGesamtpreis(bj.getGesamtpreis());
+                    });
+                }
+                this.buchung = enriched;
 
                 // 3) Falls aus Reservierung: Delete-Kommando senden
                 if (ctx != null && ctx.getReservierungsId() != null) {

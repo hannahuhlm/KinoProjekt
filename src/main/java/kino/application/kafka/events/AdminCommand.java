@@ -13,6 +13,7 @@ public class AdminCommand {
     private Entity entity;
     private Action action;
     private Instant issuedAt = Instant.now();
+    private String correlationId;
 
     // Payloads (only one is populated depending on entity/action)
     private FilmPayload film;
@@ -47,6 +48,9 @@ public class AdminCommand {
 
     public QueryPayload getQuery() { return query; }
     public void setQuery(QueryPayload query) { this.query = query; }
+
+    public String getCorrelationId() { return correlationId; }
+    public void setCorrelationId(String correlationId) { this.correlationId = correlationId; }
 
     @Override
     public String toString() {

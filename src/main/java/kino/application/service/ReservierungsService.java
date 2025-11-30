@@ -40,6 +40,7 @@ public class ReservierungsService {
     public void reservierePlaetze(Long auffuehrungId, Long kundeId, String kundeName, String kundeEmail, List<Long> sitzplatzIds) {
         // Sitzplätze laden und SitzplatzInfo-Objekte erstellen
         List<SitzplatzInfo> sitzplatzInfos = new ArrayList<>();
+        System.out.println(">>> [ReservierungsService] Starte Reservierung: auffuehrungId=" + auffuehrungId + ", kundeId=" + kundeId + ", Sitzplatz-IDs=" + sitzplatzIds);
         
         for (Long sitzplatzId : sitzplatzIds) {
             Sitzplatz sitzplatz = sitzplatzRepository.findById(sitzplatzId)
@@ -67,7 +68,7 @@ public class ReservierungsService {
         );
         
         producer.sendReservation(command);
-        System.out.println(">>> [ReservierungsService] Reservierung an Kafka gesendet für " + kundeName);
+        System.out.println(">>> [ReservierungsService] Reservierung an Kafka gesendet: Sitzplätze=" + sitzplatzInfos.size());
     }
 
     /**

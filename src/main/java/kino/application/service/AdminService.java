@@ -49,6 +49,10 @@ public class AdminService {
 
     // --- Aufführung ---
     public void createAuffuehrung(Long filmId, Long saalId, Date start) {
+        createAuffuehrung(filmId, saalId, start, null);
+    }
+
+    public void createAuffuehrung(Long filmId, Long saalId, Date start, String correlationId) {
         AdminCommand cmd = new AdminCommand(AdminCommand.Entity.AUFFUEHRUNG, AdminCommand.Action.CREATE);
         AuffuehrungPayload p = new AuffuehrungPayload();
         p.setFilmId(filmId);
@@ -56,6 +60,7 @@ public class AdminService {
         SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd HH:mm");
         p.setStartzeit(fmt.format(start));
         cmd.setAuffuehrung(p);
+        cmd.setCorrelationId(correlationId);
         producer.send(cmd);
     }
 

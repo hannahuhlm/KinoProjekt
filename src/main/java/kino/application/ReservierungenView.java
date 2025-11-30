@@ -288,10 +288,105 @@ public class ReservierungenView extends VerticalLayout {
     }
 
     private Div erzeugeReservierungsKachelDTO(kino.application.kafka.dto.ReservierungDTO dto) {
-        // Load full entity to reuse existing card creation
-        Reservierung reservierung = reservierungRepository.findById(dto.getId())
-                .orElseThrow(() -> new RuntimeException("Reservierung nicht gefunden: " + dto.getId()));
-        return erzeugeReservierungsKachel(reservierung);
+        // Baut eine Reservierungskachel direkt aus dem DTO (vermeidet Lazy-Loading-Probleme der Sitzplätze)
+        Div card = new Div();
+        card.addClassName("reservierungs-card");
+        card.getStyle().set("background-color", "#f6e6bf");
+        card.getStyle().set("color", "black");
+        card.getStyle().set("border-radius", "8px");
+        card.getStyle().set("padding", "20px");
+        card.getStyle().set("display", "flex");
+        card.getStyle().set("gap", "20px");
+        card.getStyle().set("align-items", "stretch");
+        card.getStyle().set("max-width", "900px");
+        card.getStyle().set("margin-left", "300px");
+
+        // Poster: echte Poster-URL aus DTO mit Fallback
+        Image poster = new Image();
+        poster.setAlt(dto.getFilmTitel() != null ? dto.getFilmTitel() : "Film");
+        poster.setWidth("120px");
+        poster.setHeight("160px");
+        poster.getStyle().set("object-fit", "cover");
+        if (dto.getFilmPosterUrl() != null && !dto.getFilmPosterUrl().isBlank()) {
+            poster.setSrc(dto.getFilmPosterUrl());
+        } else {
+            poster.setSrc("images/placeholder-poster.png");
+        }
+
+        // Mitte: Filminfo
+        VerticalLayout mitte = new VerticalLayout();
+        mitte.setPadding(false);
+        mitte.setSpacing(false);
+
+        Span titelSpan = new Span(dto.getFilmTitel() != null ? dto.getFilmTitel() : "Unbekannter Film");
+        titelSpan.getStyle().set("font-weight", "600");
+        titelSpan.getStyle().set("font-size", "18px");
+        titelSpan.getStyle().set("margin-bottom", "10px");
+
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        String datumText = dto.getStartzeitpunkt() != null ? sdf.format(dto.getStartzeitpunkt()) : "";
+        Span datumSpan = new Span("Datum: " + datumText);
+        Span reservierungsNrSpan = new Span("Reservierung #" + dto.getReservierungsnummer());
+        mitte.add(titelSpan, datumSpan, reservierungsNrSpan);
+
+        // Rechts: Plätze, Preis, Buttons
+        VerticalLayout rechts = new VerticalLayout();
+        rechts.setPadding(false);
+        rechts.setSpacing(false);
+        rechts.setAlignItems(FlexComponent.Alignment.START);
+
+        // Plätze-Text aus DTO erstellen
+        String plaetzeText;
+        if (dto.getSitzplaetze() == null || dto.getSitzplaetze().isEmpty()) {
+            plaetzeText = "-";
+        } else {
+            plaetzeText = dto.getSitzplaetze().stream()
+                    .map(sp -> "R" + sp.getReihe() + "-P" + sp.getPlatz())
+                    .collect(Collectors.joining(" | "));
+        }
+        Span plaetzeSpan = new Span("Plätze: " + plaetzeText);
+
+        // Gesamtpreis direkt aus DTO
+        Span preisSpan = new Span("Preis: " + formatierePreis(dto.getGesamtpreis()));
+
+        // Optionale Tooltip-Details: Einzelpreise
+        if (dto.getSitzplaetze() != null && !dto.getSitzplaetze().isEmpty()) {
+            String preisDetails = dto.getSitzplaetze().stream()
+                    .map(sp -> "R" + sp.getReihe() + ":" + "P" + sp.getPlatz() + " = " + formatierePreis(sp.getPreis()))
+                    .collect(Collectors.joining(" | "));
+            preisSpan.getElement().setProperty("title", preisDetails);
+        }
+
+        // Buttons
+        HorizontalLayout buttonRow = new HorizontalLayout();
+        buttonRow.setSpacing(true);
+
+        Button buchenButton = new Button("Buchen");
+        buchenButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+        buchenButton.getStyle().set("color", "#c76b28");
+        buchenButton.addClickListener(e -> {
+            // Reservierung inkl. Sitzplätze per Fetch-Join laden für korrekte Preis-/Platzanzeige
+            reservierungRepository.findWithSeatsById(dto.getId()).ifPresentOrElse(
+                this::bestaetigeUndStarteBuchung,
+                () -> Notification.show("Reservierung nicht mehr vorhanden.")
+            );
+        });
+
+        Button loeschenButton = new Button(new Icon(VaadinIcon.TRASH));
+        loeschenButton.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_TERTIARY);
+        loeschenButton.getElement().setProperty("title", "Reservierung löschen");
+        loeschenButton.addClickListener(e -> {
+                reservierungRepository.findWithSeatsById(dto.getId()).ifPresentOrElse(
+                    this::loescheReservierung,
+                    () -> Notification.show("Reservierung nicht mehr vorhanden.")
+            );
+        });
+
+        buttonRow.add(buchenButton, loeschenButton);
+
+        rechts.add(plaetzeSpan, preisSpan, buttonRow);
+        card.add(poster, mitte, rechts);
+        return card;
     }
 
     private Div erzeugeReservierungsKachel(Reservierung reservierung) {

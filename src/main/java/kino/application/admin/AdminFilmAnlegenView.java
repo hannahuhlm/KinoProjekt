@@ -141,12 +141,16 @@ public class AdminFilmAnlegenView extends VerticalLayout {
                         clearForm();
                     }
                     updateGrid();
-                } else if (ev.getEntity() == AdminEvent.Entity.AUFFUEHRUNG) {
-                    // On showing changes, refresh grid and reopen dialog if needed
+                } else if (ev.getEntity() == AdminEvent.Entity.AUFFUEHRUNG 
+                        && (ev.getAction() == AdminEvent.Action.CREATE || ev.getAction() == AdminEvent.Action.DELETE)
+                        && ev.getStatus() == AdminEvent.Status.SUCCESS) {
+                    // Only on CREATE/DELETE success, refresh dialog
                     updateGrid();
-                    if (offeneAuffuehrungenDialog != null && offeneAuffuehrungenDialog.isOpened() && dialogFilm != null) {
+                    // Lokale Kopie zur Vermeidung von Race Conditions
+                    Film film = dialogFilm;
+                    if (offeneAuffuehrungenDialog != null && offeneAuffuehrungenDialog.isOpened() && film != null) {
                         offeneAuffuehrungenDialog.close();
-                        filmRepository.findById(dialogFilm.getId()).ifPresent(this::openAuffuehrungenDialog);
+                        filmRepository.findById(film.getId()).ifPresent(this::openAuffuehrungenDialog);
                     }
                 }
             }));
@@ -248,6 +252,11 @@ public class AdminFilmAnlegenView extends VerticalLayout {
         this.dialogFilm = film;
         dialog.setWidth("900px");
         dialog.setHeight("600px");
+        dialog.setModal(true);
+        dialog.setDraggable(false);
+        dialog.setCloseOnOutsideClick(false);
+        dialog.setCloseOnEsc(true);
+        dialog.setCloseOnEsc(true);
 
         VerticalLayout layout = new VerticalLayout();
         layout.setSizeFull();
@@ -375,6 +384,10 @@ public class AdminFilmAnlegenView extends VerticalLayout {
         Dialog dialog = new Dialog();
         dialog.setWidth("900px");
         dialog.setHeight("600px");
+        dialog.setModal(true);
+        dialog.setDraggable(false);
+        dialog.setCloseOnOutsideClick(false);
+        dialog.setCloseOnEsc(true);
         dialog.getElement().getStyle().set("margin-left", "40px");
         dialog.getElement().getStyle().set("margin-top", "40px");
 
@@ -405,6 +418,40 @@ public class AdminFilmAnlegenView extends VerticalLayout {
         VerticalLayout buttons = new VerticalLayout(speichern, schliessen);
         buttons.setWidthFull();
         layout.add(buttons);
+
+        // Event-Listener für erfolgreiche Erstellung
+        String createCorr = UUID.randomUUID().toString();
+        AdminUIEventBus.Registration createReg = AdminUIEventBus.register(event -> {
+            if (event.getEntity() == AdminEvent.Entity.AUFFUEHRUNG 
+                && event.getAction() == AdminEvent.Action.CREATE
+                && event.getCorrelationId() != null
+                && event.getCorrelationId().equals(createCorr)
+                && event.getStatus() == AdminEvent.Status.SUCCESS) {
+                getUI().ifPresent(ui -> ui.access(() -> {
+                    dialog.close();
+                    // Parent-Dialog schließen und neu öffnen um aktualisierte Liste zu laden
+                    if (parentDialog != null) {
+                        parentDialog.close();
+                        openAuffuehrungenDialog(film);
+                    }
+                    Notification.show("Aufführung erfolgreich angelegt!", 2000, Notification.Position.MIDDLE);
+                }));
+            } else if (event.getEntity() == AdminEvent.Entity.AUFFUEHRUNG 
+                && event.getAction() == AdminEvent.Action.CREATE
+                && event.getCorrelationId() != null
+                && event.getCorrelationId().equals(createCorr)
+                && event.getStatus() == AdminEvent.Status.FAILURE) {
+                getUI().ifPresent(ui -> ui.access(() -> {
+                    Notification.show("Fehler beim Anlegen: " + event.getMessage(), 4000, Notification.Position.MIDDLE);
+                }));
+            }
+        });
+
+        dialog.addOpenedChangeListener(e -> {
+            if (!e.isOpened() && createReg != null) {
+                createReg.remove();
+            }
+        });
 
         speichern.addClickListener(ev -> {
             LocalDate datum = datumPicker.getValue();
@@ -443,12 +490,12 @@ public class AdminFilmAnlegenView extends VerticalLayout {
                     return;
                 }
 
-                // Über Kafka-AdminService anlegen lassen
-                adminService.createAuffuehrung(managedFilm.getId(), ausgewaehlterSaal.getId(), startzeit);
+                // Über Kafka-AdminService anlegen lassen mit Korrelations-ID
+                adminService.createAuffuehrung(managedFilm.getId(), ausgewaehlterSaal.getId(), startzeit, createCorr);
 
-                // Event-Listener aktualisiert die Ansicht (Dialog wird geschlossen/neu geöffnet)
-                Notification.show("Aufführung wird gespeichert…",
-                    1500, Notification.Position.MIDDLE);
+                // Button deaktivieren um Doppelklicks zu vermeiden
+                speichern.setEnabled(false);
+                Notification.show("Aufführung wird gespeichert…", 1500, Notification.Position.MIDDLE);
 
             } catch (ParseException e) {
                 Notification.show("Ungültiges Zeitformat, bitte HH:mm eingeben",

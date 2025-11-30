@@ -96,18 +96,34 @@ public class ReservationCommandConsumer {
             reservierung.setStartZeitstempel(new Date());
             reservierung.setKunde(kunde);
             reservierung.setAuffuehrung(auffuehrung);
+            reservierung.setReservierungSitzplaetze(new ArrayList<>()); // Liste vorab initialisieren
             reservierung = reservierungRepository.save(reservierung);
 
             // 4. Sitzplätze reservieren
-            List<ReservierungSitzplatz> reserviertePlaetze = new ArrayList<>();
+            System.out.println(">>> [ReservationConsumer] Anzahl Sitzplätze im Command: " + (command.getSitzplaetze() == null ? 0 : command.getSitzplaetze().size()));
+            java.util.List<SitzplatzInfo> conflicts = new java.util.ArrayList<>();
             for (SitzplatzInfo info : command.getSitzplaetze()) {
                 Sitzplatz sitzplatz = sitzplatzRepository.findById(info.getSitzplatzId())
                         .orElseThrow(() -> new RuntimeException("Sitzplatz nicht gefunden: " + info.getSitzplatzId()));
 
-                // Prüfen, ob Sitzplatz bereits reserviert ist
-                if (sitzplatz.getReservierung() != null || sitzplatz.getBuchung() != null) {
-                    throw new RuntimeException("Sitzplatz bereits belegt: Reihe " + 
-                            info.getReiheNummer() + ", Platz " + info.getPlatzNummer());
+                // Prüfen, ob Sitzplatz bereits für DIESELBE Aufführung reserviert/gebucht ist
+                boolean belegtGleicheAuff = false;
+                if (sitzplatz.getReservierung() != null && sitzplatz.getReservierung().getAuffuehrung() != null) {
+                    Long reservAuffId = sitzplatz.getReservierung().getAuffuehrung().getId();
+                    if (reservAuffId != null && reservAuffId.equals(command.getAuffuehrungId())) {
+                        belegtGleicheAuff = true;
+                    }
+                }
+                if (!belegtGleicheAuff && sitzplatz.getBuchung() != null && sitzplatz.getBuchung().getAuffuehrung() != null) {
+                    Long buchAuffId = sitzplatz.getBuchung().getAuffuehrung().getId();
+                    if (buchAuffId != null && buchAuffId.equals(command.getAuffuehrungId())) {
+                        belegtGleicheAuff = true;
+                    }
+                }
+                if (belegtGleicheAuff) {
+                    System.out.println(">>> [ReservationConsumer] Sitzplatz belegt für dieselbe Aufführung (Konflikt): ID=" + sitzplatz.getId());
+                    conflicts.add(info);
+                    continue; // nicht reservieren
                 }
 
                 // ReservierungSitzplatz Join-Entity erstellen
@@ -116,26 +132,49 @@ public class ReservationCommandConsumer {
                 rs.setSitzplatz(sitzplatz);
                 rs.setPreis(info.getPreis());
                 rs = reservierungSitzplatzRepository.save(rs);
-                
-                reserviertePlaetze.add(rs);
+                // Bidirektional: der Reservierung ihre Liste direkt erweitern
+                reservierung.getReservierungSitzplaetze().add(rs);
                 
                 // Sitzplatz als reserviert markieren
                 sitzplatz.setReservierung(reservierung);
+                sitzplatz.setFrei(false); // explizit als belegt kennzeichnen
                 sitzplatzRepository.save(sitzplatz);
+                System.out.println(">>> [ReservationConsumer] Sitzplatz reserviert: ID=" + sitzplatz.getId() + ", Reihe=" + info.getReiheNummer() + ", Platz=" + info.getPlatzNummer());
+                // Zwischenstand speichern (reduziert Risiko leerer Liste bei Lazy/Cache)
+                reservierung = reservierungRepository.save(reservierung);
             }
 
-            reservierung.setReservierungSitzplaetze(reserviertePlaetze);
+            // Finale Sicherung
+            if (reservierung.getReservierungSitzplaetze().isEmpty()) {
+                Long tmpId = reservierung.getId();
+                reservierungRepository.delete(reservierung);
+                System.out.println(">>> [ReservationConsumer] Reservierung verworfen (keine Sitzplätze): id=" + tmpId);
+                // Sende Failure-Event mit Konflikt-Information
+                ReservationEvent failed = new ReservationEvent(
+                        null,
+                        reservierung.getReservierungsnummer(),
+                        auffuehrung.getId(),
+                        kunde.getId(),
+                        "FAILED_SEATS_OCCUPIED"
+                );
+                failed.setCorrelationId(command.getCorrelationId());
+                eventProducer.sendReservationEvent(failed);
+                return;
+            }
+            reservierung = reservierungRepository.save(reservierung);
+            System.out.println(">>> [ReservationConsumer] Gesamt reservierte Sitzplätze für Reservierung " + reservierung.getId() + ": " + reservierung.getReservierungSitzplaetze().size());
 
             System.out.println(">>> Reservierung erfolgreich gespeichert: " + reservierung.getId());
 
             // 5. Event verschicken
-            ReservationEvent event = new ReservationEvent(
+                ReservationEvent event = new ReservationEvent(
                     reservierung.getId(),
                     reservierung.getReservierungsnummer(),
                     auffuehrung.getId(),
                     kunde.getId(),
-                    "CREATED"
-            );
+                    conflicts.isEmpty() ? "CREATED" : "CREATED_PARTIAL"
+                );
+                event.setCorrelationId(command.getCorrelationId());
             eventProducer.sendReservationEvent(event);
 
         } catch (Exception e) {
@@ -171,6 +210,7 @@ public class ReservationCommandConsumer {
                 Sitzplatz sitz = rs.getSitzplatz();
                 if (sitz != null) {
                     sitz.setReservierung(null);
+                    sitz.setFrei(true); // wieder freigeben
                     sitzplatzRepository.save(sitz);
                 }
             }
@@ -210,15 +250,26 @@ public class ReservationCommandConsumer {
 
         try {
             if (command.getKundeId() != null) {
-                // Query reservations by kunde ID
+                // Neue Fetch-Query für vollständige Sitzplatz-Daten
                 java.util.List<kino.application.data.Reservierung> reservierungen = 
-                    kundeRepository.findById(command.getKundeId())
-                        .map(k -> k.getReservierungen().stream().toList())
-                        .orElse(java.util.Collections.emptyList());
-                
-                java.util.List<kino.application.kafka.dto.ReservierungDTO> dtos = reservierungen.stream()
-                    .map(kino.application.kafka.dto.ReservierungDTO::new)
-                    .collect(java.util.stream.Collectors.toList());
+                        reservierungRepository.findWithSeatsByKundeId(command.getKundeId());
+                System.out.println(">>> [ReservationConsumer-QUERY] Gefundene Reservierungen: " + reservierungen.size());
+                for (kino.application.data.Reservierung r : reservierungen) {
+                    int seats = r.getReservierungSitzplaetze() == null ? 0 : r.getReservierungSitzplaetze().size();
+                    System.out.println(">>> [ReservationConsumer-QUERY] Reservierung=" + r.getId() + " Sitzplätze=" + seats);
+                }
+                // Filter: Reservierungen ohne Sitzplätze ausblenden (Altbestand / Fehlerfälle)
+                java.util.List<kino.application.data.Reservierung> mitSitzen = reservierungen.stream()
+                        .filter(r -> r.getReservierungSitzplaetze() != null && !r.getReservierungSitzplaetze().isEmpty())
+                        .collect(java.util.stream.Collectors.toList());
+                int entfernte = reservierungen.size() - mitSitzen.size();
+                if (entfernte > 0) {
+                    System.out.println(">>> [ReservationConsumer-QUERY] Filter: " + entfernte + " Reservierungen ohne Sitzplätze ausgeblendet");
+                }
+                // Mapping nur für Reservierungen mit Sitzplätzen
+                java.util.List<kino.application.kafka.dto.ReservierungDTO> dtos = mitSitzen.stream()
+                        .map(kino.application.kafka.dto.ReservierungDTO::new)
+                        .collect(java.util.stream.Collectors.toList());
                 event.setReservierungen(dtos);
             } else {
                 event.setStatus("NOT_FOUND");
