@@ -1,6 +1,7 @@
 package kino.application;
 
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Hr;
@@ -9,39 +10,64 @@ import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.router.RouteAlias;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
-import com.vaadin.flow.component.orderedlayout.FlexComponent;
+import com.vaadin.flow.server.VaadinSession;
 
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Date;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
+import kino.application.buchung.BuchungContext;
+import kino.application.data.Auffuehrung;
+import kino.application.data.AuffuehrungRepository;
 import kino.application.data.Buchung;
 import kino.application.data.BuchungRepository;
+import kino.application.data.BuchungSitzplatz;
+import kino.application.data.BuchungSitzplatzRepository;
 import kino.application.data.Film;
+import kino.application.data.Kunde;
+import kino.application.data.KundeRepository;
+import kino.application.data.ReservierungRepository;
+import kino.application.data.ReservierungSitzplatz;
+import kino.application.data.ReservierungSitzplatzRepository;
+import kino.application.data.Sitzplatz;
+import kino.application.data.SitzplatzRepository;
+import kino.application.data.SitzreihenKategorie;
+import kino.application.service.ReservierungsService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Route(value = "buchung/:buchungId", layout = MainViewLayout.class)
+@RouteAlias(value = "buchung", layout = MainViewLayout.class)
 @PageTitle("Buchungsbestätigung")
 @AnonymousAllowed
 public class BuchungsView extends VerticalLayout implements BeforeEnterObserver {
+    private static final Logger LOGGER = LoggerFactory.getLogger(BuchungsView.class);
 
     private final BuchungRepository buchungRepository;
     private final BuchungSitzplatzRepository buchungSitzplatzRepository;
+    private final AuffuehrungRepository auffuehrungRepository;
+    private final KundeRepository kundeRepository;
+    private final SitzplatzRepository sitzplatzRepository;
+    private final ReservierungRepository reservierungRepository;
+    private final ReservierungSitzplatzRepository reservierungSitzplatzRepository;
+    private final ReservierungsService reservierungsService;
 
+    private Buchung buchung;
     private BuchungContext ctx;
     private Auffuehrung auffuehrung;
     private Kunde kunde;
     private List<Sitzplatz> sitzplaetze;
     
-    private final ReservierungRepository reservierungRepository;
-    private final ReservierungSitzplatzRepository reservierungSitzplatzRepository;
-    private final DateTimeFormatter filmStartFormatter =
-            DateTimeFormatter.ofPattern("dd.MM.yyyy");
     private final DateTimeFormatter auffuehrungsFormatter =
             DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
 
@@ -53,15 +79,17 @@ public class BuchungsView extends VerticalLayout implements BeforeEnterObserver 
             BuchungRepository buchungRepository,
             BuchungSitzplatzRepository buchungSitzplatzRepository,
             ReservierungRepository reservierungRepository,
-            ReservierungSitzplatzRepository reservierungSitzplatzRepository
+                ReservierungSitzplatzRepository reservierungSitzplatzRepository,
+                ReservierungsService reservierungsService
     ) {
         this.auffuehrungRepository = auffuehrungRepository;
         this.kundeRepository = kundeRepository;
         this.sitzplatzRepository = sitzplatzRepository;
         this.buchungRepository = buchungRepository;
         this.buchungSitzplatzRepository = buchungSitzplatzRepository;
-        this.reservierungRepository= reservierungRepository;
-		this.reservierungSitzplatzRepository = reservierungSitzplatzRepository;
+        this.reservierungRepository = reservierungRepository;
+        this.reservierungSitzplatzRepository = reservierungSitzplatzRepository;
+        this.reservierungsService = reservierungsService;
 
         setWidthFull();
         setPadding(true);
@@ -71,14 +99,53 @@ public class BuchungsView extends VerticalLayout implements BeforeEnterObserver 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
         String idStr = event.getRouteParameters().get("buchungId").orElse(null);
+        LOGGER.debug("BuchungsView.beforeEnter: routeParam.buchungId={}", idStr);
         if (idStr == null) {
-            showNotFound();
+            // Kein Parameter: Versuche Buchung über BuchungContext zu erzeugen
+            this.ctx = VaadinSession.getCurrent().getAttribute(BuchungContext.class);
+            if (this.ctx == null) {
+                LOGGER.warn("Kein BuchungContext in Session gefunden; gehe zurück zu 'reservierungen'.");
+                // Kein Kontext vorhanden, zurück zur Reservierungsübersicht
+                UI.getCurrent().navigate("reservierungen");
+                return;
+            }
+            try {
+                // Entitäten laden
+                LOGGER.info("Erzeuge Buchung aus Context: auffId={}, kundeId={}, sitze={}, resId={}",
+                        ctx.getAuffuehrungId(), ctx.getKundeId(),
+                        ctx.getSitzplatzIds() != null ? ctx.getSitzplatzIds().size() : 0,
+                        ctx.getReservierungsId());
+                this.auffuehrung = auffuehrungRepository.findById(ctx.getAuffuehrungId()).orElse(null);
+                this.kunde = kundeRepository.findById(ctx.getKundeId()).orElse(null);
+                this.sitzplaetze = ctx.getSitzplatzIds().stream()
+                        .map(id -> sitzplatzRepository.findById(id).orElse(null))
+                        .filter(sp -> sp != null)
+                        .toList();
+
+                if (auffuehrung == null || kunde == null || sitzplaetze.isEmpty()) {
+                    LOGGER.error("Buchung aus Context fehlgeschlagen: auff={} kunde={} sitze={}",
+                            auffuehrung != null, kunde != null, sitzplaetze != null ? sitzplaetze.size() : 0);
+                    showNotFound();
+                    return;
+                }
+
+                // Buchung erzeugen und anzeigen
+                LOGGER.debug("Starte finalizeBooking für kundeId={}, auffId={}, plaetze={}",
+                        kunde.getId(), auffuehrung.getId(), sitzplaetze.size());
+                finalizeBooking();
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                LOGGER.error("Exception in beforeEnter (Context-Buchung): {}", ex.getMessage(), ex);
+                showNotFound();
+            }
             return;
         }
         try {
             Long id = Long.valueOf(idStr);
             this.buchung = buchungRepository.findById(id).orElse(null);
+            LOGGER.info("Lade Buchung per ID: {} -> vorhanden={}", id, this.buchung != null);
         } catch (NumberFormatException ex) {
+            LOGGER.error("Ungültige Buchungs-ID im Pfad: {}", idStr);
             this.buchung = null;
         }
         if (this.buchung == null) {
@@ -190,53 +257,65 @@ public class BuchungsView extends VerticalLayout implements BeforeEnterObserver 
     private void finalizeBooking() {
         //Preis berechnen
         double gesamtPreis = berechnePreis(sitzplaetze);
+        LOGGER.info("Berechneter Gesamtpreis: {} für {} Plätze", gesamtPreis, sitzplaetze != null ? sitzplaetze.size() : 0);
 
         // Buchung anlegen
-        Buchung buchung = new Buchung();
-        buchung.setKunde(kunde);
-        buchung.setAuffuehrung(auffuehrung);
-        buchung.setGesamtpreis(gesamtPreis);
-        buchung.setBezahlt(false);
-        buchung.setBuchungsZeitstempel(new Date());
-        buchung.setBuchungsnummer(generateBuchungsnummer());
+        Buchung buch = new Buchung();
+        buch.setKunde(kunde);
+        buch.setAuffuehrung(auffuehrung);
+        buch.setGesamtpreis(gesamtPreis);
+        buch.setBezahlt(false);
+        buch.setBuchungsZeitstempel(new Date());
+        buch.setBuchungsnummer(generateBuchungsnummer());
 
-        buchungRepository.save(buchung);
+        buch = buchungRepository.save(buch);
+        LOGGER.info("Buchung gespeichert: id={}, nr={}", buch.getId(), buch.getBuchungsnummer());
+        this.buchung = buch;
         
         //Einnahmen der Aufführung hochzählen
         double neueEinnahmen = auffuehrung.getAktuelleEinnahmen() + gesamtPreis;
         auffuehrung.setAktuelleEinnahmen(neueEinnahmen);
         auffuehrungRepository.save(auffuehrung);
+        LOGGER.debug("Aufführung {} Einnahmen aktualisiert auf {}", auffuehrung.getId(), neueEinnahmen);
 
         // Sitzplätze auf belegt setzen + BuchungSitzplatz anlegen
         for (Sitzplatz s : sitzplaetze) {
             if (s.isFrei()) {
                 s.setFrei(false);
                 sitzplatzRepository.save(s);
+                LOGGER.trace("Sitz {} als belegt markiert", s.getId());
             }
 
             BuchungSitzplatz bs = new BuchungSitzplatz();
-            bs.setBuchung(buchung);
+            bs.setBuchung(buch);
             bs.setSitzplatz(s);
             buchungSitzplatzRepository.save(bs);
+            LOGGER.trace("BuchungSitzplatz gespeichert: buchId={}, sitzId={}", buch.getId(), s.getId());
         }
         
-     //Wenn diese Buchung aus einer Reservierung kommt - Reservierung löschen
+        // Wenn diese Buchung aus einer Reservierung kommt -> über Kafka löschen
         if (ctx != null && ctx.getReservierungsId() != null) {
-            reservierungRepository.findById(ctx.getReservierungsId()).ifPresent(res -> {
-
-                // Reservierung Sitzplatz Verknüpfungen löschen
-                if (res.getReservierungSitzplaetze() != null) {
-                    for (ReservierungSitzplatz rsp : res.getReservierungSitzplaetze()) {
-                        reservierungSitzplatzRepository.delete(rsp);
+            try {
+                LOGGER.info("Sende Kafka-Delete für reservierungId={}", ctx.getReservierungsId());
+                reservierungsService.loescheReservierung(ctx.getReservierungsId());
+            } catch (Exception ex) {
+                // Als Fallback: direkte Löschung versuchen
+                LOGGER.error("Kafka-Delete fehlgeschlagen, versuche Direktlöschung: {}", ex.getMessage(), ex);
+                reservierungRepository.findById(ctx.getReservierungsId()).ifPresent(res -> {
+                    if (res.getReservierungSitzplaetze() != null) {
+                        for (ReservierungSitzplatz rsp : res.getReservierungSitzplaetze()) {
+                            reservierungSitzplatzRepository.delete(rsp);
+                        }
                     }
-                }
-
-                reservierungRepository.delete(res);
-            });
+                    reservierungRepository.delete(res);
+                    LOGGER.warn("Reservierung {} direkt gelöscht (Fallback)", ctx.getReservierungsId());
+                });
+            }
         }
 
         //BuchungContext leeren
         VaadinSession.getCurrent().setAttribute(BuchungContext.class, null);
+        LOGGER.debug("BuchungContext aus Session entfernt");
 
         // Danke-Dialog anzeigen
         Dialog dialog = new Dialog();
@@ -244,7 +323,7 @@ public class BuchungsView extends VerticalLayout implements BeforeEnterObserver 
         dialog.setCloseOnOutsideClick(false);
 
         H2 title = new H2("Vielen Dank für Ihre Buchung!");
-        Paragraph info = new Paragraph("Ihre Buchungsnummer: " + buchung.getBuchungsnummer());
+        Paragraph info = new Paragraph("Ihre Buchungsnummer: " + buch.getBuchungsnummer());
         Paragraph hint = new Paragraph("Bitte notieren Sie sich diese Nummer für Rückfragen.");
 
         Button close = new Button("Schließen", e -> {
@@ -256,9 +335,10 @@ public class BuchungsView extends VerticalLayout implements BeforeEnterObserver 
         VerticalLayout layout = new VerticalLayout(title, info, hint, close);
         layout.setSpacing(true);
         layout.setPadding(true);
-        layout.setAlignItems(Alignment.START);
+        layout.setAlignItems(FlexComponent.Alignment.START);
 
         dialog.add(layout);
         dialog.open();
+        LOGGER.info("Buchungsbestätigungsdialog geöffnet für buchungId={}", buch.getId());
     }
 }

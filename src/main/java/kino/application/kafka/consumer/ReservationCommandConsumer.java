@@ -51,8 +51,15 @@ public class ReservationCommandConsumer {
     )
     @Transactional
     public void handleReservationCommand(ReservationCommand command) {
-        System.out.println(">>> [ReservationConsumer] Reservierung erhalten: " + command);
+        System.out.println(">>> [ReservationConsumer] Command erhalten: " + command);
 
+        // Prüfen ob CREATE oder DELETE
+        if ("DELETE".equals(command.getAction())) {
+            handleDeleteReservation(command);
+            return;
+        }
+
+        // CREATE Logik
         try {
             // 1. Aufführung laden
             Auffuehrung auffuehrung = auffuehrungRepository.findById(command.getAuffuehrungId())
@@ -131,5 +138,58 @@ public class ReservationCommandConsumer {
     private int generateReservierungsnummer() {
         // Einfache Zufallsnummer - in Produktion würdest du eine Sequenz verwenden
         return 10000 + random.nextInt(90000);
+    }
+
+    /**
+     * Behandelt das Löschen einer Reservierung
+     */
+    private void handleDeleteReservation(ReservationCommand command) {
+        System.out.println(">>> [ReservationConsumer] Lösch-Command erhalten: " + command);
+
+        try {
+            Long reservierungId = command.getReservierungId();
+
+            // 1. Reservierung laden
+            Reservierung reservierung = reservierungRepository.findById(reservierungId)
+                    .orElseThrow(() -> new RuntimeException("Reservierung nicht gefunden: " + reservierungId));
+
+            // 2. Alle ReservierungSitzplatz-Verknüpfungen holen
+            List<ReservierungSitzplatz> sitzplaetze = reservierungSitzplatzRepository.findByReservierung(reservierung);
+
+            // 3. Sitzplatz-Referenzen auf null setzen (wichtig für Hibernate!)
+            for (ReservierungSitzplatz rs : sitzplaetze) {
+                Sitzplatz sitz = rs.getSitzplatz();
+                if (sitz != null) {
+                    sitz.setReservierung(null);
+                    sitzplatzRepository.save(sitz);
+                }
+            }
+
+            // 4. Join-Entities löschen
+            reservierungSitzplatzRepository.deleteAll(sitzplaetze);
+
+            // 5. Reservierung selbst löschen
+            int reservierungsnummer = reservierung.getReservierungsnummer();
+            Long auffuehrungId = reservierung.getAuffuehrung() != null ? reservierung.getAuffuehrung().getId() : null;
+            Long kundeId = reservierung.getKunde() != null ? reservierung.getKunde().getId() : null;
+
+            reservierungRepository.deleteById(reservierungId);
+
+            System.out.println(">>> Reservierung erfolgreich gelöscht: " + reservierungId);
+
+            // 6. Event verschicken
+            ReservationEvent event = new ReservationEvent(
+                    reservierungId,
+                    reservierungsnummer,
+                    auffuehrungId,
+                    kundeId,
+                    "DELETED"
+            );
+            eventProducer.sendReservationEvent(event);
+
+        } catch (Exception e) {
+            System.err.println(">>> [ReservationConsumer] Fehler beim Löschen: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }

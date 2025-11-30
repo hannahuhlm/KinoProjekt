@@ -23,11 +23,11 @@ public class ReservationCommandProducer {
     }
 
     public void sendReservation(ReservationCommand command) {
-        String key = command.getAuffuehrungId() != null
-                ? command.getAuffuehrungId().toString()
-                : "unknown";
+        String key = command.getAction().equals("DELETE") && command.getReservierungId() != null
+                ? command.getReservierungId().toString()
+                : (command.getAuffuehrungId() != null ? command.getAuffuehrungId().toString() : "unknown");
 
-        System.out.println(">>> [ReservationProducer] Sende Reservierung an Kafka: " + command);
+        System.out.println(">>> [ReservationProducer] Sende Command an Kafka: " + command);
         kafkaTemplate.send(topic, key, command);
     }
 }

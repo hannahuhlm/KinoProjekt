@@ -85,6 +85,18 @@ public class ReservierungsService {
     }
 
     /**
+     * Löscht eine Reservierung über Kafka.
+     * 
+     * @param reservierungId ID der zu löschenden Reservierung
+     */
+    public void loescheReservierung(Long reservierungId) {
+        ReservationCommand command = new ReservationCommand("DELETE", reservierungId);
+        
+        producer.sendReservation(command);
+        System.out.println(">>> [ReservierungsService] Lösch-Command an Kafka gesendet für Reservierung: " + reservierungId);
+    }
+
+    /**
      * Kleine Hilfsmethode zum Testen – schickt Dummy-Daten.
      */
     public void sendeTestReservierung() {
