@@ -14,6 +14,7 @@ public class ReservationCommand {
     private Long auffuehrungId;
     private Long kundeId;
     private String kundeName;
+    private String kundeEmail;
     private List<SitzplatzInfo> sitzplaetze;
 
     public ReservationCommand() {
@@ -21,12 +22,14 @@ public class ReservationCommand {
     }
 
     // Konstruktor für CREATE
-    public ReservationCommand(Long auffuehrungId, Long kundeId, String kundeName, 
-                             List<SitzplatzInfo> sitzplaetze) {
+    public ReservationCommand(Long auffuehrungId, Long kundeId, String kundeName,
+                              String kundeEmail,
+                              List<SitzplatzInfo> sitzplaetze) {
         this.action = "CREATE";
         this.auffuehrungId = auffuehrungId;
         this.kundeId = kundeId;
         this.kundeName = kundeName;
+        this.kundeEmail = kundeEmail;
         this.sitzplaetze = sitzplaetze;
     }
 
@@ -76,6 +79,14 @@ public class ReservationCommand {
         this.kundeName = kundeName;
     }
 
+    public String getKundeEmail() {
+        return kundeEmail;
+    }
+
+    public void setKundeEmail(String kundeEmail) {
+        this.kundeEmail = kundeEmail;
+    }
+
     public List<SitzplatzInfo> getSitzplaetze() {
         return sitzplaetze;
     }
@@ -92,6 +103,7 @@ public class ReservationCommand {
                 ", auffuehrungId=" + auffuehrungId +
                 ", kundeId=" + kundeId +
                 ", kundeName='" + kundeName + '\'' +
+            ", kundeEmail='" + kundeEmail + '\'' +
                 ", sitzplaetze=" + sitzplaetze +
                 '}';
     }

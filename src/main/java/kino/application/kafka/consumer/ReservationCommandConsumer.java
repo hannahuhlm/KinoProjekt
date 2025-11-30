@@ -65,17 +65,23 @@ public class ReservationCommandConsumer {
             Auffuehrung auffuehrung = auffuehrungRepository.findById(command.getAuffuehrungId())
                     .orElseThrow(() -> new RuntimeException("Aufführung nicht gefunden: " + command.getAuffuehrungId()));
 
-            // 2. Kunde laden oder neu erstellen
+            // 2. Kunde laden oder idempotent anhand Email erstellen
             Kunde kunde = null;
             if (command.getKundeId() != null) {
                 kunde = kundeRepository.findById(command.getKundeId()).orElse(null);
             }
-            
+            if (kunde == null && command.getKundeEmail() != null && !command.getKundeEmail().isBlank()) {
+                kunde = kundeRepository.findByEmail(command.getKundeEmail());
+            }
             if (kunde == null) {
-                // Neuen Kunden erstellen
+                // Neuen Kunden erstellen – Email bevorzugt, ansonsten Minimalfallback
                 kunde = new Kunde();
                 kunde.setName(command.getKundeName());
-                kunde.setEmail(command.getKundeName() + "@example.com"); // Platzhalter
+                String email = command.getKundeEmail();
+                if (email == null || email.isBlank()) {
+                    email = (command.getKundeName() != null ? command.getKundeName() : "kunde") + "@example.com";
+                }
+                kunde.setEmail(email);
                 kunde = kundeRepository.save(kunde);
                 System.out.println(">>> Neuer Kunde erstellt: " + kunde.getId());
             }

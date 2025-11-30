@@ -11,6 +11,7 @@ import com.vaadin.flow.component.html.*;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.router.*;
+import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.server.VaadinSession;
 
 import jakarta.annotation.security.PermitAll;
@@ -37,9 +38,11 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
     private final AuffuehrungRepository auffuehrungRepository;
     private final ReservierungsService reservierungsService;
     private final BuchungsService buchungsService;
+    private final kino.application.service.CustomerService customerService;
     private Auffuehrung aktuelleAuffuehrung;
     private List<Sitzplatz> ausgewähltePlaetze = new ArrayList<>();
     private Kunde currentKunde;
+    private String lastCustomerEmail;
 
     private final VerticalLayout content = new VerticalLayout();
 
@@ -49,10 +52,12 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
     public SitzplatzWahlView(
             AuffuehrungRepository auffuehrungRepository,
             ReservierungsService reservierungsService,
-            BuchungsService buchungsService) {
+            BuchungsService buchungsService,
+            kino.application.service.CustomerService customerService) {
         this.auffuehrungRepository = auffuehrungRepository;
         this.reservierungsService = reservierungsService;
         this.buchungsService = buchungsService;
+        this.customerService = customerService;
 
         setSizeFull();
         setPadding(false);
@@ -67,7 +72,27 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
                 .set("box-shadow", "0 4px 10px rgba(0,0,0,0.1)");
 
         add(content);
+
+        // React to CustomerEvents to show feedback when a customer is created/exists/fails
+        customerReg = kino.application.customer.CustomerUIEventBus.register(ev -> {
+            if (ev == null || ev.getEmail() == null) return;
+            String email = ev.getEmail();
+            getUI().ifPresent(ui -> ui.access(() -> {
+                if (lastCustomerEmail != null && lastCustomerEmail.equalsIgnoreCase(email)) {
+                    switch (ev.getStatus()) {
+                        case SUCCESS -> com.vaadin.flow.component.notification.Notification.show(
+                                "Kunde OK: " + email, 2000,
+                                com.vaadin.flow.component.notification.Notification.Position.MIDDLE);
+                        case FAILURE -> com.vaadin.flow.component.notification.Notification.show(
+                                "Kunden-Anlage fehlgeschlagen: " + (ev.getMessage() != null ? ev.getMessage() : "Unbekannter Fehler"),
+                                3000, com.vaadin.flow.component.notification.Notification.Position.MIDDLE);
+                    }
+                }
+            }));
+        });
     }
+
+    private kino.application.customer.CustomerUIEventBus.Registration customerReg;
 
     private HorizontalLayout createInfoLeiste(Auffuehrung auff) {
         HorizontalLayout bar = new HorizontalLayout();
@@ -332,29 +357,29 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
             }
 
             // 1. Versuchen, bestehenden Kunden zu finden
-            Kunde kunde = kundeRepository.findByEmail(email);
+            Kunde foundKunde = kundeRepository.findByEmail(email);
+            lastCustomerEmail = email;
 
-            // 2. Wenn kein Kunde existiert -> neuen anlegen
-            if (kunde == null) {
+            // 2. Wenn kein Kunde existiert
+            Kunde resolvedKunde = foundKunde;
+            if (resolvedKunde == null) {
                 if (name == null || name.isBlank()) {
                     Notification.show("Bitte Name angeben, um einen neuen Kunden anzulegen.");
                     return;
                 }
-
-                kunde = new Kunde();
-                kunde.setName(name);
-                kunde.setEmail(email);
-                kundeRepository.save(kunde);
+                // Für beide Flows sicherstellen, dass der Kunde via Kafka existiert, um konsistente IDs zu haben
+                resolvedKunde = customerService.ensureCustomer(name, email);
             }
 
             // 3. Kunde speichern und weiter
-            this.currentKunde = kunde;
+            this.currentKunde = resolvedKunde; // kann bei Reservierung null sein; nicht benötigt
             dialog.close();
 
             if (isDirektBuchung) {
                 startDirektbuchung();
             } else {
-                saveReservierung(kunde);
+                Long rid = resolvedKunde.getId();
+                saveReservierung(rid, resolvedKunde.getName(), resolvedKunde.getEmail());
             }
         });
 
@@ -363,8 +388,17 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
         dialog.open();
     }
 
+    @Override
+    protected void onDetach(DetachEvent detachEvent) {
+        super.onDetach(detachEvent);
+        if (customerReg != null) {
+            customerReg.remove();
+            customerReg = null;
+        }
+    }
 
-    private void saveReservierung(Kunde kunde) {
+
+    private void saveReservierung(Long kundeId, String kundeName, String kundeEmail) {
         if (aktuelleAuffuehrung == null || ausgewähltePlaetze.isEmpty()) {
             Notification.show("Bitte zuerst Sitzplätze auswählen.");
             return;
@@ -377,8 +411,9 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
 
         reservierungsService.reservierePlaetze(
                 aktuelleAuffuehrung.getId(),
-                kunde.getId(),
-                kunde.getName(),
+                kundeId,
+                kundeName,
+                kundeEmail,
                 sitzplatzIds
         );
 
@@ -388,7 +423,7 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
         ausgewähltePlaetze.clear();
 
         // E-Mail in der Session merken, damit die ReservierungenView sie nutzen kann
-        String email = kunde.getEmail();
+        String email = kundeEmail;
         VaadinSession.getCurrent().setAttribute("kundenEmail", email);
 
         // Kurze Wartezeit für Kafka-Verarbeitung, dann navigieren

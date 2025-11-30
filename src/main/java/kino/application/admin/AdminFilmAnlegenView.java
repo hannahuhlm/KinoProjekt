@@ -10,6 +10,7 @@ import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
@@ -21,7 +22,6 @@ import com.vaadin.flow.data.provider.hierarchy.TreeDataProvider;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 
-import jakarta.transaction.Transactional;
 import kino.application.MainViewLayout;
 import kino.application.data.Film;
 import kino.application.data.FilmRepository;
@@ -44,6 +44,7 @@ public class AdminFilmAnlegenView extends VerticalLayout {
 
     private final FilmRepository filmRepository;
     private final AuffuehrungRepository auffuehrungRepository;
+    private final kino.application.service.AdminService adminService;
 
     private Grid<Film> grid = new Grid<>(Film.class, false);
 
@@ -62,12 +63,16 @@ public class AdminFilmAnlegenView extends VerticalLayout {
 
     private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     private final KinosaalRepository kinosaalRepository;
+    private AdminUIEventBus.Registration adminReg;
+    private Dialog offeneAuffuehrungenDialog;
+    private Film dialogFilm;
 
 
-    public AdminFilmAnlegenView(FilmRepository filmRepository, KinosaalRepository kinosaalRepository, AuffuehrungRepository auffuehrungRepository) {
+    public AdminFilmAnlegenView(FilmRepository filmRepository, KinosaalRepository kinosaalRepository, AuffuehrungRepository auffuehrungRepository, kino.application.service.AdminService adminService) {
         this.filmRepository = filmRepository;
         this.auffuehrungRepository = auffuehrungRepository;
         this.kinosaalRepository = kinosaalRepository;
+        this.adminService = adminService;
 
         setSizeFull();
         setPadding(true);
@@ -107,6 +112,26 @@ public class AdminFilmAnlegenView extends VerticalLayout {
 
         updateGrid();
         clearForm();
+
+        // Register to Admin events to refresh UI without delays
+        adminReg = AdminUIEventBus.register(ev -> {
+            getUI().ifPresent(ui -> ui.access(() -> {
+                switch (ev.getEntity()) {
+                    case FILM -> {
+                        updateGrid();
+                        clearForm();
+                    }
+                    case AUFFUEHRUNG -> {
+                        updateGrid();
+                        if (offeneAuffuehrungenDialog != null && offeneAuffuehrungenDialog.isOpened() && dialogFilm != null) {
+                            offeneAuffuehrungenDialog.close();
+                            filmRepository.findById(dialogFilm.getId()).ifPresent(this::openAuffuehrungenDialog);
+                        }
+                    }
+                    default -> {}
+                }
+            }));
+        });
     }
 
     private void configureGrid() {
@@ -173,19 +198,17 @@ public class AdminFilmAnlegenView extends VerticalLayout {
 
     private void saveFilm() {
         if (binder.validate().isOk()) {
-            filmRepository.save(currentFilm);
-            updateGrid();
-            clearForm();
-            Notification.show("Film gespeichert", 2000, Notification.Position.MIDDLE);
+            adminService.saveFilm(currentFilm);
+            // UI aktualisiert sich über AdminEvent (event-driven)
+            Notification.show("Film wird gespeichert…", 1500, Notification.Position.MIDDLE);
         }
     }
 
     private void deleteFilm() {
         if (currentFilm == null || currentFilm.getId() == null) return;
-        filmRepository.delete(currentFilm);
-        updateGrid();
-        clearForm();
-        Notification.show("Film gelöscht", 2000, Notification.Position.MIDDLE);
+        adminService.deleteFilm(currentFilm.getId());
+        // UI aktualisiert sich über AdminEvent (event-driven)
+        Notification.show("Film wird gelöscht…", 1500, Notification.Position.MIDDLE);
     }
 
     private void updateGrid() {
@@ -195,6 +218,8 @@ public class AdminFilmAnlegenView extends VerticalLayout {
     // ------------------ Aufführungen-Popup -------------------
     private void openAuffuehrungenDialog(Film film) {
         Dialog dialog = new Dialog();
+        this.offeneAuffuehrungenDialog = dialog;
+        this.dialogFilm = film;
         dialog.setWidth("900px");
         dialog.setHeight("600px");
 
@@ -235,31 +260,12 @@ public class AdminFilmAnlegenView extends VerticalLayout {
 
                 loeschen.addClickListener(ev -> {
                     try {
-                        Long filmId = film.getId();
                         Long auffId = auff.getId();
-
-                        // Film als managed Entity holen
-                        filmRepository.findById(filmId).ifPresent(managedFilm -> {
-                            // Aufführung aus der Liste des Films entfernen
-                            managedFilm.getAuffuehrungen()
-                                    .removeIf(a -> Objects.equals(a.getId(), auffId));
-
-                            // wegen orphanRemoval = true wird die Aufführung in DB gelöscht
-                            filmRepository.save(managedFilm);
-                        });
-
-                        dialog.close();
-
-                        // Film nochmal frisch laden und Dialog neu öffnen
-                        filmRepository.findById(filmId)
-                                .ifPresent(this::openAuffuehrungenDialog);
-
-                        Notification.show("Aufführung gelöscht",
-                                2000, Notification.Position.MIDDLE);
+                        adminService.deleteAuffuehrung(auffId);
+                        // Event-Listener schließt und lädt Dialog neu
+                        Notification.show("Aufführung wird gelöscht…", 1500, Notification.Position.MIDDLE);
                     } catch (Exception ex) {
-                        Notification.show("Fehler beim Löschen: " + ex.getMessage(),
-                                4000, Notification.Position.MIDDLE);
-                        ex.printStackTrace();
+                        Notification.show("Fehler beim Löschen: " + ex.getMessage(), 4000, Notification.Position.MIDDLE);
                     }
                 });
 
@@ -287,7 +293,17 @@ public class AdminFilmAnlegenView extends VerticalLayout {
         layout.add(buttonLayout);
 
         dialog.add(layout);
+        dialog.addOpenedChangeListener(e -> { if (!e.isOpened()) { offeneAuffuehrungenDialog = null; dialogFilm = null; }});
         dialog.open();
+    }
+
+    @Override
+    protected void onDetach(DetachEvent detachEvent) {
+        super.onDetach(detachEvent);
+        if (adminReg != null) {
+            adminReg.remove();
+            adminReg = null;
+        }
     }
 
 
@@ -363,19 +379,12 @@ public class AdminFilmAnlegenView extends VerticalLayout {
                     return;
                 }
 
-                Auffuehrung neue = new Auffuehrung();
-                neue.setStartzeitpunkt(startzeit);
-                neue.setFilm(managedFilm);      // statt detached film
-                neue.setSaal(ausgewaehlterSaal);
+                // Über Kafka-AdminService anlegen lassen
+                adminService.createAuffuehrung(managedFilm.getId(), ausgewaehlterSaal.getId(), startzeit);
 
-                auffuehrungRepository.save(neue);
-
-                dialog.close();
-                parentDialog.close();
-                openAuffuehrungenDialog(managedFilm);
-
-                Notification.show("Aufführung gespeichert",
-                        2000, Notification.Position.MIDDLE);
+                // Event-Listener aktualisiert die Ansicht (Dialog wird geschlossen/neu geöffnet)
+                Notification.show("Aufführung wird gespeichert…",
+                    1500, Notification.Position.MIDDLE);
 
             } catch (ParseException e) {
                 Notification.show("Ungültiges Zeitformat, bitte HH:mm eingeben",

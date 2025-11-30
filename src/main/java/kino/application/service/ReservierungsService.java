@@ -37,7 +37,7 @@ public class ReservierungsService {
      * @param kundeName Name des Kunden
      * @param sitzplatzIds Liste der zu reservierenden Sitzplatz-IDs
      */
-    public void reservierePlaetze(Long auffuehrungId, Long kundeId, String kundeName, List<Long> sitzplatzIds) {
+    public void reservierePlaetze(Long auffuehrungId, Long kundeId, String kundeName, String kundeEmail, List<Long> sitzplatzIds) {
         // Sitzplätze laden und SitzplatzInfo-Objekte erstellen
         List<SitzplatzInfo> sitzplatzInfos = new ArrayList<>();
         
@@ -59,10 +59,11 @@ public class ReservierungsService {
 
         // Command erstellen und senden
         ReservationCommand command = new ReservationCommand(
-                auffuehrungId,
-                kundeId,
-                kundeName,
-                sitzplatzInfos
+            auffuehrungId,
+            kundeId,
+            kundeName,
+            kundeEmail,
+            sitzplatzInfos
         );
         
         producer.sendReservation(command);
@@ -101,7 +102,7 @@ public class ReservierungsService {
      */
     public void sendeTestReservierung() {
         List<Long> testSitzplaetze = List.of(1L, 2L);
-        reservierePlaetze(1L, null, "Testkunde Kafka", testSitzplaetze);
+        reservierePlaetze(1L, null, "Testkunde Kafka", "testkunde@example.com", testSitzplaetze);
     }
 }
 

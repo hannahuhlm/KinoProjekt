@@ -30,6 +30,9 @@ import kino.application.data.Sitzplatz;
 import kino.application.data.SitzreihenKategorie;
 // Import an dein Repo anpassen:
 import kino.application.data.KinosaalRepository;
+import kino.application.service.AdminService;
+import kino.application.kafka.events.AdminEvent;
+import com.vaadin.flow.component.DetachEvent;
 
 @Route(value = "saal-anlegen", layout = MainViewLayout.class)
 @PageTitle("Saal anlegen – Admin")
@@ -37,6 +40,7 @@ public class AdminSaalAnlegenView extends VerticalLayout {
 
     // --- Repositories / Datenzugriff ---
     private final KinosaalRepository kinosaalRepository;
+    private final AdminService adminService;
 
     // --- UI-Komponenten für die Listenansicht ---
     private final Grid<Kinosaal> grid = new Grid<>(Kinosaal.class, false);
@@ -56,8 +60,9 @@ public class AdminSaalAnlegenView extends VerticalLayout {
     // ---------------------------------------------------------
     // Konstruktor
     // ---------------------------------------------------------
-    public AdminSaalAnlegenView(KinosaalRepository kinosaalRepository) {
+    public AdminSaalAnlegenView(KinosaalRepository kinosaalRepository, AdminService adminService) {
         this.kinosaalRepository = kinosaalRepository;
+        this.adminService = adminService;
 
         // Grundlayout-Einstellungen für die View
         setSizeFull();
@@ -83,6 +88,24 @@ public class AdminSaalAnlegenView extends VerticalLayout {
 
         // Daten ins Grid laden
         updateGrid();
+
+        // Refresh grid on admin events
+        adminReg = AdminUIEventBus.register(ev -> {
+            if (ev.getEntity() == AdminEvent.Entity.SAAL) {
+                getUI().ifPresent(ui -> ui.access(this::updateGrid));
+            }
+        });
+    }
+
+    private AdminUIEventBus.Registration adminReg;
+
+    @Override
+    protected void onDetach(DetachEvent detachEvent) {
+        super.onDetach(detachEvent);
+        if (adminReg != null) {
+            adminReg.remove();
+            adminReg = null;
+        }
     }
 
     // ---------------------------------------------------------
@@ -358,11 +381,10 @@ public class AdminSaalAnlegenView extends VerticalLayout {
                 }
             }
 
-            // Saal inklusive aller abhängigen Entitäten speichern
-            kinosaalRepository.save(aktuellerSaal);
+            // Saal über Kafka speichern (inkl. Reihen/Sitze als Struktur)
+            adminService.saveSaal(aktuellerSaal);
 
             saalDialog.close();
-            updateGrid();
         } catch (ValidationException e) {
             // Falls du später Validierungen einbaust, kannst du hier z. B. eine Notification anzeigen
             e.printStackTrace();
