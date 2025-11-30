@@ -1,5 +1,6 @@
 package kino.application.data;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -95,8 +96,12 @@ public class Reservierung {
      * - Jede Reservierung kann mehrere Einträge in ReservierungSitzplatz haben.
      * - Jeder dieser Einträge verweist auf genau einen Sitzplatz.
      */
-    @OneToMany(mappedBy = "reservierung", fetch = FetchType.EAGER)
-    private List<ReservierungSitzplatz> reservierungSitzplaetze;
+    @OneToMany(mappedBy = "reservierung",
+            fetch = FetchType.EAGER,
+            cascade = CascadeType.ALL,
+            orphanRemoval = true)
+ private List<ReservierungSitzplatz> reservierungSitzplaetze;
+
 
     /**
      * Leerer Konstruktor, den JPA/Hibernate für das Anlegen

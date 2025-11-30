@@ -30,19 +30,43 @@ import kino.application.data.Film;
 @AnonymousAllowed
 public class BuchungsView extends VerticalLayout implements BeforeEnterObserver {
 
-        private final BuchungRepository buchungRepository;
-        private Buchung buchung;
+    private final BuchungRepository buchungRepository;
+    private final BuchungSitzplatzRepository buchungSitzplatzRepository;
 
-        private final DateTimeFormatter auffuehrungsFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
+    private BuchungContext ctx;
+    private Auffuehrung auffuehrung;
+    private Kunde kunde;
+    private List<Sitzplatz> sitzplaetze;
+    
+    private final ReservierungRepository reservierungRepository;
+    private final ReservierungSitzplatzRepository reservierungSitzplatzRepository;
+    private final DateTimeFormatter filmStartFormatter =
+            DateTimeFormatter.ofPattern("dd.MM.yyyy");
+    private final DateTimeFormatter auffuehrungsFormatter =
+            DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
 
-        @Autowired
-        public BuchungsView(BuchungRepository buchungRepository) {
-                this.buchungRepository = buchungRepository;
-                setSizeFull();
-                setPadding(true);
-                setSpacing(true);
-                getStyle().set("background-color", "#201c19");
-        }
+    @Autowired
+    public BuchungsView(
+            AuffuehrungRepository auffuehrungRepository,
+            KundeRepository kundeRepository,
+            SitzplatzRepository sitzplatzRepository,
+            BuchungRepository buchungRepository,
+            BuchungSitzplatzRepository buchungSitzplatzRepository,
+            ReservierungRepository reservierungRepository,
+            ReservierungSitzplatzRepository reservierungSitzplatzRepository
+    ) {
+        this.auffuehrungRepository = auffuehrungRepository;
+        this.kundeRepository = kundeRepository;
+        this.sitzplatzRepository = sitzplatzRepository;
+        this.buchungRepository = buchungRepository;
+        this.buchungSitzplatzRepository = buchungSitzplatzRepository;
+        this.reservierungRepository= reservierungRepository;
+		this.reservierungSitzplatzRepository = reservierungSitzplatzRepository;
+
+        setWidthFull();
+        setPadding(true);
+        setSpacing(true);
+    }
 
         @Override
         public void beforeEnter(BeforeEnterEvent event) {
@@ -130,15 +154,111 @@ public class BuchungsView extends VerticalLayout implements BeforeEnterObserver 
                 add(nrInfo, kundeInfo, platzInfo, preisInfo, close);
         }
 
-        private Div createInfoBox(String text) {
-                Div box = new Div();
-                box.setText(text);
-                box.getStyle()
-                                .set("background-color", "#3a332f")
-                                .set("color", "#f5f1e6")
-                                .set("padding", "6px 12px")
-                                .set("border-radius", "6px")
-                                .set("font-size", "13px");
-                return box;
+    private Div createInfoBox(String text) {
+        Div box = new Div();
+        box.setText(text);
+        box.getStyle()
+                .set("background-color", "#3a332f")
+                .set("color", "#f5f1e6")
+                .set("padding", "6px 12px")
+                .set("border-radius", "6px")
+                .set("font-size", "13px");
+        return box;
+    }
+
+    private double berechnePreis(List<Sitzplatz> plaetze) {
+        double preis = 0.0;
+        for (Sitzplatz s : plaetze) {
+            SitzreihenKategorie kat = s.getReihe().getKategorie();
+            if (SitzreihenKategorie.LOGE.equals(kat)) {
+                preis += 10.50;
+            } else if (SitzreihenKategorie.PARKETT.equals(kat)) {
+                preis += 9.50;
+            } else if (SitzreihenKategorie.LOGE_MIT_SERVICE.equals(kat)) {
+                preis += 12.00;
+            }
         }
+        return preis;
+    }
+
+    private String generateBuchungsnummer() {
+        // z.B. einfache 8-stellige Nummer
+        int num = (int) (Math.random() * 1_0000_0000);
+        return String.format("%08d", num);
+    }
+
+    private void finalizeBooking() {
+        //Preis berechnen
+        double gesamtPreis = berechnePreis(sitzplaetze);
+
+        // Buchung anlegen
+        Buchung buchung = new Buchung();
+        buchung.setKunde(kunde);
+        buchung.setAuffuehrung(auffuehrung);
+        buchung.setGesamtpreis(gesamtPreis);
+        buchung.setBezahlt(false);
+        buchung.setBuchungsZeitstempel(new Date());
+        buchung.setBuchungsnummer(generateBuchungsnummer());
+
+        buchungRepository.save(buchung);
+        
+        //Einnahmen der Aufführung hochzählen
+        double neueEinnahmen = auffuehrung.getAktuelleEinnahmen() + gesamtPreis;
+        auffuehrung.setAktuelleEinnahmen(neueEinnahmen);
+        auffuehrungRepository.save(auffuehrung);
+
+        // Sitzplätze auf belegt setzen + BuchungSitzplatz anlegen
+        for (Sitzplatz s : sitzplaetze) {
+            if (s.isFrei()) {
+                s.setFrei(false);
+                sitzplatzRepository.save(s);
+            }
+
+            BuchungSitzplatz bs = new BuchungSitzplatz();
+            bs.setBuchung(buchung);
+            bs.setSitzplatz(s);
+            buchungSitzplatzRepository.save(bs);
+        }
+        
+     //Wenn diese Buchung aus einer Reservierung kommt - Reservierung löschen
+        if (ctx != null && ctx.getReservierungsId() != null) {
+            reservierungRepository.findById(ctx.getReservierungsId()).ifPresent(res -> {
+
+                // Reservierung Sitzplatz Verknüpfungen löschen
+                if (res.getReservierungSitzplaetze() != null) {
+                    for (ReservierungSitzplatz rsp : res.getReservierungSitzplaetze()) {
+                        reservierungSitzplatzRepository.delete(rsp);
+                    }
+                }
+
+                reservierungRepository.delete(res);
+            });
+        }
+
+        //BuchungContext leeren
+        VaadinSession.getCurrent().setAttribute(BuchungContext.class, null);
+
+        // Danke-Dialog anzeigen
+        Dialog dialog = new Dialog();
+        dialog.setCloseOnEsc(false);
+        dialog.setCloseOnOutsideClick(false);
+
+        H2 title = new H2("Vielen Dank für Ihre Buchung!");
+        Paragraph info = new Paragraph("Ihre Buchungsnummer: " + buchung.getBuchungsnummer());
+        Paragraph hint = new Paragraph("Bitte notieren Sie sich diese Nummer für Rückfragen.");
+
+        Button close = new Button("Schließen", e -> {
+            dialog.close();
+            // zurück auf Startseite oder Reservierungsübersicht
+            UI.getCurrent().navigate("");
+        });
+
+        VerticalLayout layout = new VerticalLayout(title, info, hint, close);
+        layout.setSpacing(true);
+        layout.setPadding(true);
+        layout.setAlignItems(Alignment.START);
+
+        dialog.add(layout);
+        dialog.open();
+    }
 }
