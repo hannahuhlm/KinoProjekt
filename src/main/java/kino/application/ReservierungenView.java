@@ -1,6 +1,7 @@
 package kino.application;
 
 import com.vaadin.flow.component.Text;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.Div;
@@ -21,12 +22,15 @@ import com.vaadin.flow.server.VaadinSession;
 
 import jakarta.annotation.security.PermitAll;
 import jakarta.transaction.Transactional;
+import kino.application.buchung.BuchungContext;
 import kino.application.data.Auffuehrung;
 import kino.application.data.Film;
 import kino.application.data.Kunde;
 import kino.application.data.Reservierung;
 import kino.application.data.KundeRepository;
 import kino.application.data.ReservierungRepository;
+import kino.application.data.ReservierungSitzplatz;
+import kino.application.data.Sitzplatz;
 import kino.application.data.SitzreihenKategorie;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -123,8 +127,10 @@ public class ReservierungenView extends VerticalLayout {
     private void createContentArea() {
         // Überschrift
         reservierungenTitel = new H2();
-        reservierungenTitel.getStyle().set("color", "#e0c184");
-        reservierungenTitel.getStyle().set("margin-left", "300px");
+        reservierungenTitel.getStyle()
+        	.set("color", "#e0c184")
+        	.set("margin-left", "300px")
+        	.set("margin-top", "20px");
         reservierungenTitel.setVisible(false);
 
         // Container für die Kacheln
@@ -265,7 +271,9 @@ public class ReservierungenView extends VerticalLayout {
         Button buchenButton = new Button("Buchen");
         buchenButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
         buchenButton.getStyle().set("color", "#c76b28");
+        buchenButton.addClickListener(e -> starteBuchungAusReservierung(reservierung));
 
+        //löscvh button 
         Button loeschenButton = new Button(new Icon(VaadinIcon.TRASH));
         loeschenButton.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_TERTIARY);
         loeschenButton.getElement().setProperty("title", "Reservierung löschen");
@@ -279,38 +287,33 @@ public class ReservierungenView extends VerticalLayout {
         return card;
     }
 
-    /**
-     * Baut einen kurzen Text zu den reservierten Plätzen.
-     * Hier verwende ich erstmal nur die Anzahl, weil die Sitzplatz-Entitäten
-     * noch nicht geschickt wurden. Du kannst das später leicht anpassen.
-     */
-
-private String bauePlaetzeText(Reservierung reservierung) {
-    if (reservierung.getReservierungSitzplaetze() == null
-            || reservierung.getReservierungSitzplaetze().isEmpty()) {
-        return "-";
-    }
-
-    // Kategorie je Sitz sammeln
-    Map<SitzreihenKategorie, Long> anzahlProKategorie =
-            reservierung.getReservierungSitzplaetze().stream()
-                    .map(rs -> rs.getSitzplatz())      
-                    .filter(Objects::nonNull)
-                    .map(sp -> sp.getReihe())   
-                    .filter(Objects::nonNull)
-                    .map(r -> r.getKategorie())
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.groupingBy(
-                            Function.identity(),
-                            LinkedHashMap::new,
-                            Collectors.counting()
-                    ));
-
-    // Aus Map kategorie ziehen 
-    return anzahlProKategorie.entrySet().stream()
-            .map(e -> e.getValue() + "x " + e.getKey())
-            .collect(Collectors.joining(", "));
-}
+    //Baut einen kurzen Text zu den reservierten Plätzen
+	private String bauePlaetzeText(Reservierung reservierung) {
+	    if (reservierung.getReservierungSitzplaetze() == null
+	            || reservierung.getReservierungSitzplaetze().isEmpty()) {
+	        return "-";
+	    }
+	
+	    // Kategorie je Sitz sammeln
+	    Map<SitzreihenKategorie, Long> anzahlProKategorie =
+	            reservierung.getReservierungSitzplaetze().stream()
+	                    .map(rs -> rs.getSitzplatz())      
+	                    .filter(Objects::nonNull)
+	                    .map(sp -> sp.getReihe())   
+	                    .filter(Objects::nonNull)
+	                    .map(r -> r.getKategorie())
+	                    .filter(Objects::nonNull)
+	                    .collect(Collectors.groupingBy(
+	                            Function.identity(),
+	                            LinkedHashMap::new,
+	                            Collectors.counting()
+	                    ));
+	
+	    // Aus Map kategorie ziehen 
+	    return anzahlProKategorie.entrySet().stream()
+	            .map(e -> e.getValue() + "x " + e.getKey())
+	            .collect(Collectors.joining(", "));
+	}
 
     /**
      * Preisberechnung – vorerst Dummy (z.B. 9.50 € pro Platz),
@@ -355,6 +358,45 @@ private String bauePlaetzeText(Reservierung reservierung) {
 
         // UI aktualisieren
         aktualisiereReservierungsAnzeige();
+    }
+    private void starteBuchungAusReservierung(Reservierung reservierung) {
+        if (reservierung == null) {
+            Notification.show("Reservierung konnte nicht geladen werden.");
+            return;
+        }
+        if (reservierung.getAuffuehrung() == null || reservierung.getKunde() == null) {
+            Notification.show("Reservierung ist unvollständig (kein Kunde oder keine Aufführung).");
+            return;
+        }
+        if (reservierung.getReservierungSitzplaetze() == null
+                || reservierung.getReservierungSitzplaetze().isEmpty()) {
+            Notification.show("Diese Reservierung enthält keine Sitzplätze.");
+            return;
+        }
+
+        // Sitzplatz-IDs aus der Reservierung sammeln
+        List<Long> sitzplatzIds = reservierung.getReservierungSitzplaetze().stream()
+                .map(ReservierungSitzplatz::getSitzplatz)
+                .filter(sp -> sp != null && sp.getId() != null)
+                .map(Sitzplatz::getId)
+                .toList();
+
+        if (sitzplatzIds.isEmpty()) {
+            Notification.show("Sitzplätze konnten nicht ermittelt werden.");
+            return;
+        }
+
+        // BuchungContext wie in SitzplatzWahlView aufbauen
+        BuchungContext ctx = new BuchungContext();
+        ctx.setAuffuehrungId(reservierung.getAuffuehrung().getId());
+        ctx.setKundeId(reservierung.getKunde().getId());
+        ctx.setSitzplatzIds(sitzplatzIds);
+        //reservierungs id setzen um reservieung löschen zu können
+        ctx.setReservierungsId(reservierung.getId());
+
+        // In Session legen und zur Buchungsseite navigieren
+        VaadinSession.getCurrent().setAttribute(BuchungContext.class, ctx);
+        UI.getCurrent().navigate(BuchungsView.class);
     }
 
 }

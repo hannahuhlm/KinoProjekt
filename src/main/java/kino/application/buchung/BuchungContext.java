@@ -8,6 +8,7 @@ public class BuchungContext implements Serializable {
     private Long auffuehrungId;
     private Long kundeId;
     private List<Long> sitzplatzIds;
+    private Long reservierungsId;
 
     public Long getAuffuehrungId() {
         return auffuehrungId;
@@ -32,4 +33,12 @@ public class BuchungContext implements Serializable {
     public void setSitzplatzIds(List<Long> sitzplatzIds) {
         this.sitzplatzIds = sitzplatzIds;
     }
+
+	public Long getReservierungsId() {
+		return reservierungsId;
+	}
+
+	public void setReservierungsId(Long reservierungsId) {
+		this.reservierungsId = reservierungsId;
+	}
 }

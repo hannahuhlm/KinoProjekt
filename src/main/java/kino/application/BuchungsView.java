@@ -38,7 +38,9 @@ public class BuchungsView extends VerticalLayout implements BeforeEnterObserver 
     private Auffuehrung auffuehrung;
     private Kunde kunde;
     private List<Sitzplatz> sitzplaetze;
-
+    
+    private final ReservierungRepository reservierungRepository;
+    private final ReservierungSitzplatzRepository reservierungSitzplatzRepository;
     private final DateTimeFormatter filmStartFormatter =
             DateTimeFormatter.ofPattern("dd.MM.yyyy");
     private final DateTimeFormatter auffuehrungsFormatter =
@@ -50,13 +52,17 @@ public class BuchungsView extends VerticalLayout implements BeforeEnterObserver 
             KundeRepository kundeRepository,
             SitzplatzRepository sitzplatzRepository,
             BuchungRepository buchungRepository,
-            BuchungSitzplatzRepository buchungSitzplatzRepository
+            BuchungSitzplatzRepository buchungSitzplatzRepository,
+            ReservierungRepository reservierungRepository,
+            ReservierungSitzplatzRepository reservierungSitzplatzRepository
     ) {
         this.auffuehrungRepository = auffuehrungRepository;
         this.kundeRepository = kundeRepository;
         this.sitzplatzRepository = sitzplatzRepository;
         this.buchungRepository = buchungRepository;
         this.buchungSitzplatzRepository = buchungSitzplatzRepository;
+        this.reservierungRepository= reservierungRepository;
+		this.reservierungSitzplatzRepository = reservierungSitzplatzRepository;
 
         setWidthFull();
         setPadding(true);
@@ -249,11 +255,26 @@ public class BuchungsView extends VerticalLayout implements BeforeEnterObserver 
             bs.setSitzplatz(s);
             buchungSitzplatzRepository.save(bs);
         }
+        
+     //Wenn diese Buchung aus einer Reservierung kommt - Reservierung löschen
+        if (ctx != null && ctx.getReservierungsId() != null) {
+            reservierungRepository.findById(ctx.getReservierungsId()).ifPresent(res -> {
 
-        // 4) BuchungContext leeren
+                // Reservierung Sitzplatz Verknüpfungen löschen
+                if (res.getReservierungSitzplaetze() != null) {
+                    for (ReservierungSitzplatz rsp : res.getReservierungSitzplaetze()) {
+                        reservierungSitzplatzRepository.delete(rsp);
+                    }
+                }
+
+                reservierungRepository.delete(res);
+            });
+        }
+
+        //BuchungContext leeren
         VaadinSession.getCurrent().setAttribute(BuchungContext.class, null);
 
-        // 5) Danke-Dialog anzeigen
+        // Danke-Dialog anzeigen
         Dialog dialog = new Dialog();
         dialog.setCloseOnEsc(false);
         dialog.setCloseOnOutsideClick(false);
@@ -264,7 +285,7 @@ public class BuchungsView extends VerticalLayout implements BeforeEnterObserver 
 
         Button close = new Button("Schließen", e -> {
             dialog.close();
-            // z.B. zurück auf Startseite oder Reservierungsübersicht
+            // zurück auf Startseite oder Reservierungsübersicht
             UI.getCurrent().navigate("");
         });
 
