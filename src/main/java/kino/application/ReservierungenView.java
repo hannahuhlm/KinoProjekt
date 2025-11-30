@@ -25,13 +25,19 @@ import kino.application.data.Kunde;
 import kino.application.data.Reservierung;
 import kino.application.data.KundeRepository;
 import kino.application.data.ReservierungRepository;
+import kino.application.data.SitzreihenKategorie;
+
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.text.SimpleDateFormat;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 
@@ -58,18 +64,21 @@ public class ReservierungenView extends VerticalLayout {
 
     @Autowired
     public ReservierungenView(KundeRepository kundeRepository,
-                              ReservierungRepository reservierungRepository) {
-        this.kundeRepository = kundeRepository;
-        this.reservierungRepository = reservierungRepository;
+            ReservierungRepository reservierungRepository) {
+		this.kundeRepository = kundeRepository;
+		this.reservierungRepository = reservierungRepository;
+		
+		setWidthFull();
+		setMinHeight("100vh");           
+		getStyle().set("background-color", "#241f20");
+		
+		setPadding(false);
+		setSpacing(false);
+		
+		createSearchBar();
+		createContentArea();
+	}
 
-        setSizeFull();
-        setPadding(false);
-        setSpacing(false);
-        getStyle().set("background-color", "#241f20");
-
-        createSearchBar();
-        createContentArea();
-    }
 
     private void createSearchBar() {
         // Obere beige Zeile
@@ -78,7 +87,7 @@ public class ReservierungenView extends VerticalLayout {
         searchBar.setPadding(true);
         searchBar.setSpacing(true);
         searchBar.setAlignItems(FlexComponent.Alignment.CENTER);
-        searchBar.getStyle().set("background-color", "#d9bf8a"); // Beige wie im Screenshot
+        searchBar.getStyle().set("background-color", "#f3e0b5");
 
         nameField = new TextField("Name");
         nameField.setPlaceholder("Name");
@@ -90,6 +99,8 @@ public class ReservierungenView extends VerticalLayout {
 
         searchButton = new Button("OK");
         searchButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        searchButton.getStyle().set("background-color", "#c76b28");
+
         searchButton.addClickListener(e -> ladeKundeUndReservierungen());
 
         searchBar.add(nameField, emailField, searchButton);
@@ -180,7 +191,8 @@ public class ReservierungenView extends VerticalLayout {
 
         Div card = new Div();
         card.addClassName("reservierungs-card");
-        card.getStyle().set("background-color", "#f3e0b5");
+        card.getStyle().set("background-color", "#f6e6bf");
+        card.getStyle().set("color", "black");
         card.getStyle().set("border-radius", "8px");
         card.getStyle().set("padding", "20px");
         card.getStyle().set("display", "flex");
@@ -239,6 +251,7 @@ public class ReservierungenView extends VerticalLayout {
 
         Button buchenButton = new Button("Buchen");
         buchenButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+        buchenButton.getStyle().set("color", "#c76b28");
 
         Button loeschenButton = new Button(new Icon(VaadinIcon.TRASH));
         loeschenButton.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_TERTIARY);
@@ -258,13 +271,33 @@ public class ReservierungenView extends VerticalLayout {
      * Hier verwende ich erstmal nur die Anzahl, weil die Sitzplatz-Entitäten
      * noch nicht geschickt wurden. Du kannst das später leicht anpassen.
      */
-    private String bauePlaetzeText(Reservierung reservierung) {
-        if (reservierung.getReservierungSitzplaetze() == null) {
-            return "-";
-        }
-        int anzahl = reservierung.getReservierungSitzplaetze().size();
-        return anzahl + "x Platz";
+
+private String bauePlaetzeText(Reservierung reservierung) {
+    if (reservierung.getReservierungSitzplaetze() == null
+            || reservierung.getReservierungSitzplaetze().isEmpty()) {
+        return "-";
     }
+
+    // Kategorie je Sitz sammeln
+    Map<SitzreihenKategorie, Long> anzahlProKategorie =
+            reservierung.getReservierungSitzplaetze().stream()
+                    .map(rs -> rs.getSitzplatz())      
+                    .filter(Objects::nonNull)
+                    .map(sp -> sp.getReihe())   
+                    .filter(Objects::nonNull)
+                    .map(r -> r.getKategorie())
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.groupingBy(
+                            Function.identity(),
+                            LinkedHashMap::new,
+                            Collectors.counting()
+                    ));
+
+    // Aus Map kategorie ziehen 
+    return anzahlProKategorie.entrySet().stream()
+            .map(e -> e.getValue() + "x " + e.getKey())
+            .collect(Collectors.joining(", "));
+}
 
     /**
      * Preisberechnung – vorerst Dummy (z.B. 9.50 € pro Platz),

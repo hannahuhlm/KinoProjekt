@@ -261,67 +261,58 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
     }
 
     private void openCustomerDialog(Boolean isDirektBuchung) {
-        Dialog dialog = new Dialog();
+    Dialog dialog = new Dialog();
 
-        VerticalLayout layout = new VerticalLayout();
-        layout.setSpacing(true);
+    VerticalLayout layout = new VerticalLayout();
+    layout.setSpacing(true);
 
-        TextField nameField = new TextField("Name");
-        TextField emailField = new TextField("E-Mail");
-        Button newCustomerButton = new Button("Neuen Kunden anlegen");
-        Button existingCustomerButton = new Button("Bereits vorhandenen Kunden wählen");
+    TextField nameField = new TextField("Name");
+    TextField emailField = new TextField("E-Mail");
 
-        newCustomerButton.addClickListener(e -> {
-            String name = nameField.getValue();
-            String email = emailField.getValue();
+    Button weiterButton = new Button("Weiter");
 
-            if (name == null || name.isBlank() || email == null || email.isBlank()) {
-                Notification.show("Bitte Name und E-Mail angeben.");
+    weiterButton.addClickListener(e -> {
+        String name = nameField.getValue();
+        String email = emailField.getValue();
+
+        if (email == null || email.isBlank()) {
+            Notification.show("Bitte E-Mail angeben.");
+            return;
+        }
+
+        // 1. Versuchen, bestehenden Kunden zu finden
+        Kunde kunde = kundeRepository.findByEmail(email);
+
+        // 2. Wenn kein Kunde existiert -> neuen anlegen
+        if (kunde == null) {
+            if (name == null || name.isBlank()) {
+                Notification.show("Bitte Name angeben, um einen neuen Kunden anzulegen.");
                 return;
             }
 
             Kunde newKunde = new Kunde();
             newKunde.setName(name);
             newKunde.setEmail(email);
-            kundeRepository.save(newKunde);
-            this.currentKunde = newKunde;
+            kunde = kundeRepository.save(newKunde);
+        }
 
-            if (isDirektBuchung) {
-                dialog.close();
-                startDirektbuchung();
-            } else {
-                saveReservierung(newKunde);
-                dialog.close();
-            }
-        });
+        // 3. Kunde (egal ob neu oder bestehend) setzen
+        this.currentKunde = kunde;
 
-        existingCustomerButton.addClickListener(e -> {
-            String email = emailField.getValue();
-            if (email == null || email.isBlank()) {
-                Notification.show("Bitte E-Mail angeben.");
-                return;
-            }
+        // 4. Je nach Modus weiter
+        dialog.close();
+        if (isDirektBuchung) {
+            startDirektbuchung();
+        } else {
+            saveReservierung(kunde);
+        }
+    });
 
-            Kunde existingKunde = kundeRepository.findByEmail(email);
-            if (existingKunde != null) {
-                this.currentKunde = existingKunde;
+    layout.add(nameField, emailField, weiterButton);
+    dialog.add(layout);
+    dialog.open();
+}
 
-                if (isDirektBuchung) {
-                    dialog.close();
-                    startDirektbuchung();
-                } else {
-                    saveReservierung(existingKunde);
-                    dialog.close();
-                }
-            } else {
-                Notification.show("Kunde nicht gefunden. Bitte einen neuen Kunden anlegen.");
-            }
-        });
-
-        layout.add(nameField, emailField, newCustomerButton, existingCustomerButton);
-        dialog.add(layout);
-        dialog.open();
-    }
 
     private void saveReservierung(Kunde kunde) {
         if (aktuelleAuffuehrung == null || ausgewähltePlaetze.isEmpty()) {
