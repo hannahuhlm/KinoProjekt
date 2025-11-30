@@ -65,7 +65,14 @@ public class MainViewLayout extends AppLayout {
 
         // Burger Button hinzufügen
         Button menuButton = new Button(new Icon(VaadinIcon.MENU));
-        menuButton.getStyle().set("margin-left", "20px");
+        menuButton.getStyle()
+                .set("background", "transparent")
+                .set("border", "none")
+                .set("box-shadow", "none")
+                .set("color", "#f5e1a4") 
+                .set("cursor", "pointer")
+                .set("padding", "4px");
+
         menuButton.addClickListener(e -> setDrawerOpened(!isDrawerOpened()));
 
         // Branding-Bild als Button
@@ -143,10 +150,13 @@ public class MainViewLayout extends AppLayout {
     	Button adminButton = new Button("Admin", new Icon(VaadinIcon.LOCK));
         adminButton.setWidthFull();
         adminButton.getStyle()
-            .set("margin-top", "40px")
-            .set("border-radius", "8px")
-            .set("background", "#e0e0e0")
-            .set("cursor", "pointer");
+        .set("margin-top", "40px")
+        .set("border-radius", "8px")
+        .set("background-color", "#f5e1a4")
+        .set("color", "#2c2723")           
+        .set("border", "none")
+        .set("cursor", "pointer");
+
 
         adminButton.addClickListener(e -> addAdminMenuItems(layout));
 

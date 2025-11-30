@@ -1,5 +1,6 @@
 package kino.application.data;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -102,8 +103,10 @@ public class Auffuehrung {
      * mappedBy = "auffuehrung" muss exakt dem Feldnamen in Reservierung
      * entsprechen – dann weiß JPA, dass der Fremdschlüssel dort liegt.
      */
-    @OneToMany(mappedBy = "auffuehrung", fetch = FetchType.EAGER)
-    private List<Reservierung> reservierungen;
+    @OneToMany(mappedBy = "auffuehrung",
+            fetch = FetchType.EAGER)
+ private List<Reservierung> reservierungen;
+
 
     /**
      * Alle Buchungen zu dieser Aufführung.
