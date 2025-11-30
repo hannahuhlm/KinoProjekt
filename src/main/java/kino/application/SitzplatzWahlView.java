@@ -339,9 +339,15 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
 
         Notification.show("Reservierung erfolgreich!");
 
-        // Auswahl leeren und UI aktualisieren
+     // Auswahl leeren
         ausgewähltePlaetze.clear();
-        UI.getCurrent().getPage().reload();
+
+        // E-Mail in der Session merken, damit die ReservierungenView sie nutzen kann
+        VaadinSession.getCurrent().setAttribute("kundenEmail", kunde.getEmail());
+
+        // Zur Reservierungsseite navigieren
+        UI.getCurrent().navigate(ReservierungenView.class);
+
     }
 
     private int generateReservierungsnummer() {

@@ -17,6 +17,8 @@ import com.vaadin.flow.component.textfield.EmailField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.server.VaadinSession;
+
 import jakarta.annotation.security.PermitAll;
 import jakarta.transaction.Transactional;
 import kino.application.data.Auffuehrung;
@@ -77,6 +79,17 @@ public class ReservierungenView extends VerticalLayout {
 		
 		createSearchBar();
 		createContentArea();
+		
+		//email bei weiterleitung aus sitzplatzwahlview übernehmen
+		String emailFromSession = (String) VaadinSession.getCurrent().getAttribute("kundenEmail");
+
+	    if (emailFromSession != null && !emailFromSession.isBlank()) {
+	        emailField.setValue(emailFromSession);
+	        ladeKundeUndReservierungen();
+
+	        // optional: wieder löschen, damit es nur einmal automatisch passiert
+	        VaadinSession.getCurrent().setAttribute("kundenEmail", null);
+	    }
 	}
 
 
