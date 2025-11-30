@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Locale;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.repository.CrudRepository;
 import kino.application.service.ReservierungsService;
 import kino.application.service.BuchungsService;
 
@@ -46,8 +45,6 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
 
     @Autowired
     private KundeRepository kundeRepository;
-    @Autowired
-    private SitzplatzRepository sitzplatzRepository;
 
     public SitzplatzWahlView(
             AuffuehrungRepository auffuehrungRepository,
@@ -199,37 +196,57 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
             return;
         }
 
-        // Buchung über Kafka senden
+        openConfirmDialogFuerDirektbuchung();
+    }
+
+    private void openConfirmDialogFuerDirektbuchung() {
         List<Long> sitzplatzIds = ausgewähltePlaetze.stream()
                 .map(Sitzplatz::getId)
                 .toList();
 
-        buchungsService.buchePlaetze(
-                aktuelleAuffuehrung.getId(),
-                currentKunde.getId(),
-                sitzplatzIds
-        );
+        double total;
+        try {
+            total = buchungsService.berechneGesamtpreis(sitzplatzIds);
+        } catch (Exception ex) {
+            Notification.show("Preisberechnung fehlgeschlagen: " + ex.getMessage());
+            return;
+        }
 
-        Notification.show("Buchung wird verarbeitet...");
+        String plaetzeText = ausgewähltePlaetze.stream()
+                .map(sp -> "Reihe " + sp.getReihe().getReihennummer() + ", Platz " + sp.getPlatznummer())
+                .reduce((a, b) -> a + " | " + b)
+                .orElse("-");
 
-        // Auswahl leeren
-        ausgewähltePlaetze.clear();
+        Dialog dialog = new Dialog();
+        dialog.setHeaderTitle("Kauf bestätigen");
+        VerticalLayout layout = new VerticalLayout();
+        layout.setPadding(false);
+        layout.setSpacing(false);
 
-        // E-Mail in der Session merken, damit die ReservierungenView sie nutzen kann
-        String email = currentKunde.getEmail();
-        VaadinSession.getCurrent().setAttribute("kundenEmail", email);
+        Paragraph p1 = new Paragraph("Ausgewählte Plätze: " + plaetzeText);
+        Paragraph p2 = new Paragraph("Gesamtpreis: " + String.format("%.2f", total) + " €");
 
-        // Nach kurzer Wartezeit zur Reservierungsseite navigieren
-        UI ui = UI.getCurrent();
-        new Thread(() -> {
-            try {
-                Thread.sleep(800); // 0.8s warten, bis Consumer gespeichert hat
-                ui.access(() -> ui.navigate(ReservierungenView.class));
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-                ui.access(() -> ui.navigate(ReservierungenView.class));
-            }
-        }).start();
+        HorizontalLayout actions = new HorizontalLayout();
+        Button abbrechen = new Button("Abbrechen", e -> dialog.close());
+        Button bestaetigen = new Button("Jetzt kaufen", e -> {
+            dialog.close();
+
+            // Direkt über BuchungsView abschließen
+            BuchungContext ctx = new BuchungContext();
+            ctx.setAuffuehrungId(aktuelleAuffuehrung.getId());
+            ctx.setKundeId(currentKunde.getId());
+            ctx.setSitzplatzIds(sitzplatzIds);
+            VaadinSession.getCurrent().setAttribute(BuchungContext.class, ctx);
+
+            Notification.show("Kauf wird ausgeführt...");
+            ausgewähltePlaetze.clear();
+            UI.getCurrent().navigate("buchung");
+        });
+        actions.add(abbrechen, bestaetigen);
+
+        layout.add(p1, p2, actions);
+        dialog.add(layout);
+        dialog.open();
     }
 
     private Button createSitzButton(Sitzplatz platz, SitzreihenKategorie kategorie) {
@@ -388,9 +405,7 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
 
     }
 
-    private int generateReservierungsnummer() {
-        return (int) (Math.random() * 10000); // Zufällige Reservierungsnummer
-    }
+    // generateReservierungsnummer nicht mehr benötigt
 
     // *** NEU: Belegungsprüfung pro Aufführung ***
     private boolean isPlatzBelegtFuerAktuelleAuffuehrung(Sitzplatz platz) {

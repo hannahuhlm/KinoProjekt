@@ -80,6 +80,21 @@ public class BuchungsService {
     }
 
     /**
+     * Berechnet den Gesamtpreis für die gegebenen Sitzplatz-IDs,
+     * ohne eine Buchung auszulösen.
+     */
+    public double berechneGesamtpreis(List<Long> sitzplatzIds) {
+        double gesamtpreis = 0.0;
+        for (Long sitzplatzId : sitzplatzIds) {
+            Sitzplatz sitzplatz = sitzplatzRepository.findById(sitzplatzId)
+                    .orElseThrow(() -> new RuntimeException("Sitzplatz nicht gefunden: " + sitzplatzId));
+            Sitzreihe reihe = sitzplatz.getReihe();
+            gesamtpreis += calculatePreis(reihe.getKategorie());
+        }
+        return gesamtpreis;
+    }
+
+    /**
      * Berechnet den Preis basierend auf der Kategorie.
      */
     private double calculatePreis(SitzreihenKategorie kategorie) {

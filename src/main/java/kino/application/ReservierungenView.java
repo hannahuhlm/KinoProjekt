@@ -7,7 +7,9 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Image;
+import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
@@ -21,7 +23,6 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 
 import jakarta.annotation.security.PermitAll;
-import jakarta.transaction.Transactional;
 import kino.application.buchung.BuchungContext;
 import kino.application.data.Auffuehrung;
 import kino.application.data.Film;
@@ -32,6 +33,7 @@ import kino.application.data.KundeRepository;
 import kino.application.data.ReservierungSitzplatz;
 import kino.application.data.Sitzplatz;
 import kino.application.data.SitzreihenKategorie;
+import kino.application.service.BuchungsService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.slf4j.Logger;
@@ -61,6 +63,7 @@ public class ReservierungenView extends VerticalLayout {
     private final KundeRepository kundeRepository;
     // Entfernt ungenutzte Repositories (Delete via Kafka, kein Direktzugriff nötig)
     private final kino.application.service.ReservierungsService reservierungsService;
+    private final BuchungsService buchungsService;
 
     private TextField nameField;
     private EmailField emailField;
@@ -73,9 +76,11 @@ public class ReservierungenView extends VerticalLayout {
 
     @Autowired
         public ReservierungenView(KundeRepository kundeRepository,
-            kino.application.service.ReservierungsService reservierungsService) {
+            kino.application.service.ReservierungsService reservierungsService,
+            BuchungsService buchungsService) {
 		this.kundeRepository = kundeRepository;
 		this.reservierungsService = reservierungsService;
+        this.buchungsService = buchungsService;
 		
 		setWidthFull();
 		setMinHeight("100vh");           
@@ -284,7 +289,26 @@ public class ReservierungenView extends VerticalLayout {
         rechts.setAlignItems(FlexComponent.Alignment.START);
 
         Span plaetzeSpan = new Span("Plätze: " + bauePlaetzeText(reservierung));
-        Span preisSpan = new Span("Preis: " + formatierePreis(berechnePreis(reservierung)));
+        // Preis konsistent über BuchungsService berechnen
+        String preisText;
+        String preisDetails = "";
+        try {
+            List<Long> sitzplatzIds = reservierung.getReservierungSitzplaetze().stream()
+                    .map(rs -> rs.getSitzplatz())
+                    .filter(Objects::nonNull)
+                    .map(Sitzplatz::getId)
+                    .filter(Objects::nonNull)
+                    .toList();
+            double total = buchungsService.berechneGesamtpreis(sitzplatzIds);
+            preisText = formatierePreis(total);
+            preisDetails = bauePreisAufschluesselung(reservierung);
+        } catch (Exception ex) {
+            preisText = "-"; // Fallback
+        }
+        Span preisSpan = new Span("Preis: " + preisText);
+        if (!preisDetails.isBlank()) {
+            preisSpan.getElement().setProperty("title", preisDetails);
+        }
 
         // Buttons
         HorizontalLayout buttonRow = new HorizontalLayout();
@@ -293,7 +317,7 @@ public class ReservierungenView extends VerticalLayout {
         Button buchenButton = new Button("Buchen");
         buchenButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
         buchenButton.getStyle().set("color", "#c76b28");
-        buchenButton.addClickListener(e -> starteBuchungAusReservierung(reservierung));
+        buchenButton.addClickListener(e -> bestaetigeUndStarteBuchung(reservierung));
 
         //lösch button 
         Button loeschenButton = new Button(new Icon(VaadinIcon.TRASH));
@@ -303,7 +327,17 @@ public class ReservierungenView extends VerticalLayout {
 
         buttonRow.add(buchenButton, loeschenButton);
 
-        rechts.add(plaetzeSpan, preisSpan, buttonRow);
+        // Subline mit Preisaufschlüsselung
+        if (!preisDetails.isBlank()) {
+            Span preisDetailsSpan = new Span(preisDetails);
+            preisDetailsSpan.getStyle()
+                    .set("color", "#555")
+                    .set("font-size", "12px")
+                    .set("margin-top", "4px");
+            rechts.add(plaetzeSpan, preisSpan, preisDetailsSpan, buttonRow);
+        } else {
+            rechts.add(plaetzeSpan, preisSpan, buttonRow);
+        }
 
         card.add(poster, mitte, rechts);
         return card;
@@ -337,21 +371,63 @@ public class ReservierungenView extends VerticalLayout {
 	            .collect(Collectors.joining(", "));
 	}
 
-    /**
-     * Preisberechnung – vorerst Dummy (z.B. 9.50 € pro Platz),
-     * damit die Oberfläche funktioniert. Kannst du später
-     * an dein Preissystem anpassen.
-     */
-    private double berechnePreis(Reservierung reservierung) {
-        int anzahlPlaetze = reservierung.getReservierungSitzplaetze() == null
-                ? 0
-                : reservierung.getReservierungSitzplaetze().size();
-        double preisProPlatz = 9.50;
-        return anzahlPlaetze * preisProPlatz;
-    }
+    // Preisberechnung erfolgt zentral im BuchungsService
 
     private String formatierePreis(double wert) {
         return String.format("%.2f €", wert);
+    }
+
+    // Baut eine Preisaufschlüsselung je Kategorie, z. B. "2 x PARKETT à 12,00 € = 24,00 € | 1 x LOGE à 18,00 € = 18,00 €"
+    private String bauePreisAufschluesselung(Reservierung reservierung) {
+        if (reservierung == null || reservierung.getReservierungSitzplaetze() == null
+                || reservierung.getReservierungSitzplaetze().isEmpty()) {
+            return "";
+        }
+
+        Map<SitzreihenKategorie, Long> anzahlProKategorie = reservierung.getReservierungSitzplaetze().stream()
+            .map(ReservierungSitzplatz::getSitzplatz)
+            .filter(Objects::nonNull)
+            .map(sp -> sp.getReihe())
+            .filter(Objects::nonNull)
+            .map(r -> r.getKategorie())
+            .filter(Objects::nonNull)
+            .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+
+        if (anzahlProKategorie.isEmpty()) {
+            return "";
+        }
+
+        List<SitzreihenKategorie> reihenfolge = List.of(
+                SitzreihenKategorie.PARKETT,
+                SitzreihenKategorie.LOGE,
+                SitzreihenKategorie.LOGE_MIT_SERVICE
+        );
+
+        List<String> teile = new java.util.ArrayList<>();
+        for (SitzreihenKategorie kat : reihenfolge) {
+            Long count = anzahlProKategorie.get(kat);
+            if (count == null || count == 0) continue;
+            double einzel = preisFuerKategorie(kat);
+            double summe = einzel * count;
+            String katName = kat.name().replace('_', ' ');
+            teile.add(count + " x " + katName + " à " + formatierePreis(einzel) + " = " + formatierePreis(summe));
+        }
+        return String.join(" | ", teile);
+    }
+
+    // Muss konsistent sein mit BuchungsService-Preisen
+    private double preisFuerKategorie(SitzreihenKategorie kat) {
+        if (kat == null) return 0.0;
+        switch (kat) {
+            case LOGE_MIT_SERVICE:
+                return 25.0;
+            case LOGE:
+                return 18.0;
+            case PARKETT:
+                return 12.0;
+            default:
+                return 0.0;
+        }
     }
 
     /**
@@ -441,6 +517,70 @@ public class ReservierungenView extends VerticalLayout {
             , reservierung.getId(), ctx.getAuffuehrungId(), ctx.getKundeId(), sitzplatzIds.size());
         Notification.show("Buchung wird vorbereitet...");
         UI.getCurrent().navigate("buchung");
+    }
+
+    private void bestaetigeUndStarteBuchung(Reservierung reservierung) {
+        if (reservierung == null) {
+            Notification.show("Reservierung konnte nicht geladen werden.");
+            return;
+        }
+        if (reservierung.getAuffuehrung() == null || reservierung.getKunde() == null) {
+            Notification.show("Reservierung ist unvollständig (kein Kunde oder keine Aufführung).");
+            return;
+        }
+        if (reservierung.getReservierungSitzplaetze() == null
+                || reservierung.getReservierungSitzplaetze().isEmpty()) {
+            Notification.show("Diese Reservierung enthält keine Sitzplätze.");
+            return;
+        }
+
+        // Sitzplatz-IDs vorbereiten
+        List<Long> sitzplatzIds = reservierung.getReservierungSitzplaetze().stream()
+                .map(rs -> rs.getSitzplatz())
+                .filter(sp -> sp != null && sp.getId() != null)
+                .map(Sitzplatz::getId)
+                .toList();
+        if (sitzplatzIds.isEmpty()) {
+            Notification.show("Sitzplätze konnten nicht ermittelt werden.");
+            return;
+        }
+
+        double total;
+        try {
+            total = buchungsService.berechneGesamtpreis(sitzplatzIds);
+        } catch (Exception ex) {
+            Notification.show("Preisberechnung fehlgeschlagen: " + ex.getMessage());
+            return;
+        }
+
+        String plaetzeText = reservierung.getReservierungSitzplaetze().stream()
+                .map(rs -> rs.getSitzplatz())
+                .filter(Objects::nonNull)
+                .map(sp -> "Reihe " + sp.getReihe().getReihennummer() + ", Platz " + sp.getPlatznummer())
+                .reduce((a, b) -> a + " | " + b)
+                .orElse("-");
+
+        Dialog dialog = new Dialog();
+        dialog.setHeaderTitle("Kauf bestätigen");
+        VerticalLayout layout = new VerticalLayout();
+        layout.setPadding(false);
+        layout.setSpacing(false);
+
+        Paragraph p1 = new Paragraph("Ausgewählte Plätze: " + plaetzeText);
+        Paragraph p2 = new Paragraph("Gesamtpreis: " + String.format("%.2f", total) + " €");
+
+        HorizontalLayout actions = new HorizontalLayout();
+        Button abbrechen = new Button("Abbrechen", e -> dialog.close());
+        Button bestaetigen = new Button("Jetzt kaufen", e -> {
+            dialog.close();
+            // Bestehenden Flow ausführen
+            starteBuchungAusReservierung(reservierung);
+        });
+        actions.add(abbrechen, bestaetigen);
+
+        layout.add(p1, p2, actions);
+        dialog.add(layout);
+        dialog.open();
     }
 
 }

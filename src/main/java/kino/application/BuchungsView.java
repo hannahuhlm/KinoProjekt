@@ -1,7 +1,6 @@
 package kino.application;
 
 import com.vaadin.flow.component.UI;
-import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Hr;
@@ -21,7 +20,6 @@ import com.vaadin.flow.server.VaadinSession;
 
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,18 +29,13 @@ import kino.application.data.Auffuehrung;
 import kino.application.data.AuffuehrungRepository;
 import kino.application.data.Buchung;
 import kino.application.data.BuchungRepository;
-import kino.application.data.BuchungSitzplatz;
-import kino.application.data.BuchungSitzplatzRepository;
 import kino.application.data.Film;
 import kino.application.data.Kunde;
 import kino.application.data.KundeRepository;
-import kino.application.data.ReservierungRepository;
-import kino.application.data.ReservierungSitzplatz;
-import kino.application.data.ReservierungSitzplatzRepository;
 import kino.application.data.Sitzplatz;
 import kino.application.data.SitzplatzRepository;
-import kino.application.data.SitzreihenKategorie;
 import kino.application.service.ReservierungsService;
+import kino.application.service.BuchungsService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,13 +47,12 @@ public class BuchungsView extends VerticalLayout implements BeforeEnterObserver 
     private static final Logger LOGGER = LoggerFactory.getLogger(BuchungsView.class);
 
     private final BuchungRepository buchungRepository;
-    private final BuchungSitzplatzRepository buchungSitzplatzRepository;
+    // Repositories kept for read/poll and future fallback
     private final AuffuehrungRepository auffuehrungRepository;
     private final KundeRepository kundeRepository;
     private final SitzplatzRepository sitzplatzRepository;
-    private final ReservierungRepository reservierungRepository;
-    private final ReservierungSitzplatzRepository reservierungSitzplatzRepository;
     private final ReservierungsService reservierungsService;
+    private final BuchungsService buchungsService;
 
     private Buchung buchung;
     private BuchungContext ctx;
@@ -77,19 +69,16 @@ public class BuchungsView extends VerticalLayout implements BeforeEnterObserver 
             KundeRepository kundeRepository,
             SitzplatzRepository sitzplatzRepository,
             BuchungRepository buchungRepository,
-            BuchungSitzplatzRepository buchungSitzplatzRepository,
-            ReservierungRepository reservierungRepository,
-                ReservierungSitzplatzRepository reservierungSitzplatzRepository,
-                ReservierungsService reservierungsService
+            
+                ReservierungsService reservierungsService,
+                BuchungsService buchungsService
     ) {
         this.auffuehrungRepository = auffuehrungRepository;
         this.kundeRepository = kundeRepository;
         this.sitzplatzRepository = sitzplatzRepository;
         this.buchungRepository = buchungRepository;
-        this.buchungSitzplatzRepository = buchungSitzplatzRepository;
-        this.reservierungRepository = reservierungRepository;
-        this.reservierungSitzplatzRepository = reservierungSitzplatzRepository;
         this.reservierungsService = reservierungsService;
+        this.buchungsService = buchungsService;
 
         setWidthFull();
         setPadding(true);
@@ -233,112 +222,80 @@ public class BuchungsView extends VerticalLayout implements BeforeEnterObserver 
         return box;
     }
 
-    private double berechnePreis(List<Sitzplatz> plaetze) {
-        double preis = 0.0;
-        for (Sitzplatz s : plaetze) {
-            SitzreihenKategorie kat = s.getReihe().getKategorie();
-            if (SitzreihenKategorie.LOGE.equals(kat)) {
-                preis += 10.50;
-            } else if (SitzreihenKategorie.PARKETT.equals(kat)) {
-                preis += 9.50;
-            } else if (SitzreihenKategorie.LOGE_MIT_SERVICE.equals(kat)) {
-                preis += 12.00;
-            }
-        }
-        return preis;
-    }
-
-    private String generateBuchungsnummer() {
-        // z.B. einfache 8-stellige Nummer
-        int num = (int) (Math.random() * 1_0000_0000);
-        return String.format("%08d", num);
-    }
+    // Preis- und Nummern-Generierung wird im Service/Consumer gehandhabt
 
     private void finalizeBooking() {
-        //Preis berechnen
-        double gesamtPreis = berechnePreis(sitzplaetze);
-        LOGGER.info("Berechneter Gesamtpreis: {} für {} Plätze", gesamtPreis, sitzplaetze != null ? sitzplaetze.size() : 0);
-
-        // Buchung anlegen
-        Buchung buch = new Buchung();
-        buch.setKunde(kunde);
-        buch.setAuffuehrung(auffuehrung);
-        buch.setGesamtpreis(gesamtPreis);
-        buch.setBezahlt(false);
-        buch.setBuchungsZeitstempel(new Date());
-        buch.setBuchungsnummer(generateBuchungsnummer());
-
-        buch = buchungRepository.save(buch);
-        LOGGER.info("Buchung gespeichert: id={}, nr={}", buch.getId(), buch.getBuchungsnummer());
-        this.buchung = buch;
-        
-        //Einnahmen der Aufführung hochzählen
-        double neueEinnahmen = auffuehrung.getAktuelleEinnahmen() + gesamtPreis;
-        auffuehrung.setAktuelleEinnahmen(neueEinnahmen);
-        auffuehrungRepository.save(auffuehrung);
-        LOGGER.debug("Aufführung {} Einnahmen aktualisiert auf {}", auffuehrung.getId(), neueEinnahmen);
-
-        // Sitzplätze auf belegt setzen + BuchungSitzplatz anlegen
-        for (Sitzplatz s : sitzplaetze) {
-            if (s.isFrei()) {
-                s.setFrei(false);
-                sitzplatzRepository.save(s);
-                LOGGER.trace("Sitz {} als belegt markiert", s.getId());
-            }
-
-            BuchungSitzplatz bs = new BuchungSitzplatz();
-            bs.setBuchung(buch);
-            bs.setSitzplatz(s);
-            buchungSitzplatzRepository.save(bs);
-            LOGGER.trace("BuchungSitzplatz gespeichert: buchId={}, sitzId={}", buch.getId(), s.getId());
+        // 1) Command über Service senden
+        List<Long> sitzplatzIds = sitzplaetze.stream().map(Sitzplatz::getId).toList();
+        LOGGER.info("Sende BookingCommand via BuchungsService: auffId={}, kundeId={}, sitze={}",
+                auffuehrung.getId(), kunde.getId(), sitzplatzIds.size());
+        try {
+            buchungsService.buchePlaetze(auffuehrung.getId(), kunde.getId(), sitzplatzIds);
+        } catch (Exception ex) {
+            LOGGER.error("Fehler beim Senden des BookingCommand: {}", ex.getMessage(), ex);
+            showNotFound();
+            return;
         }
-        
-        // Wenn diese Buchung aus einer Reservierung kommt -> über Kafka löschen
-        if (ctx != null && ctx.getReservierungsId() != null) {
-            try {
-                LOGGER.info("Sende Kafka-Delete für reservierungId={}", ctx.getReservierungsId());
-                reservierungsService.loescheReservierung(ctx.getReservierungsId());
-            } catch (Exception ex) {
-                // Als Fallback: direkte Löschung versuchen
-                LOGGER.error("Kafka-Delete fehlgeschlagen, versuche Direktlöschung: {}", ex.getMessage(), ex);
-                reservierungRepository.findById(ctx.getReservierungsId()).ifPresent(res -> {
-                    if (res.getReservierungSitzplaetze() != null) {
-                        for (ReservierungSitzplatz rsp : res.getReservierungSitzplaetze()) {
-                            reservierungSitzplatzRepository.delete(rsp);
-                        }
+
+        // 2) Asynchron warten, bis der Consumer die Buchung persistiert hat, dann UI anzeigen
+        UI ui = UI.getCurrent();
+        new Thread(() -> {
+            long deadline = System.currentTimeMillis() + 3000; // bis zu 3s warten
+            Buchung found = null;
+            while (System.currentTimeMillis() < deadline) {
+                try {
+                    List<Buchung> all = buchungRepository.findAll();
+                    found = all.stream()
+                            .filter(b -> b.getKunde() != null && b.getAuffuehrung() != null)
+                            .filter(b -> b.getKunde().getId().equals(kunde.getId())
+                                    && b.getAuffuehrung().getId().equals(auffuehrung.getId()))
+                            .sorted((a, b) -> Long.compare(
+                                    b.getId() != null ? b.getId() : 0L,
+                                    a.getId() != null ? a.getId() : 0L))
+                            .findFirst()
+                            .orElse(null);
+                    // Warten bis Consumer Plätze UND Gesamtpreis gesetzt hat
+                    if (found != null
+                            && found.getBuchungSitzplaetze() != null
+                            && !found.getBuchungSitzplaetze().isEmpty()
+                            && found.getGesamtpreis() > 0.0) {
+                        break;
                     }
-                    reservierungRepository.delete(res);
-                    LOGGER.warn("Reservierung {} direkt gelöscht (Fallback)", ctx.getReservierungsId());
-                });
+                    Thread.sleep(150);
+                } catch (InterruptedException e) {
+                    break;
+                } catch (Exception e) {
+                    LOGGER.warn("Polling-Fehler beim Lesen der Buchung: {}", e.getMessage());
+                }
             }
-        }
 
-        //BuchungContext leeren
-        VaadinSession.getCurrent().setAttribute(BuchungContext.class, null);
-        LOGGER.debug("BuchungContext aus Session entfernt");
+            final Buchung result = found;
+            ui.access(() -> {
+                if (result == null) {
+                    LOGGER.error("Buchung wurde nicht rechtzeitig gefunden.");
+                    showNotFound();
+                    return;
+                }
 
-        // Danke-Dialog anzeigen
-        Dialog dialog = new Dialog();
-        dialog.setCloseOnEsc(false);
-        dialog.setCloseOnOutsideClick(false);
+                this.buchung = result;
 
-        H2 title = new H2("Vielen Dank für Ihre Buchung!");
-        Paragraph info = new Paragraph("Ihre Buchungsnummer: " + buch.getBuchungsnummer());
-        Paragraph hint = new Paragraph("Bitte notieren Sie sich diese Nummer für Rückfragen.");
+                // 3) Falls aus Reservierung: Delete-Kommando senden
+                if (ctx != null && ctx.getReservierungsId() != null) {
+                    try {
+                        LOGGER.info("Sende Kafka-Delete für reservierungId={}", ctx.getReservierungsId());
+                        reservierungsService.loescheReservierung(ctx.getReservierungsId());
+                    } catch (Exception ex) {
+                        LOGGER.error("Kafka-Delete fehlgeschlagen (wird ignoriert in UI): {}", ex.getMessage());
+                    }
+                }
 
-        Button close = new Button("Schließen", e -> {
-            dialog.close();
-            // zurück auf Startseite oder Reservierungsübersicht
-            UI.getCurrent().navigate("");
-        });
+                // 4) BuchungContext leeren und Bestätigung anzeigen
+                VaadinSession.getCurrent().setAttribute(BuchungContext.class, null);
+                LOGGER.debug("BuchungContext aus Session entfernt");
 
-        VerticalLayout layout = new VerticalLayout(title, info, hint, close);
-        layout.setSpacing(true);
-        layout.setPadding(true);
-        layout.setAlignItems(FlexComponent.Alignment.START);
-
-        dialog.add(layout);
-        dialog.open();
-        LOGGER.info("Buchungsbestätigungsdialog geöffnet für buchungId={}", buch.getId());
+                removeAll();
+                buildUI();
+            });
+        }).start();
     }
 }

@@ -64,6 +64,7 @@ public class BookingCommandConsumer {
             Buchung buchung = new Buchung();
             buchung.setBuchungsnummer(generateBuchungsnummer());
             buchung.setBuchungsZeitstempel(new Date());
+            buchung.setBezahlt(false);
             buchung.setKunde(kunde);
             buchung.setAuffuehrung(auffuehrung);
             buchung = buchungRepository.save(buchung);
@@ -103,6 +104,9 @@ public class BookingCommandConsumer {
             }
 
             buchung.setBuchungSitzplaetze(gebuchterPlaetze);
+            // Gesamtpreis auf der Buchung speichern
+            buchung.setGesamtpreis(gesamtpreis);
+            buchung = buchungRepository.save(buchung);
 
             // 5. Einnahmen der Aufführung aktualisieren
             auffuehrung.setAktuelleEinnahmen(auffuehrung.getAktuelleEinnahmen() + gesamtpreis);
