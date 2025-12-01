@@ -11,6 +11,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OrderBy;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,6 +46,7 @@ public class Sitzreihe {
      * (1 Sitzreihe : viele Sitzplätze)
      */
     @OneToMany(mappedBy = "reihe", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @OrderBy("platznummer ASC")
     private List<Sitzplatz> plaetze = new ArrayList<>();
 
 

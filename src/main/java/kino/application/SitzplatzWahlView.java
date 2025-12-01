@@ -190,9 +190,10 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
 
             reihenLayout.add(reihenLabel);
 
-            for (Sitzplatz platz : reihe.getPlaetze()) {
-                reihenLayout.add(createSitzButton(platz, reihe.getKategorie()));
-            }
+            // Plaetze deterministisch nach Platznummer sortieren, damit Links/Rechts konsistent ist
+            reihe.getPlaetze().stream()
+                    .sorted(Comparator.comparing(Sitzplatz::getPlatznummer))
+                    .forEach(platz -> reihenLayout.add(createSitzButton(platz, reihe.getKategorie())));
 
             sitzLayout.add(reihenLayout);
         }
@@ -330,8 +331,18 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
         if (isPlatzBelegtFuerAktuelleAuffuehrung(platz)) {
             btn.getStyle().set("background", "#9e9e9e");
             btn.setEnabled(false);
+            // Auch für belegte Plätze den Preis anzeigen (informativ)
+            try {
+                double preis = buchungsService.berechneGesamtpreis(java.util.List.of(platz.getId()));
+                btn.getElement().setProperty("title", "Preis: " + String.format("%.2f", preis) + " €");
+            } catch (Exception ignored) { }
         } else {
             btn.getStyle().set("background", "#4caf50").set("color", "white");
+            // Preis im Tooltip anzeigen
+            try {
+                double preis = buchungsService.berechneGesamtpreis(java.util.List.of(platz.getId()));
+                btn.getElement().setProperty("title", "Preis: " + String.format("%.2f", preis) + " €");
+            } catch (Exception ignored) { }
             btn.addClickListener(e -> {
                 if (ausgewähltePlaetze.contains(platz)) {
                     // Sitz wird abgewählt
@@ -392,25 +403,70 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
                             }
                         }, () -> Notification.show("Kunde nicht gefunden"));
                     } else if (ev.getStatus() == kino.application.kafka.events.CustomerEvent.Status.NOT_FOUND) {
-                        // Create via Kafka ensureCustomer
+                        // Create via Kafka ensureCustomer - wartet auf CREATE Event
                         if (name == null || name.isBlank()) {
                             Notification.show("Bitte Name angeben, um einen neuen Kunden anzulegen.");
+                            if (tmpRegHolder[0] != null) {
+                                tmpRegHolder[0].remove();
+                                tmpRegHolder[0] = null;
+                            }
                             return;
                         }
-                        Kunde k = customerService.ensureCustomer(name, email);
-                        this.currentKunde = k;
-                        dialog.close();
-                        if (isDirektBuchung) {
-                            startDirektbuchung();
-                        } else {
-                            saveReservierung(k.getId(), k.getName(), k.getEmail());
+                        
+                        // Query-Listener entfernen bevor wir CREATE-Listener registrieren
+                        if (tmpRegHolder[0] != null) {
+                            tmpRegHolder[0].remove();
+                            tmpRegHolder[0] = null;
                         }
+                        
+                        // Registriere Listener für CREATE Event
+                        String createCorr = java.util.UUID.randomUUID().toString();
+                        System.out.println(">>> Registriere CREATE-Listener mit correlationId: " + createCorr);
+                        final kino.application.customer.CustomerUIEventBus.Registration[] createRegHolder = new kino.application.customer.CustomerUIEventBus.Registration[1];
+                        createRegHolder[0] = kino.application.customer.CustomerUIEventBus.register(createEv -> {
+                            System.out.println(">>> CREATE Event empfangen: status=" + (createEv != null ? createEv.getStatus() : "null") + ", corrId=" + (createEv != null ? createEv.getCorrelationId() : "null") + ", expected=" + createCorr);
+                            if (createEv == null || createEv.getCorrelationId() == null || !createEv.getCorrelationId().equals(createCorr)) return;
+                            getUI().ifPresent(ui3 -> ui3.access(() -> {
+                                if (createEv.getStatus() == kino.application.kafka.events.CustomerEvent.Status.SUCCESS && createEv.getKundeId() != null) {
+                                    System.out.println(">>> CREATE Event SUCCESS: kundeId=" + createEv.getKundeId() + ", isDirektBuchung=" + isDirektBuchung);
+                                    kundeRepository.findById(createEv.getKundeId()).ifPresentOrElse(k -> {
+                                        System.out.println(">>> Kunde geladen: id=" + k.getId() + ", name=" + k.getName());
+                                        this.currentKunde = k;
+                                        System.out.println(">>> currentKunde gesetzt: " + (this.currentKunde != null));
+                                        dialog.close();
+                                        if (isDirektBuchung) {
+                                            System.out.println(">>> Rufe startDirektbuchung() auf...");
+                                            System.out.println(">>> aktuelleAuffuehrung: " + (aktuelleAuffuehrung != null));
+                                            System.out.println(">>> currentKunde: " + (currentKunde != null));
+                                            System.out.println(">>> ausgewähltePlaetze: " + ausgewähltePlaetze.size());
+                                            startDirektbuchung();
+                                        } else {
+                                            saveReservierung(k.getId(), k.getName(), k.getEmail());
+                                        }
+                                    }, () -> {
+                                        System.out.println(">>> FEHLER: Kunde konnte nicht aus Repository geladen werden für ID: " + createEv.getKundeId());
+                                        Notification.show("Kunde konnte nicht geladen werden");
+                                    });
+                                } else {
+                                    Notification.show("Kunde konnte nicht angelegt werden: " + (createEv.getMessage() != null ? createEv.getMessage() : "Unbekannter Fehler"));
+                                }
+                                if (createRegHolder[0] != null) {
+                                    createRegHolder[0].remove();
+                                    createRegHolder[0] = null;
+                                }
+                            }));
+                        });
+                        
+                        // Jetzt Kunde anlegen mit Correlation ID (gibt null zurück, Event wird erwartet)
+                        System.out.println(">>> Sende CREATE Command für Kunde: name=" + name + ", email=" + email + ", correlationId=" + createCorr);
+                        customerService.ensureCustomer(name, email, createCorr);
+                        System.out.println(">>> CREATE Command gesendet");
                     } else {
                         Notification.show("Kundenabfrage fehlgeschlagen");
-                    }
-                    if (tmpRegHolder[0] != null) {
-                        tmpRegHolder[0].remove();
-                        tmpRegHolder[0] = null;
+                        if (tmpRegHolder[0] != null) {
+                            tmpRegHolder[0].remove();
+                            tmpRegHolder[0] = null;
+                        }
                     }
                 }));
             });
@@ -472,17 +528,8 @@ public class SitzplatzWahlView extends VerticalLayout implements BeforeEnterObse
         String email = kundeEmail;
         VaadinSession.getCurrent().setAttribute("kundenEmail", email);
 
-        // Kurze Wartezeit für Kafka-Verarbeitung, dann navigieren
-        UI ui = UI.getCurrent();
-        new Thread(() -> {
-            try {
-                Thread.sleep(800); // 0.8s warten, bis Consumer gespeichert hat
-                ui.access(() -> ui.navigate(ReservierungenView.class));
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-                ui.access(() -> ui.navigate(ReservierungenView.class));
-            }
-        }).start();
+        // Direkt zur Reservierungen-Ansicht navigieren; die View lädt nach kurzer Verzögerung selbst
+        getUI().ifPresent(ui -> ui.navigate(ReservierungenView.class));
 
     }
 

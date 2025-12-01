@@ -48,6 +48,7 @@ public class CustomerCommandConsumer {
             CustomerEvent ev = new CustomerEvent(CustomerEvent.Action.CREATE, CustomerEvent.Status.SUCCESS);
             ev.setKundeId(existing.getId());
             ev.setEmail(existing.getEmail());
+            ev.setCorrelationId(cmd.getCorrelationId());
             ev.setMessage("exists");
             eventProducer.send(ev);
             CustomerUIEventBus.broadcast(ev);
@@ -60,6 +61,7 @@ public class CustomerCommandConsumer {
         CustomerEvent ev = new CustomerEvent(CustomerEvent.Action.CREATE, CustomerEvent.Status.SUCCESS);
         ev.setKundeId(k.getId());
         ev.setEmail(k.getEmail());
+        ev.setCorrelationId(cmd.getCorrelationId());
         eventProducer.send(ev);
         CustomerUIEventBus.broadcast(ev);
     }

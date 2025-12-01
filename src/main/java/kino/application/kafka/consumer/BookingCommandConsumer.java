@@ -98,8 +98,9 @@ public class BookingCommandConsumer {
                 gebuchterPlaetze.add(bs);
                 gesamtpreis += info.getPreis();
                 
-                // Sitzplatz als gebucht markieren
+                // Sitzplatz als gebucht markieren und als belegt setzen
                 sitzplatz.setBuchung(buchung);
+                sitzplatz.setFrei(false);  // Sitzplatz permanent blockieren
                 sitzplatzRepository.save(sitzplatz);
             }
 

@@ -22,6 +22,15 @@ public class CustomerService {
      * wait briefly until it is persisted, then return the entity from the repository.
      */
     public Kunde ensureCustomer(String name, String email) {
+        return ensureCustomer(name, email, null);
+    }
+
+    /**
+     * Ensure a customer with the given email exists. If not, emit Kafka command with correlationId.
+     * If correlationId is provided, does NOT wait/poll - caller should listen for CustomerEvent.
+     * If correlationId is null, falls back to polling behavior.
+     */
+    public Kunde ensureCustomer(String name, String email, String correlationId) {
         if (email == null || email.isBlank()) {
             throw new IllegalArgumentException("email required");
         }
@@ -29,7 +38,15 @@ public class CustomerService {
         if (existing != null) return existing;
 
         CustomerCommand cmd = new CustomerCommand(CustomerCommand.Action.CREATE, name, email);
+        if (correlationId != null) {
+            cmd.setCorrelationId(correlationId);
+        }
         producer.send(cmd);
+
+        // If correlationId provided, return null immediately - caller waits for event
+        if (correlationId != null) {
+            return null;
+        }
 
         // Simple polling for eventual consistency (reads are allowed in UI)
         int attempts = 0;

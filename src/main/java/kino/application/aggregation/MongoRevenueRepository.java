@@ -10,4 +10,5 @@ import java.util.List;
 public interface MongoRevenueRepository extends MongoRepository<RevenueAggregate, String> {
     List<RevenueAggregate> findByDay(LocalDate day);
     List<RevenueAggregate> findByFilmId(Long filmId);
+    long deleteByDay(LocalDate day);
 }

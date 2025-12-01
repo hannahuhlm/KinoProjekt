@@ -247,6 +247,10 @@ public class AdminFilmAnlegenView extends VerticalLayout {
 
     // ------------------ Aufführungen-Popup -------------------
     private void openAuffuehrungenDialog(Film film) {
+        // Verhindere Mehrfach-Öffnen: vorhandenen Dialog zuerst schließen
+        if (this.offeneAuffuehrungenDialog != null && this.offeneAuffuehrungenDialog.isOpened()) {
+            this.offeneAuffuehrungenDialog.close();
+        }
         Dialog dialog = new Dialog();
         this.offeneAuffuehrungenDialog = dialog;
         this.dialogFilm = film;
@@ -255,8 +259,7 @@ public class AdminFilmAnlegenView extends VerticalLayout {
         dialog.setModal(true);
         dialog.setDraggable(false);
         dialog.setCloseOnOutsideClick(false);
-        dialog.setCloseOnEsc(true);
-        dialog.setCloseOnEsc(true);
+        dialog.setCloseOnEsc(true); // nur einmal setzen
 
         VerticalLayout layout = new VerticalLayout();
         layout.setSizeFull();
@@ -279,9 +282,17 @@ public class AdminFilmAnlegenView extends VerticalLayout {
 
         treeGrid.addHierarchyColumn(obj -> {
             if (obj instanceof Integer) return "KW " + obj;
-            if (obj instanceof Auffuehrung) return "Aufführung: " + ((Auffuehrung) obj).getStartzeitpunkt();
+            if (obj instanceof Auffuehrung) {
+                Auffuehrung a = (Auffuehrung) obj;
+                // Kompakte Datum/Uhrzeit Darstellung ohne Präfix
+                return a.getStartzeitpunkt()
+                        .toInstant()
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDateTime()
+                        .format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"));
+            }
             return "";
-        }).setHeader("Kalenderwoche / Aufführung");
+        }).setHeader("Kalenderwoche / Zeit");
 
         // Column shows count per calendar week (based on received data)
         java.util.List<Auffuehrung> loadedAuffuehrungen = new java.util.ArrayList<>();
@@ -353,7 +364,9 @@ public class AdminFilmAnlegenView extends VerticalLayout {
         neueAuffuehrung.setWidthFull();
         neueAuffuehrung.addClickListener(ev -> openNeueAuffuehrungDialog(film, dialog));
 
-        Button schliessen = new Button("Schließen", ev -> dialog.close());
+        Button schliessen = new Button("Schließen", ev -> {
+            dialog.close();
+        });
 
         VerticalLayout buttonLayout = new VerticalLayout(neueAuffuehrung, schliessen);
         buttonLayout.setWidthFull();

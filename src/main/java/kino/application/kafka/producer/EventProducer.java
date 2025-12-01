@@ -1,6 +1,7 @@
 package kino.application.kafka.producer;
 
 import kino.application.kafka.events.BookingEvent;
+import kino.application.kafka.events.AggregationResultEvent;
 import kino.application.kafka.events.ReservationEvent;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -17,14 +18,17 @@ public class EventProducer {
     
     private final String reservationEventTopic;
     private final String bookingEventTopic;
+    private final String aggregationEventTopic;
 
     public EventProducer(
             KafkaTemplate<String, Object> kafkaTemplate,
             @Value("${kino.kafka.topic.reservation-events}") String reservationEventTopic,
-            @Value("${kino.kafka.topic.booking-events}") String bookingEventTopic) {
+            @Value("${kino.kafka.topic.booking-events}") String bookingEventTopic,
+            @Value("${kino.kafka.topic.aggregation-events}") String aggregationEventTopic) {
         this.kafkaTemplate = kafkaTemplate;
         this.reservationEventTopic = reservationEventTopic;
         this.bookingEventTopic = bookingEventTopic;
+        this.aggregationEventTopic = aggregationEventTopic;
     }
 
     /**
@@ -49,5 +53,14 @@ public class EventProducer {
 
         System.out.println(">>> [EventProducer] Sende Buchungs-Event: " + event);
         kafkaTemplate.send(bookingEventTopic, key, event);
+    }
+
+    /**
+     * Verschickt ein Aggregations-Result-Event (Erfolg/Fehlschlag bei Insert/Delete in Mongo).
+     */
+    public void sendAggregationEvent(AggregationResultEvent event) {
+        String key = event.getDay() != null ? event.getDay().toString() : "unknown";
+        System.out.println(">>> [EventProducer] Sende Aggregations-Event: " + event);
+        kafkaTemplate.send(aggregationEventTopic, key, event);
     }
 }
