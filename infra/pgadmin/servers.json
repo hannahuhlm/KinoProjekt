@@ -1,0 +1,13 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "Kino-Postgres",
+      "Group": "Servers",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "mydatabase",
+      "Username": "myuser",
+      "SSLMode": "prefer"
+    }
+  }
+}

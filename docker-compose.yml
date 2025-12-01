@@ -65,6 +65,23 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
 
+  pgadmin:
+    image: dpage/pgadmin4:8
+    depends_on:
+      - postgres
+    ports:
+      - "8083:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@local
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+      PGPASSFILE: /var/lib/pgadmin/.pgpass
+    restart: unless-stopped
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+      - ./infra/pgadmin/servers.json:/pgadmin4/servers.json:ro
+      - ./infra/pgadmin/pgpass:/pgpass-src:ro
+
   mongo:
     image: mongo:7
     ports:
@@ -93,4 +110,5 @@ services:
 volumes:
   postgres-data:
   mongo-data:
+  pgadmin-data:
 

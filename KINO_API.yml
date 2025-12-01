@@ -1,0 +1,456 @@
+asyncapi: '2.6.0'
+info:
+  title: KinoProjekt Kafka API
+  version: '1.0.0'
+  description: |
+    AsyncAPI specification describing Kafka-based communication for KinoProjekt.
+    Topics and schemas match application.properties and DTOs in the Java codebase.
+
+servers:
+  local-kafka:
+    url: localhost:9092
+    protocol: kafka
+    description: Local Kafka broker
+    protocolVersion: '0.10.2'
+
+defaultContentType: application/json
+
+channels:
+  admin-commands:
+    description: Admin commands (manage films, halls, showings)
+    publish:
+      message:
+        $ref: '#/components/messages/AdminCommand'
+  admin-events:
+    description: Admin command results
+    subscribe:
+      message:
+        $ref: '#/components/messages/AdminEvent'
+
+  customer-commands:
+    description: Customer commands (QUERY/CREATE)
+    publish:
+      message:
+        $ref: '#/components/messages/CustomerCommand'
+  customer-events:
+    description: Customer events (SUCCESS/FAILURE/NOT_FOUND)
+    subscribe:
+      message:
+        $ref: '#/components/messages/CustomerEvent'
+
+  reservation-commands:
+    description: Reservation commands (CREATE/DELETE/QUERY)
+    publish:
+      message:
+        $ref: '#/components/messages/ReservationCommand'
+  reservation-events:
+    description: Reservation events (created/cancelled/query results)
+    subscribe:
+      message:
+        $ref: '#/components/messages/ReservationEvent'
+
+  booking-commands:
+    description: Booking commands (create booking)
+    publish:
+      message:
+        $ref: '#/components/messages/BookingCommand'
+  booking-events:
+    description: Booking events (completed/failed)
+    subscribe:
+      message:
+        $ref: '#/components/messages/BookingEvent'
+
+  kino-aggregation:
+    description: Aggregation command topic (trigger daily revenue aggregation)
+    publish:
+      message:
+        $ref: '#/components/messages/AggregationCommand'
+  aggregation-events:
+    description: Aggregation result events
+    subscribe:
+      message:
+        $ref: '#/components/messages/AggregationResultEvent'
+
+components:
+  schemas:
+    Correlation:
+      type: object
+      properties:
+        correlationId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    AdminCommandPayload:
+      type: object
+      properties:
+        entity:
+          type: string
+          enum: [FILM, SAAL, AUFFUEHRUNG]
+        action:
+          type: string
+          enum: [SAVE, DELETE, CREATE, QUERY]
+        issuedAt:
+          type: string
+          format: date-time
+        film:
+          $ref: '#/components/schemas/AdminFilmPayload'
+        saal:
+          $ref: '#/components/schemas/AdminSaalPayload'
+        auffuehrung:
+          $ref: '#/components/schemas/AdminAuffuehrungPayload'
+        query:
+          $ref: '#/components/schemas/AdminQueryPayload'
+      required: [entity, action]
+    AdminFilmPayload:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        titel: { type: string }
+        dauer: { type: integer }
+        filmstart: { type: string }
+        posterUrl: { type: string }
+        beschreibung: { type: string }
+    AdminSaalPayload:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+        freigegeben: { type: boolean }
+        reihen:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminSitzreihePayload'
+    AdminSitzreihePayload:
+      type: object
+      properties:
+        reihennummer: { type: integer }
+        kategorie: { type: string }
+        anzahlSitze: { type: integer }
+    AdminAuffuehrungPayload:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        filmId: { type: integer, format: int64 }
+        saalId: { type: integer, format: int64 }
+        startzeit: { type: string }
+    AdminQueryPayload:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [LIST_ALL, GET_BY_ID, LIST_BY_FILM]
+        id: { type: integer, format: int64 }
+        filmId: { type: integer, format: int64 }
+        correlationId: { type: string }
+
+    AdminEventPayload:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [SUCCESS, ERROR]
+        message: { type: string }
+        data: { type: object }
+
+    CustomerCommandPayload:
+      type: object
+      properties:
+        action:
+          type: string
+          enum: [QUERY, CREATE]
+        name: { type: string }
+        email: { type: string }
+        issuedAt:
+          type: string
+          format: date-time
+      required: [action]
+    CustomerEventPayload:
+      type: object
+      properties:
+        action:
+          type: string
+          enum: [QUERY, CREATE]
+        status:
+          type: string
+          enum: [SUCCESS, FAILURE, NOT_FOUND]
+        kundeId:
+          type: integer
+          format: int64
+        email: { type: string }
+        message: { type: string }
+
+    SitzplatzInfo:
+      type: object
+      properties:
+        sitzplatzId: { type: integer, format: int64 }
+        reihe: { type: integer }
+        platz: { type: integer }
+        kategorie: { type: string }
+
+    ReservierungDTO:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        auffuehrungId: { type: integer, format: int64 }
+        kundeId: { type: integer, format: int64 }
+        sitzplaetze:
+          type: array
+          items:
+            $ref: '#/components/schemas/SitzplatzInfo'
+
+    ReservationCommandPayload:
+      type: object
+      properties:
+        action: { type: string }
+        reservierungId: { type: integer, format: int64 }
+        auffuehrungId: { type: integer, format: int64 }
+        kundeId: { type: integer, format: int64 }
+        kundeName: { type: string }
+        kundeEmail: { type: string }
+        sitzplaetze:
+          type: array
+          items:
+            $ref: '#/components/schemas/SitzplatzInfo'
+        correlationId: { type: string }
+      required: [action]
+    ReservationEventPayload:
+      type: object
+      properties:
+        reservierungId: { type: integer, format: int64 }
+        reservierungsnummer: { type: integer }
+        auffuehrungId: { type: integer, format: int64 }
+        kundeId: { type: integer, format: int64 }
+        timestamp: { type: string }
+        status: { type: string }
+        correlationId: { type: string }
+        reservierungen:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReservierungDTO'
+
+    BookingCommandPayload:
+      type: object
+      properties:
+        auffuehrungId: { type: integer, format: int64 }
+        kundeId: { type: integer, format: int64 }
+        kundeName: { type: string }
+        sitzplaetze:
+          type: array
+          items:
+            $ref: '#/components/schemas/SitzplatzInfo'
+        gesamtpreis: { type: number }
+      required: [auffuehrungId, kundeId, sitzplaetze]
+    BookingEventPayload:
+      type: object
+      properties:
+        buchungId: { type: integer, format: int64 }
+        buchungsnummer: { type: string }
+        auffuehrungId: { type: integer, format: int64 }
+        kundeId: { type: integer, format: int64 }
+        gesamtpreis: { type: number }
+        timestamp: { type: string }
+        status: { type: string }
+
+    AggregationCommandPayload:
+      type: object
+      properties:
+        day: { type: string, format: date }
+      required: [day]
+    AggregationResultEventPayload:
+      type: object
+      properties:
+        day: { type: string, format: date }
+        correlationId: { type: string }
+        operation: { type: string, enum: [INSERT, DELETE] }
+        status: { type: string, enum: [SUCCESS, FAILURE] }
+        count: { type: integer }
+        message: { type: string }
+        timestamp: { type: string, format: date-time }
+
+  messages:
+    AdminCommand:
+      name: AdminCommand
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Correlation'
+          - $ref: '#/components/schemas/AdminCommandPayload'
+      examples:
+        - name: PlanAuffuehrung
+          payload:
+            correlationId: "3b4a2c7e-8b9d-4e0f-9a11-1234567890ab"
+            timestamp: "2025-12-01T12:00:00Z"
+            entity: "AUFFUEHRUNG"
+            action: "CREATE"
+            issuedAt: "2025-12-01T12:00:00Z"
+            auffuehrung:
+              filmId: 123
+              saalId: 1
+              startzeit: "2025-12-02 19:30"
+    AdminEvent:
+      name: AdminEvent
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Correlation'
+          - $ref: '#/components/schemas/AdminEventPayload'
+      examples:
+        - name: PlanAuffuehrungSuccess
+          payload:
+            correlationId: "3b4a2c7e-8b9d-4e0f-9a11-1234567890ab"
+            timestamp: "2025-12-01T12:00:01Z"
+            status: "SUCCESS"
+            message: "Aufführung geplant"
+            data:
+              auffuehrungId: 789
+
+    CustomerCommand:
+      name: CustomerCommand
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Correlation'
+          - $ref: '#/components/schemas/CustomerCommandPayload'
+      examples:
+        - name: QueryCustomer
+          payload:
+            correlationId: "c0ffee00-0000-0000-aaaa-bbbbbbbbbbbb"
+            timestamp: "2025-12-01T12:05:00Z"
+            action: "QUERY"
+            email: "alice@example.com"
+        - name: CreateCustomer
+          payload:
+            correlationId: "c0ffee00-0000-0000-aaaa-cccccccccccc"
+            timestamp: "2025-12-01T12:05:10Z"
+            action: "CREATE"
+            name: "Alice"
+            email: "alice@example.com"
+    CustomerEvent:
+      name: CustomerEvent
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Correlation'
+          - $ref: '#/components/schemas/CustomerEventPayload'
+      examples:
+        - name: CustomerNotFound
+          payload:
+            correlationId: "c0ffee00-0000-0000-aaaa-bbbbbbbbbbbb"
+            timestamp: "2025-12-01T12:05:00Z"
+            action: "QUERY"
+            status: "NOT_FOUND"
+            email: "alice@example.com"
+        - name: CustomerCreated
+          payload:
+            correlationId: "c0ffee00-0000-0000-aaaa-cccccccccccc"
+            timestamp: "2025-12-01T12:05:11Z"
+            action: "CREATE"
+            status: "SUCCESS"
+            kundeId: 1
+            email: "alice@example.com"
+
+    ReservationCommand:
+      name: ReservationCommand
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Correlation'
+          - $ref: '#/components/schemas/ReservationCommandPayload'
+      examples:
+        - name: CreateReservation
+          payload:
+            correlationId: "deadbeef-1234-5678-90ab-cdef12345678"
+            timestamp: "2025-12-01T12:10:00Z"
+            action: "CREATE"
+            auffuehrungId: 789
+            kundeId: 1
+            kundeName: "Alice"
+            kundeEmail: "alice@example.com"
+            sitzplaetze:
+              - { sitzplatzId: 105, reihe: 1, platz: 5, kategorie: "STANDARD" }
+              - { sitzplatzId: 106, reihe: 1, platz: 6, kategorie: "STANDARD" }
+    ReservationEvent:
+      name: ReservationEvent
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Correlation'
+          - $ref: '#/components/schemas/ReservationEventPayload'
+      examples:
+        - name: ReservationConfirmed
+          payload:
+            correlationId: "deadbeef-1234-5678-90ab-cdef12345678"
+            timestamp: "2025-12-01T12:10:01Z"
+            status: "CREATED"
+            reservierungId: 100
+            reservierungsnummer: 5001
+            auffuehrungId: 789
+            kundeId: 1
+
+    BookingCommand:
+      name: BookingCommand
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Correlation'
+          - $ref: '#/components/schemas/BookingCommandPayload'
+      examples:
+        - name: CreateBooking
+          payload:
+            correlationId: "feedface-1111-2222-3333-444455556666"
+            timestamp: "2025-12-01T12:15:00Z"
+            auffuehrungId: 789
+            kundeId: 1
+            kundeName: "Alice"
+            sitzplaetze:
+              - { sitzplatzId: 105, reihe: 1, platz: 5, kategorie: "STANDARD" }
+              - { sitzplatzId: 106, reihe: 1, platz: 6, kategorie: "STANDARD" }
+            gesamtpreis: 24.00
+    BookingEvent:
+      name: BookingEvent
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Correlation'
+          - $ref: '#/components/schemas/BookingEventPayload'
+      examples:
+        - name: BookingCompleted
+          payload:
+            correlationId: "feedface-1111-2222-3333-444455556666"
+            timestamp: "2025-12-01T12:15:01Z"
+            buchungId: 200
+            buchungsnummer: "B-20251201-200"
+            auffuehrungId: 789
+            kundeId: 1
+            gesamtpreis: 24.00
+            status: "COMPLETED"
+
+    AggregationCommand:
+      name: AggregationCommand
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Correlation'
+          - $ref: '#/components/schemas/AggregationCommandPayload'
+      examples:
+        - name: AggregateDay
+          payload:
+            correlationId: "aa11bb22-cc33-dd44-ee55-ff6677889900"
+            timestamp: "2025-12-01T06:00:00Z"
+            day: "2025-12-01"
+    AggregationResultEvent:
+      name: AggregationResultEvent
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Correlation'
+          - $ref: '#/components/schemas/AggregationResultEventPayload'
+      examples:
+        - name: AggregationDone
+          payload:
+            correlationId: "aa11bb22-cc33-dd44-ee55-ff6677889900"
+            timestamp: "2025-12-01T06:00:05Z"
+            day: "2025-12-01"
+            operation: "INSERT"
+            status: "SUCCESS"
+            count: 2
+            message: "Aggregated 2 showings"
+
+tags:
+  - name: admin
+  - name: customer
+  - name: reservation
+  - name: booking
+  - name: aggregation

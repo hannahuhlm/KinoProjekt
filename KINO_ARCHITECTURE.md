@@ -55,6 +55,8 @@
 │    reservation-events    ← ReservationEventProducer                                             │
 │    booking-commands      → BookingCommandConsumer                                               │
 │    booking-events        ← BookingEventProducer                                                 │
+│    aggregation           → AggregationCommandConsumer                                           │
+│    aggregation-events    ← EventProducer.sendAggregationEvent                                   │
 └───────────┬─────────────────────────────────────────────────────────────────────────────────────┘
             │ consume (@KafkaListener) + map Entities → DTOs / execute writes
             ▼
@@ -64,15 +66,21 @@
 │  CustomerCommandConsumer     (Kunde CREATE / QUERY by Email)                                   │
 │  ReservationCommandConsumer  (Reservierung CREATE / DELETE / QUERY by kundeId)                 │
 │  BookingCommandConsumer      (Buchung CREATE)                                                  │
-│  → Build AdminEvent / CustomerEvent / ReservationEvent / BookingEvent                          │
+│  AggregationCommandConsumer  (Aggregation für Mongo, pro Tag/Aufführung)                       │
+│  → Build AdminEvent / CustomerEvent / ReservationEvent / BookingEvent / AggregationResultEvent │
 │  → Send event to Kafka & broadcast to matching UI EventBus                                     │
 └───────────┬────────────────────────────────────────────────────────────────────────────────────┘
-            │ JPA/Hibernate transactional writes & reads
+            │ JPA/Hibernate transactional writes & reads; Mongo Aggregation writes (Spring Data)
             ▼
 ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
 │                                         POSTGRESQL                                             │
 │  Entities: Film, Kinosaal, Sitzreihe, Sitzplatz, Auffuehrung, Reservierung, Buchung, Kunde     │
 │  Join Tables: reservierung_sitzplatz, buchung_sitzplatz                                        │
+└────────────────────────────────────────────────────────────────────────────────────────────────┘
+            ▼
+┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                           MONGODB                                              │
+│  Collection: daily_revenue (RevenueAggregate je Aufführung und Tag)                            │
 └────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -204,6 +212,18 @@ Events (Output Events):
 │ - kundeId               │
 │ - timestamp             │
 │ - status (CREATED)      │
+└─────────────────────────┘
+
+┌─────────────────────────┐
+│ AggregationResultEvent  │
+├─────────────────────────┤
+│ - day                   │
+│ - correlationId         │
+│ - operation (INSERT/DELETE)
+│ - status (SUCCESS/FAILURE)
+│ - count                 │
+│ - message               │
+│ - timestamp             │
 └─────────────────────────┘
 
 ┌─────────────────────────┐
@@ -354,11 +374,82 @@ booking-events Topic
 │  └──────────────────┘                     │
 │                                            │
 │  ┌──────────────────┐                     │
+│  │    MongoDB       │                     │
+│  │   Port: 27017    │                     │
+│  └──────────────────┘                     │
+│                                            │
+│  ┌──────────────────┐                     │
 │  │  Spring Boot App │                     │
 │  │   Port: 8090     │                     │
 │  └──────────────────┘                     │
 │                                            │
 └────────────────────────────────────────────┘
+
+## Aggregation (MongoDB) – Architektur & Datenfluss
+
+Die tagesbezogene Einnahmen‑Aggregation wird in MongoDB gespeichert und über Kafka orchestriert. UI und Services sind vollständig entkoppelt.
+
+```
+UI (EinnahmenView)
+   ├─ Klick "Jetzt aggregieren" → AggregationCommand(day, correlationId)
+   ├─ send via AggregationCommandProducer → Topic: aggregation
+   ├─ registriert Listener auf AggregationUIEventBus (filter corrId & day)
+   └─ konsumiert AggregationResultEvent (INSERT) → Grid refresh
+
+AggregationCommandConsumer (@KafkaListener topic=aggregation)
+   └─ ruft AggregationService.aggregateDay(day, correlationId)
+
+AggregationService
+   ├─ löscht vorhandene Aggregate für day (Mongo) → send AggregationResultEvent(DELETE)
+   ├─ lädt Buchungen (Postgres) im Tagesfenster
+   ├─ gruppiert nach Aufführung
+   ├─ berechnet pro Aufführung:
+   │     • revenue (Summe gesamtpreis)
+   │     • bookingsCount (Anzahl Buchungen)
+   │     • occupiedSeatsCount (Summe BuchungSitzplätze)
+   │     • totalSeatsCount (Summe aller Sitzplätze im Saal)
+   │     • occupancyPercent = occupied/total*100
+   ├─ speichert RevenueAggregate in Mongo (collection "daily_revenue")
+   └─ send AggregationResultEvent(INSERT, count, correlationId)
+
+AggregationResultConsumer (@KafkaListener topic=aggregation-events)
+   └─ broadcastet AggregationResultEvent → AggregationUIEventBus
+
+MongoDB (collection: daily_revenue)
+   └─ RevenueAggregate(day, aggregatedAt, filmId, auffuehrungId, revenue,
+                       bookingsCount, occupiedSeatsCount, totalSeatsCount, occupancyPercent)
+```
+
+Wichtige Schnittstellen:
+- Command: `AggregationCommand { day: LocalDate, correlationId?: String }`
+- Event: `AggregationResultEvent { day, correlationId, operation, status, count, message, timestamp }`
+
+UI‑Integration:
+- `EinnahmenView` triggert Aggregation via `AggregationCommandProducer` und hört auf `AggregationUIEventBus` (Ergebnisse aus `aggregation-events`).
+- Anzeige im UI verwendet die letzten Mongo‑Aggregate (Umsatz, Belegung) pro Aufführung; Anzahl Buchungen kann ergänzend live aus Postgres gelesen werden.
+
+Konsistenz:
+- Aggregation arbeitet pro Aufführung; Belegungen werden nicht über mehrere Aufführungen eines Saals summiert.
+- Vor Einfügen neuer Tagesdaten werden bestehende Aggregate desselben Tages gelöscht (Replace‑Semantik).
+- `correlationId` wird durchgereicht (Command → ResultEvent), um UI‑Listener präzise zu matchen.
+
+## Architektur‑Konsistenzprüfung (Stand Implementierung)
+
+- Topics & Consumer/Producer stimmen mit Code überein:
+  - `aggregation` (AggregationCommandProducer → AggregationCommandConsumer)
+  - `aggregation-events` (EventProducer.sendAggregationEvent → AggregationResultConsumer)
+  - Admin/Customer/Reservation/Booking Topics unverändert vorhanden.
+- UI‑EventBus‑Bridges vorhanden: `AggregationUIEventBus`, `AdminUIEventBus`, `CustomerUIEventBus`, `ReservationUIEventBus`.
+- `CustomerEvent` Korrektur: `correlationId` wird im CREATE‑Pfad jetzt gesetzt (fix in `CustomerCommandConsumer.handleCreate`). UI‑Listener in `SitzplatzWahlView` filtern korrekt über `correlationId`.
+- Sitzplatz‑Belegung in `SitzplatzWahlView` prüft nur Reservierungen/Buchungen der aktuellen Aufführung (kein globales `isFrei()` mehr) → keine fälschliche Akkumulation über Aufführungen hinweg.
+- Einnahmen‑UI (`EinnahmenView`) zeigt:
+  - Gesamteinnahmen aus Mongo je Film
+  - Pro Aufführung: letzte Aggregation (Belegung, Umsatz) + Anzahl Buchungen (Postgres) und „Details anzeigen“.
+- Event‑Schemas: `AggregationResultEvent` mit Operation/Status/Count/Timestamp ist implementiert und dokumentiert.
+
+Offene/optionale Punkte:
+- Scheduler für tägliche Aggregation (z. B. 02:00 Uhr) per `@Scheduled` in einem separaten Service nutzen, der `AggregationCommand` publiziert.
+- Optionales Topic für Sitzplatz‑Queries, falls UI‑Reads konsolidiert werden sollen (derzeit lokale Repository‑Reads ok).
 ```
 
 ## Administration: Filme, Säle, Aufführungen (nach Migration über Kafka)
